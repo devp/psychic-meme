@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Lisp REPL</title>
+    <meta name="description" content="Mobile-optimized REPL for Lisp languages">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTW9iaWxlIExpc3AgUkVQTCIsInNob3J0X25hbWUiOiJMaXNwIFJFUEwiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFhMWExYSIsInRoZW1lX2NvbG9yIjoiIzFhMWExYSIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSFpwWlhkQ2IzZzlJakFnTUNBMU1USWdOVEV5SWo0OGNtVmpkQ0I0UFNJd0lpQjVQU0l3SWlCM2FXUjBhRDBpTlRFeUlpQm9aV2xuYUhROUlqVXhNaUlnWm1sc2JEMGlJekZoTVdFeFlTSXZQanh3WVhSb0lHUTlJazBnTWpVMklEazJZeklnTVRVMklERTFOaUF4TlRaaE1qUWdNalFnTUNBeElERWdOREFnTkRCaE1qUWdNalFnTUNBd0lERXRNelVnTXpsaE1qUWdNalFnTUNBd0lERXROVElnTURaaE1qUWdNalFnTUNBd0lERXROVElnTlRaNGVTSWdabWxzYkQwaUkwUkJRa0V6UWlJdlBqd3ZjM1puUGc9PSIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #333;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #555;
+            flex-shrink: 0;
+        }
+        
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .language-selector {
+            background: #444;
+            border: 1px solid #666;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+        }
+        
+        .menu-btn {
+            background: #555;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .repl-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        .output-area {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            background: #1e1e1e;
+            font-size: 14px;
+            line-height: 1.4;
+            border-bottom: 1px solid #555;
+        }
+        
+        .prompt-line {
+            margin: 8px 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .prompt {
+            color: #4a9eff;
+            user-select: none;
+        }
+        
+        .result {
+            color: #98fb98;
+            margin-left: 20px;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            margin-left: 20px;
+        }
+        
+        .comment-vars {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 6px;
+            margin: 8px 12px;
+            padding: 8px;
+            font-size: 12px;
+            color: #888;
+            flex-shrink: 0;
+        }
+        
+        .comment-vars-title {
+            color: #4a9eff;
+            margin-bottom: 4px;
+        }
+        
+        .var-tag {
+            display: inline-block;
+            background: #444;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .var-tag:hover {
+            background: #555;
+        }
+        
+        .input-area {
+            background: #2a2a2a;
+            padding: 8px 12px;
+            border-bottom: 1px solid #555;
+            flex-shrink: 0;
+        }
+        
+        .input-container {
+            display: flex;
+            align-items: flex-start;
+            background: #333;
+            border-radius: 6px;
+            padding: 8px;
+            gap: 8px;
+        }
+        
+        .input-prompt {
+            color: #4a9eff;
+            user-select: none;
+            flex-shrink: 0;
+            line-height: 1.4;
+            padding-top: 4px;
+        }
+        
+        .code-input-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 22px;
+        }
+        
+        .code-display {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.4;
+            padding: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            pointer-events: none;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        .code-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: transparent;
+            border: none;
+            color: transparent;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.4;
+            outline: none;
+            resize: none;
+            padding: 4px;
+            caret-color: #4a9eff;
+            min-height: 22px;
+            overflow: hidden;
+        }
+        
+        .code-display .keyword { color: #ff79c6; }
+        .code-display .function { color: #8be9fd; }
+        .code-display .string { color: #f1fa8c; }
+        .code-display .number { color: #bd93f9; }
+        .code-display .comment { color: #6272a4; font-style: italic; }
+        .code-display .paren { color: #50fa7b; font-weight: bold; }
+        .code-display .bracket { color: #ff9500; font-weight: bold; }
+        .code-display .variable { color: #ffb86c; }
+        
+        .autocomplete-popup {
+            position: fixed;
+            bottom: 180px;
+            left: 12px;
+            right: 12px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .autocomplete-item {
+            padding: 12px;
+            border-bottom: 1px solid #444;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .autocomplete-item.selected {
+            background: #4a9eff;
+            color: white;
+        }
+        
+        .keyboard-area {
+            background: #2a2a2a;
+            padding: 8px;
+            border-top: 1px solid #555;
+            flex-shrink: 0;
+        }
+        
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 6px;
+            gap: 4px;
+        }
+        
+        .key {
+            background: #444;
+            border: 1px solid #666;
+            color: white;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: bold;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        
+        .key:active {
+            background: #555;
+            transform: scale(0.95);
+        }
+        
+        .key.large { flex: 2; }
+        .key.medium { flex: 1.5; }
+        .key.small { flex: 1; }
+        
+        .key.paren {
+            background: #4a9eff;
+            color: white;
+            font-size: 20px;
+        }
+        
+        .key.enter {
+            background: #98fb98;
+            color: #1a1a1a;
+            font-size: 12px;
+        }
+        
+        .key.special {
+            background: #ff9500;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .menu-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .menu-content {
+            background: #333;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 300px;
+            width: 90%;
+        }
+        
+        .menu-item {
+            display: block;
+            width: 100%;
+            background: #444;
+            border: none;
+            color: white;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .menu-item:hover {
+            background: #555;
+        }
+        
+        .close-btn {
+            background: #666;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            float: right;
+        }
+        
+        .history-nav {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 500;
+            display: none;
+        }
+        
+        .history-prev {
+            left: 12px;
+        }
+        
+        .history-next {
+            right: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">
+            <span>λ</span>
+            <select class="language-selector" id="languageSelector">
+                <option value="biwascheme">Scheme</option>
+                <option value="fennel">Fennel</option>
+            </select>
+        </div>
+        <button class="menu-btn" id="menuBtn">Menu</button>
+    </div>
+    
+    <div class="repl-container">
+        <div class="output-area" id="outputArea">
+            <div class="prompt-line">
+                <span class="prompt" id="welcomePrompt">λ></span> Welcome! Select a language and start coding.
+            </div>
+        </div>
+        
+        <div class="comment-vars" id="commentVars">
+            <div class="comment-vars-title">Quick Variables:</div>
+            <div id="varTags"></div>
+        </div>
+        
+        <div class="input-area">
+            <div class="input-container">
+                <span class="input-prompt" id="inputPrompt">λ></span>
+                <div class="code-input-wrapper">
+                    <pre class="code-display" id="codeDisplay"></pre>
+                    <textarea class="code-input" id="codeInput" placeholder="Enter expression..." rows="1"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="autocomplete-popup" id="autocompletePopup"></div>
+    </div>
+    
+    <div class="keyboard-area" id="keyboardArea">
+        <!-- Keyboard will be populated by JavaScript -->
+    </div>
+    
+    <div class="menu-popup" id="menuPopup">
+        <div class="menu-content">
+            <button class="close-btn" id="closeMenu">Close</button>
+            <h3 style="color: #4a9eff; margin-bottom: 16px;">Menu</h3>
+            <button class="menu-item" id="resetRepl">Reset REPL</button>
+            <button class="menu-item" id="exportHistory">Export History</button>
+            <button class="menu-item" id="importHistory">Import History</button>
+            <button class="menu-item" id="clearHistory">Clear History</button>
+            <button class="menu-item" id="toggleKeyboard">Toggle Keyboard</button>
+        </div>
+    </div>
+    
+    <div class="history-nav history-prev" id="historyPrev">↑</div>
+    <div class="history-nav history-next" id="historyNext">↓</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/biwascheme/0.6.9/biwascheme.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fennel/1.4.2/fennel.min.js"></script>
+    
+    <script>
+        // Base Language Engine Interface
+        class LanguageEngine {
+            constructor(name) {
+                this.name = name;
+                this.history = [];
+                this.historyIndex = -1;
+            }
+            
+            async evaluate(code) {
+                throw new Error('evaluate() must be implemented');
+            }
+            
+            format(code) {
+                return this.autoIndent(code);
+            }
+            
+            getCompletions(partial) {
+                const keywords = this.getKeywords();
+                const variables = this.getVariables();
+                const all = [...keywords, ...variables];
+                
+                if (!partial) return all.slice(0, 10);
+                
+                const filtered = all.filter(word => 
+                    word.toLowerCase().startsWith(partial.toLowerCase())
+                );
+                return filtered.slice(0, 10);
+            }
+            
+            getKeywords() {
+                return [];
+            }
+            
+            getVariables() {
+                const vars = JSON.parse(localStorage.getItem(`${this.name}_variables`) || '[]');
+                return vars;
+            }
+            
+            addVariable(name) {
+                const vars = this.getVariables();
+                if (!vars.includes(name)) {
+                    vars.push(name);
+                    localStorage.setItem(`${this.name}_variables`, JSON.stringify(vars));
+                }
+            }
+            
+            getSpecialKeys() {
+                return [
+                    ['(', ')', 'λ', "'"],
+                    ['[', ']', '+', '-', '*', '/'],
+                    ['#', ':', '.', 'ENTER'],
+                    ['ABC', '⌫', '⎵', '🎤']
+                ];
+            }
+            
+            getPrompt() {
+                return 'λ>';
+            }
+            
+            reset() {
+                // Override in subclasses
+            }
+            
+            highlightSyntax(code) {
+                let highlighted = code;
+                
+                // Strings
+                highlighted = highlighted.replace(/"([^"\\]|\\.)*"/g, '<span class="string">$&</span>');
+                
+                // Numbers
+                highlighted = highlighted.replace(/\b\d+(\.\d+)?\b/g, '<span class="number">$&</span>');
+                
+                // Comments
+                highlighted = highlighted.replace(/;.*$/gm, '<span class="comment">$&</span>');
+                
+                // Parentheses and brackets
+                highlighted = highlighted.replace(/[()]/g, '<span class="paren">$&</span>');
+                highlighted = highlighted.replace(/[\[\]]/g, '<span class="bracket">$&</span>');
+                
+                // Keywords (override in subclasses for language-specific keywords)
+                const keywords = this.getKeywords();
+                keywords.forEach(keyword => {
+                    const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+                    highlighted = highlighted.replace(regex, `<span class="keyword">${keyword}</span>`);
+                });
+                
+                return highlighted;
+            }
+            
+            autoIndent(code) {
+                const lines = code.split('\n');
+                const indented = [];
+                let level = 0;
+                
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed) {
+                        indented.push('');
+                        continue;
+                    }
+                    
+                    // Count closing parens at start
+                    let closingCount = 0;
+                    for (const char of trimmed) {
+                        if (char === ')' || char === ']') closingCount++;
+                        else break;
+                    }
+                    
+                    level = Math.max(0, level - closingCount);
+                    indented.push('  '.repeat(level) + trimmed);
+                    
+                    // Count opening parens
+                    let openingCount = 0;
+                    for (const char of trimmed) {
+                        if (char === '(' || char === '[') openingCount++;
+                        else if (char === ')' || char === ']') openingCount--;
+                    }
+                    
+                    level = Math.max(0, level + openingCount);
+                }
+                
+                return indented.join('\n');
+            }
+        }
+        
+        // BiwaScheme Engine
+        class BiwaSchemeEngine extends LanguageEngine {
+            constructor() {
+                super('biwascheme');
+                this.interpreter = new BiwaScheme.Interpreter();
+            }
+            
+            async evaluate(code) {
+                try {
+                    const result = this.interpreter.evaluate(code);
+                    
+                    // Extract variable names from definitions
+                    const defineMatch = code.match(/\(define\s+([^)\s]+)/);
+                    if (defineMatch) {
+                        this.addVariable(defineMatch[1]);
+                    }
+                    
+                    const defunMatch = code.match(/\(defun\s+([^)\s]+)/);
+                    if (defunMatch) {
+                        this.addVariable(defunMatch[1]);
+                    }
+                    
+                    return { 
+                        result: BiwaScheme.to_write(result),
+                        error: null 
+                    };
+                } catch (e) {
+                    return { 
+                        result: null, 
+                        error: e.message || e.toString() 
+                    };
+                }
+            }
+            
+            getKeywords() {
+                return [
+                    'define', 'lambda', 'let', 'let*', 'letrec',
+                    'if', 'cond', 'case', 'and', 'or', 'not',
+                    'car', 'cdr', 'cons', 'list', 'append',
+                    'map', 'filter', 'fold', 'length',
+                    '+', '-', '*', '/', '=', '<', '>', '<=', '>=',
+                    'display', 'newline', 'write'
+                ];
+            }
+            
+            reset() {
+                this.interpreter = new BiwaScheme.Interpreter();
+            }
+        }
+        
+        // Fennel Engine  
+        class FennelEngine extends LanguageEngine {
+            constructor() {
+                super('fennel');
+                this.fennel = window.fennel;
+                this.luaEnv = {};
+            }
+            
+            async evaluate(code) {
+                try {
+                    // Compile Fennel to Lua
+                    const lua = this.fennel.compileString(code);
+                    
+                    // Simple Lua evaluation (limited, but works for basic cases)
+                    const result = this.evalLua(lua);
+                    
+                    // Extract variable names from let bindings and function definitions
+                    const letMatch = code.match(/\(let\s+\[([^\]]+)\]/);
+                    if (letMatch) {
+                        const vars = letMatch[1].match(/\b[a-zA-Z][a-zA-Z0-9-]*\b/g);
+                        if (vars) vars.forEach(v => this.addVariable(v));
+                    }
+                    
+                    const fnMatch = code.match(/\(fn\s+([^)\s]+)/);
+                    if (fnMatch) {
+                        this.addVariable(fnMatch[1]);
+                    }
+                    
+                    return { 
+                        result: result,
+                        error: null 
+                    };
+                } catch (e) {
+                    return { 
+                        result: null, 
+                        error: e.message || e.toString() 
+                    };
+                }
+            }
+            
+            // Simple Lua evaluator (very basic)
+            evalLua(luaCode) {
+                // This is a simplified Lua eval - in a real implementation,
+                // you'd want to use lua.vm.js or similar
+                try {
+                    // Handle basic arithmetic and function calls
+                    luaCode = luaCode.replace(/print\s*\(/g, 'console.log(');
+                    
+                    // Very basic evaluation
+                    if (/^\s*return\s+/.test(luaCode)) {
+                        const expr = luaCode.replace(/^\s*return\s+/, '').replace(/;?\s*$/, '');
+                        return eval(expr);
+                    }
+                    
+                    return 'nil';
+                } catch (e) {
+                    throw new Error(`Lua execution error: ${e.message}`);
+                }
+            }
+            
+            getKeywords() {
+                return [
+                    'fn', 'lambda', 'let', 'local', 'var',
+                    'if', 'when', 'unless', 'cond', 'case',
+                    'and', 'or', 'not',
+                    'each', 'for', 'while', 'do',
+                    'table', 'length', 'pairs', 'ipairs',
+                    '+', '-', '*', '/', '=', '<', '>', '<=', '>=',
+                    'print', 'tostring', 'tonumber'
+                ];
+            }
+            
+            getPrompt() {
+                return 'fnl>';
+            }
+            
+            reset() {
+                this.luaEnv = {};
+            }
+        }
+        
+        // Main REPL Application
+        class MobileLispREPL {
+            constructor() {
+                this.engines = {
+                    biwascheme: new BiwaSchemeEngine(),
+                    fennel: new FennelEngine()
+                };
+                this.currentEngine = this.engines.biwascheme;
+                this.history = this.loadHistory();
+                this.historyIndex = this.history.length;
+                this.autocompleteIndex = -1;
+                
+                this.initElements();
+                this.initEventListeners();
+                this.initKeyboard();
+                this.updateVariableTags();
+                
+                // Register service worker
+                this.registerServiceWorker();
+            }
+            
+            initElements() {
+                this.languageSelector = document.getElementById('languageSelector');
+                this.outputArea = document.getElementById('outputArea');
+                this.codeInput = document.getElementById('codeInput');
+                this.codeDisplay = document.getElementById('codeDisplay');
+                this.inputPrompt = document.getElementById('inputPrompt');
+                this.welcomePrompt = document.getElementById('welcomePrompt');
+                this.autocompletePopup = document.getElementById('autocompletePopup');
+                this.keyboardArea = document.getElementById('keyboardArea');
+                this.menuBtn = document.getElementById('menuBtn');
+                this.menuPopup = document.getElementById('menuPopup');
+                this.varTags = document.getElementById('varTags');
+            }
+            
+            initEventListeners() {
+                this.languageSelector.addEventListener('change', (e) => {
+                    this.switchLanguage(e.target.value);
+                });
+                
+                this.codeInput.addEventListener('input', (e) => {
+                    this.handleInput();
+                });
+                
+                this.codeInput.addEventListener('keydown', (e) => {
+                    this.handleKeydown(e);
+                });
+                
+                this.menuBtn.addEventListener('click', () => {
+                    this.toggleMenu();
+                });
+                
+                document.getElementById('closeMenu').addEventListener('click', () => {
+                    this.toggleMenu();
+                });
+                
+                document.getElementById('resetRepl').addEventListener('click', () => {
+                    this.resetRepl();
+                });
+                
+                document.getElementById('exportHistory').addEventListener('click', () => {
+                    this.exportHistory();
+                });
+                
+                document.getElementById('clearHistory').addEventListener('click', () => {
+                    this.clearHistory();
+                });
+                
+                document.getElementById('toggleKeyboard').addEventListener('click', () => {
+                    this.toggleKeyboard();
+                });
+                
+                // Touch events for history navigation
+                let touchStartX = 0;
+                this.codeInput.addEventListener('touchstart', (e) => {
+                    touchStartX = e.touches[0].clientX;
+                });
+                
+                this.codeInput.addEventListener('touchend', (e) => {
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const diff = touchStartX - touchEndX;
+                    
+                    if (Math.abs(diff) > 50) {
+                        if (diff > 0) this.navigateHistory(1);
+                        else this.navigateHistory(-1);
+                    }
+                });
+            }
+            
+            initKeyboard() {
+                this.updateKeyboard();
+            }
+            
+            updateKeyboard() {
+                const keys = this.currentEngine.getSpecialKeys();
+                this.keyboardArea.innerHTML = '';
+                
+                keys.forEach(row => {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'keyboard-row';
+                    
+                    row.forEach(key => {
+                        const keyBtn = document.createElement('button');
+                        keyBtn.className = 'key';
+                        keyBtn.textContent = key;
+                        
+                        // Add classes based on key type
+                        if (key === '(' || key === ')') {
+                            keyBtn.className += ' paren large';
+                        } else if (key === '[' || key === ']') {
+                            keyBtn.className += ' bracket medium';
+                        } else if (key === 'ENTER') {
+                            keyBtn.className += ' enter large';
+                        } else if (['ABC', '⌫', '⎵', '🎤', 'λ', "'"].includes(key)) {
+                            keyBtn.className += ' special small';
+                        } else {
+                            keyBtn.className += ' small';
+                        }
+                        
+                        keyBtn.addEventListener('click', () => {
+                            this.handleKeyPress(key);
+                        });
+                        
+                        rowDiv.appendChild(keyBtn);
+                    });
+                    
+                    this.keyboardArea.appendChild(rowDiv);
+                });
+            }
+            
+            handleKeyPress(key) {
+                const input = this.codeInput;
+                const start = input.selectionStart;
+                const end = input.selectionEnd;
+                const value = input.value;
+                
+                switch (key) {
+                    case 'ENTER':
+                        this.evaluateExpression();
+                        break;
+                    case '⌫':
+                        if (start > 0) {
+                            input.value = value.slice(0, start - 1) + value.slice(end);
+                            input.selectionStart = input.selectionEnd = start - 1;
+                            this.handleInput();
+                        }
+                        break;
+                    case '⎵':
+                        input.value = value.slice(0, start) + ' ' + value.slice(end);
+                        input.selectionStart = input.selectionEnd = start + 1;
+                        this.handleInput();
+                        break;
+                }
+                
+                input.focus();
+            }
+            
+            handleInput() {
+                const code = this.codeInput.value;
+                const formatted = this.currentEngine.format(code);
+                const highlighted = this.currentEngine.highlightSyntax(formatted);
+                
+                this.codeDisplay.innerHTML = highlighted;
+                this.adjustTextareaHeight();
+                this.updateAutocomplete();
+            }
+            
+            adjustTextareaHeight() {
+                const input = this.codeInput;
+                const display = this.codeDisplay;
+                
+                // Reset height to calculate new height
+                input.style.height = 'auto';
+                display.style.height = 'auto';
+                
+                // Set new height based on content
+                const newHeight = Math.max(22, input.scrollHeight);
+                input.style.height = newHeight + 'px';
+                display.style.height = newHeight + 'px';
+            }
+            
+            updateAutocomplete() {
+                const code = this.codeInput.value;
+                const cursor = this.codeInput.selectionStart;
+                
+                // Find the word at cursor
+                let start = cursor;
+                while (start > 0 && /[a-zA-Z0-9-_]/.test(code[start - 1])) {
+                    start--;
+                }
+                
+                const partial = code.slice(start, cursor);
+                
+                if (partial.length < 1) {
+                    this.hideAutocomplete();
+                    return;
+                }
+                
+                const completions = this.currentEngine.getCompletions(partial);
+                
+                if (completions.length === 0) {
+                    this.hideAutocomplete();
+                    return;
+                }
+                
+                this.showAutocomplete(completions, partial);
+            }
+            
+            showAutocomplete(completions, partial) {
+                this.autocompletePopup.innerHTML = '';
+                this.autocompleteIndex = -1;
+                
+                completions.forEach((completion, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.textContent = completion;
+                    
+                    item.addEventListener('click', () => {
+                        this.insertCompletion(completion, partial);
+                    });
+                    
+                    this.autocompletePopup.appendChild(item);
+                });
+                
+                this.autocompletePopup.style.display = 'block';
+            }
+            
+            hideAutocomplete() {
+                this.autocompletePopup.style.display = 'none';
+                this.autocompleteIndex = -1;
+            }
+            
+            insertCompletion(completion, partial) {
+                const input = this.codeInput;
+                const cursor = input.selectionStart;
+                const value = input.value;
+                
+                const start = cursor - partial.length;
+                const newValue = value.slice(0, start) + completion + value.slice(cursor);
+                
+                input.value = newValue;
+                input.selectionStart = input.selectionEnd = start + completion.length;
+                
+                this.handleInput();
+                this.hideAutocomplete();
+                input.focus();
+            }
+            
+            handleKeydown(e) {
+                if (e.key === 'Enter') {
+                    if (e.shiftKey || e.ctrlKey) {
+                        // Allow new line with Shift+Enter or Ctrl+Enter
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    
+                    // Check if autocomplete is open
+                    if (this.autocompletePopup.style.display === 'block') {
+                        const items = this.autocompletePopup.querySelectorAll('.autocomplete-item');
+                        if (this.autocompleteIndex >= 0 && this.autocompleteIndex < items.length) {
+                            items[this.autocompleteIndex].click();
+                        }
+                        return;
+                    }
+                    
+                    this.evaluateExpression();
+                } else if (e.key === 'ArrowUp') {
+                    if (this.autocompletePopup.style.display === 'block') {
+                        e.preventDefault();
+                        this.navigateAutocomplete(-1);
+                    } else {
+                        e.preventDefault();
+                        this.navigateHistory(-1);
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    if (this.autocompletePopup.style.display === 'block') {
+                        e.preventDefault();
+                        this.navigateAutocomplete(1);
+                    } else {
+                        e.preventDefault();
+                        this.navigateHistory(1);
+                    }
+                } else if (e.key === 'Escape') {
+                    this.hideAutocomplete();
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    // Auto-complete with first suggestion
+                    const items = this.autocompletePopup.querySelectorAll('.autocomplete-item');
+                    if (items.length > 0) {
+                        items[0].click();
+                    }
+                }
+            }
+            
+            navigateAutocomplete(direction) {
+                const items = this.autocompletePopup.querySelectorAll('.autocomplete-item');
+                if (items.length === 0) return;
+                
+                // Remove previous selection
+                if (this.autocompleteIndex >= 0) {
+                    items[this.autocompleteIndex].classList.remove('selected');
+                }
+                
+                // Update index
+                this.autocompleteIndex += direction;
+                if (this.autocompleteIndex < 0) {
+                    this.autocompleteIndex = items.length - 1;
+                } else if (this.autocompleteIndex >= items.length) {
+                    this.autocompleteIndex = 0;
+                }
+                
+                // Add selection to new item
+                items[this.autocompleteIndex].classList.add('selected');
+                
+                // Scroll into view
+                items[this.autocompleteIndex].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest'
+                });
+            }
+            
+            navigateHistory(direction) {
+                if (this.history.length === 0) return;
+                
+                this.historyIndex += direction;
+                
+                if (this.historyIndex < 0) {
+                    this.historyIndex = 0;
+                } else if (this.historyIndex >= this.history.length) {
+                    this.historyIndex = this.history.length;
+                    this.codeInput.value = '';
+                    this.handleInput();
+                    return;
+                }
+                
+                this.codeInput.value = this.history[this.historyIndex];
+                this.handleInput();
+                
+                // Move cursor to end
+                setTimeout(() => {
+                    this.codeInput.selectionStart = this.codeInput.selectionEnd = this.codeInput.value.length;
+                }, 0);
+            }
+            
+            async evaluateExpression() {
+                const code = this.codeInput.value.trim();
+                
+                if (!code) return;
+                
+                // Add to history
+                if (this.history.length === 0 || this.history[this.history.length - 1] !== code) {
+                    this.history.push(code);
+                    this.saveHistory();
+                }
+                this.historyIndex = this.history.length;
+                
+                // Display input
+                this.addToOutput(`${this.currentEngine.getPrompt()} ${code}`, 'prompt');
+                
+                // Clear input
+                this.codeInput.value = '';
+                this.handleInput();
+                this.hideAutocomplete();
+                
+                try {
+                    const result = await this.currentEngine.evaluate(code);
+                    
+                    if (result.error) {
+                        this.addToOutput(result.error, 'error');
+                    } else {
+                        this.addToOutput(result.result, 'result');
+                    }
+                } catch (e) {
+                    this.addToOutput(`Error: ${e.message}`, 'error');
+                }
+                
+                this.updateVariableTags();
+            }
+            
+            addToOutput(text, type = '') {
+                const line = document.createElement('div');
+                line.className = 'prompt-line';
+                
+                if (type === 'prompt') {
+                    line.innerHTML = text;
+                } else {
+                    const content = document.createElement('div');
+                    content.className = type;
+                    content.textContent = text;
+                    line.appendChild(content);
+                }
+                
+                this.outputArea.appendChild(line);
+                this.outputArea.scrollTop = this.outputArea.scrollHeight;
+            }
+            
+            switchLanguage(engineName) {
+                this.currentEngine = this.engines[engineName];
+                this.inputPrompt.textContent = this.currentEngine.getPrompt();
+                this.welcomePrompt.textContent = this.currentEngine.getPrompt();
+                this.updateKeyboard();
+                this.updateVariableTags();
+                
+                // Clear any formatting and re-process current input
+                this.handleInput();
+            }
+            
+            updateVariableTags() {
+                const variables = this.currentEngine.getVariables();
+                this.varTags.innerHTML = '';
+                
+                variables.forEach(variable => {
+                    const tag = document.createElement('span');
+                    tag.className = 'var-tag';
+                    tag.textContent = variable;
+                    tag.addEventListener('click', () => {
+                        this.insertText(variable);
+                    });
+                    this.varTags.appendChild(tag);
+                });
+            }
+            
+            insertText(text) {
+                const input = this.codeInput;
+                const start = input.selectionStart;
+                const end = input.selectionEnd;
+                const value = input.value;
+                
+                input.value = value.slice(0, start) + text + value.slice(end);
+                input.selectionStart = input.selectionEnd = start + text.length;
+                
+                this.handleInput();
+                input.focus();
+            }
+            
+            toggleMenu() {
+                const menu = this.menuPopup;
+                menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+            }
+            
+            resetRepl() {
+                this.currentEngine.reset();
+                this.outputArea.innerHTML = `
+                    <div class="prompt-line">
+                        <span class="prompt">${this.currentEngine.getPrompt()}</span> REPL reset.
+                    </div>
+                `;
+                this.toggleMenu();
+            }
+            
+            exportHistory() {
+                const data = {
+                    history: this.history,
+                    variables: {},
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Add variables for each language
+                Object.keys(this.engines).forEach(lang => {
+                    data.variables[lang] = this.engines[lang].getVariables();
+                });
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], {
+                    type: 'application/json'
+                });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `lisp-repl-history-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.toggleMenu();
+            }
+            
+            clearHistory() {
+                if (confirm('Clear all history and variables?')) {
+                    this.history = [];
+                    this.historyIndex = 0;
+                    localStorage.removeItem('repl_history');
+                    
+                    Object.keys(this.engines).forEach(lang => {
+                        localStorage.removeItem(`${lang}_variables`);
+                    });
+                    
+                    this.updateVariableTags();
+                    this.toggleMenu();
+                }
+            }
+            
+            toggleKeyboard() {
+                const keyboard = this.keyboardArea;
+                keyboard.style.display = keyboard.style.display === 'none' ? 'block' : 'none';
+                this.toggleMenu();
+            }
+            
+            startVoiceInput() {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    const recognition = new SpeechRecognition();
+                    
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    recognition.lang = 'en-US';
+                    
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        this.insertText(transcript);
+                    };
+                    
+                    recognition.onerror = (event) => {
+                        console.error('Speech recognition error:', event.error);
+                    };
+                    
+                    recognition.start();
+                } else {
+                    alert('Speech recognition not supported in this browser');
+                }
+            }
+            
+            loadHistory() {
+                const saved = localStorage.getItem('repl_history');
+                return saved ? JSON.parse(saved) : [];
+            }
+            
+            saveHistory() {
+                localStorage.setItem('repl_history', JSON.stringify(this.history.slice(-100))); // Keep last 100
+            }
+            
+            async registerServiceWorker() {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        // Create service worker inline
+                        const swCode = `
+                            const CACHE_NAME = 'lisp-repl-v1';
+                            const urlsToCache = ['/'];
+                            
+                            self.addEventListener('install', event => {
+                                event.waitUntil(
+                                    caches.open(CACHE_NAME)
+                                        .then(cache => cache.addAll(urlsToCache))
+                                );
+                            });
+                            
+                            self.addEventListener('fetch', event => {
+                                event.respondWith(
+                                    caches.match(event.request)
+                                        .then(response => response || fetch(event.request))
+                                );
+                            });
+                        `;
+                        
+                        const blob = new Blob([swCode], { type: 'application/javascript' });
+                        const swUrl = URL.createObjectURL(blob);
+                        
+                        await navigator.serviceWorker.register(swUrl);
+                        console.log('Service Worker registered');
+                    } catch (error) {
+                        console.log('Service Worker registration failed:', error);
+                    }
+                }
+            }
+        }
+        
+        // Initialize the REPL when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.repl = new MobileLispREPL();
+        });
+        
+        // PWA install prompt
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            deferredPrompt = e;
+            
+            // Show install button or prompt
+            const installBtn = document.createElement('button');
+            installBtn.textContent = 'Install App';
+            installBtn.className = 'menu-item';
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installBtn.remove();
+                }
+            });
+            
+            document.querySelector('.menu-content').insertBefore(
+                installBtn, 
+                document.getElementById('resetRepl')
+            );
+        });
+    </script>
+</body>
+</html>
+                    case 'ABC':
+                        input.focus();
+                        break;
+                    case '🎤':
+                        this.startVoiceInput();
+                        break;
+                    default:
+                        input.value = value.slice(0, start) + key + value.slice(end);
+                        input.selectionStart = input.selectionEnd = start + key.length;
+                        this.handleInput();
+                        break;
+                
