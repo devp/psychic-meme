@@ -6,6 +6,7 @@
     <title>Mobile Lisp REPL</title>
     <meta name="description" content="Mobile-optimized REPL for Lisp languages">
     <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="data:," />
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTW9iaWxlIExpc3AgUkVQTCIsInNob3J0X25hbWUiOiJMaXNwIFJFUEwiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzFhMWExYSIsInRoZW1lX2NvbG9yIjoiIzFhMWExYSIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSFpwWlhkQ2IzZzlJakFnTUNBMU1USWdOVEV5SWo0OGNtVmpkQ0I0UFNJd0lpQjVQU0l3SWlCM2FXUjBhRDBpTlRFeUlpQm9aV2xuYUhROUlqVXhNaUlnWm1sc2JEMGlJekZoTVdFeFlTSXZQanh3WVhSb0lHUTlJazBnTWpVMklEazJZeklnTVRVMklERTFOaUF4TlRaaE1qUWdNalFnTUNBeElERWdOREFnTkRCaE1qUWdNalFnTUNBd0lERXRNelVnTXpsaE1qUWdNalFnTUNBd0lERXROVElnTURaaE1qUWdNalFnTUNBd0lERXROVElnTlRaNGVTSWdabWxzYkQwaUkwUkJRa0V6UWlJdlBqd3ZjM1puUGc9PSIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==">
     <style>
         * {
@@ -379,7 +380,7 @@
             <span>λ</span>
             <select class="language-selector" id="languageSelector">
                 <option value="biwascheme">Scheme</option>
-                <option value="fennel">Fennel</option>
+                <!-- <option value="fennel">Fennel</option> -->
             </select>
         </div>
         <button class="menu-btn" id="menuBtn">Menu</button>
@@ -430,7 +431,6 @@
     <div class="history-nav history-next" id="historyNext">↓</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/biwascheme/0.6.9/biwascheme.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fennel/1.4.2/fennel.min.js"></script>
     
     <script>
         // Base Language Engine Interface
@@ -515,7 +515,7 @@
                 // Keywords (override in subclasses for language-specific keywords)
                 const keywords = this.getKeywords();
                 keywords.forEach(keyword => {
-                    const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+                    const regex = new RegExp(`\\\\b${keyword}\\\\b`, 'g');
                     highlighted = highlighted.replace(regex, `<span class="keyword">${keyword}</span>`);
                 });
                 
@@ -1289,15 +1289,3 @@
     </script>
 </body>
 </html>
-                    case 'ABC':
-                        input.focus();
-                        break;
-                    case '🎤':
-                        this.startVoiceInput();
-                        break;
-                    default:
-                        input.value = value.slice(0, start) + key + value.slice(end);
-                        input.selectionStart = input.selectionEnd = start + key.length;
-                        this.handleInput();
-                        break;
-                

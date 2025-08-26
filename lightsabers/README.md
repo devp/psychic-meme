@@ -1,4 +1,14 @@
-# Mobile Lisp REPL PWA
+# lightsabers
+
+- mobile-optimized web-app for playing with lisp
+- optimized for easy deployment
+- built leveraging lLms
+
+## why "lightsabers"
+
+> "There are your father's parentheses. Elegant weapons for a more... civilized age." -- [[https://xkcd.com/297/]]
+
+# [generated docs Mobile Lisp REPL PWA
 
 A mobile-optimized Progressive Web App for interactive Lisp programming, featuring auto-formatting, syntax highlighting, and a custom virtual keyboard designed for Lisp development.
 
