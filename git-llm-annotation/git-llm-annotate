@@ -4,7 +4,7 @@ set -euo pipefail
 
 usage() {
     echo "Usage: $0 [-l, --llm-name <llm-name>] [-M, --mode <mode-string>] [<commit-hash>]"
-    echo "  -l, --llm-name <llm-name>    LLM name (default: from git config or 'LLM')"
+    echo "  -l, --llm-name <llm-name>    LLM name (default: from git config llm.name or 'LLM')"
     echo "  -M, --mode <mode-string>     Optional mode string"
     echo "  <commit-hash>                Commit to annotate (default: HEAD)"
     exit 1
@@ -65,7 +65,7 @@ done
 if [[ "$commit_hash" == "HEAD" ]]; then
     git commit --amend --author="$new_author" "${trailer_args[@]}"
 else
-    echo "Error: Amending non-HEAD commits is not supported with --amend" >&2
-    echo "Use 'git rebase -i' to modify older commits" >&2
-    exit 1
+    echo "Amending non-HEAD commits is not supported with --amend" >&2
+    echo "Creating an empty commit." >&2
+    git commit --allow-empty --author="$new_author" "${trailer_args[@]}" -m "git-llm-annotate for $commit_hash"
 fi
