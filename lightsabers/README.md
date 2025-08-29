@@ -4,6 +4,10 @@
 - optimized for easy deployment
 - built leveraging lLms
 
+## Try it!
+
+=> [lightsabers.html](lightsabers.html)
+
 ## why "lightsabers"
 
 > "There are your father's parentheses. Elegant weapons for a more... civilized age." -- [[https://xkcd.com/297/]]
