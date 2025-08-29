@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -euo pipefail
+
+usage() {
+    echo "Usage: $0 [-l, --llm-name <llm-name>] [-M, --mode <mode-string>] [<commit-hash>]"
+    echo "  -l, --llm-name <llm-name>    LLM name (default: from git config or 'LLM')"
+    echo "  -M, --mode <mode-string>     Optional mode string"
+    echo "  <commit-hash>                Commit to annotate (default: HEAD)"
+    exit 1
+}
+
+llm_name=""
+mode_string=""
+commit_hash="HEAD"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -l|--llm-name)
+            llm_name="$2"
+            shift 2
+            ;;
+        -M|--mode)
+            mode_string="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            usage
+            ;;
+        *)
+            commit_hash="$1"
+            shift
+            ;;
+    esac
+done
+
+if [[ -z "$llm_name" ]]; then
+    llm_name=$(git config --get llm.name 2>/dev/null || echo "LLM")
+fi
+
+user_name=$(git config --get user.name)
+user_email=$(git config --get user.email)
+
+if [[ -z "$user_name" || -z "$user_email" ]]; then
+    echo "Error: Git user.name and user.email must be configured" >&2
+    exit 1
+fi
+
+new_author="${llm_name} (as ${user_name}) <${user_email}>"
+
+trailers=("AI-Generated: ${llm_name}")
+if [[ -n "$mode_string" ]]; then
+    trailers+=("AI-Generated-Mode: ${mode_string}")
+fi
+
+trailer_args=()
+for trailer in "${trailers[@]}"; do
+    trailer_args+=("--trailer" "$trailer")
+done
+
+if [[ "$commit_hash" == "HEAD" ]]; then
+    git commit --amend --author="$new_author" "${trailer_args[@]}"
+else
+    echo "Error: Amending non-HEAD commits is not supported with --amend" >&2
+    echo "Use 'git rebase -i' to modify older commits" >&2
+    exit 1
+fi
