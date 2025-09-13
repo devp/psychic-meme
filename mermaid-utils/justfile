@@ -1,0 +1,51 @@
+# Default format for the build task
+format_default := "svg"
+
+# Task to initialize a new mermaid file
+init filename:
+    #!/usr/bin/env bash
+    if [ -f "{{filename}}" ]; then
+        echo "File {{filename}} already exists."
+        exit 1
+    fi
+    echo "graph TD;" > "{{filename}}"
+    echo "    A[Start] --> B{Is it?};" >> "{{filename}}"
+    echo "    B -- Yes --> C[OK];" >> "{{filename}}"
+    echo "    B -- No --> D[Rethink];" >> "{{filename}}"
+    echo "    C --> E[End];" >> "{{filename}}"
+    echo "    D --> E[End];" >> "{{filename}}"
+    echo "File {{filename}} created."
+
+# Task to build a mermaid file
+build filename format=format_default:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    base_name=$(basename "{{filename}}" .md)
+    output_dir="."
+
+    if [[ "{{format}}" == "svg" || "{{format}}" == "both" ]]; then
+        mmdc -i "{{filename}}" -o "${output_dir}/${base_name}.svg"
+    fi
+
+    if [[ "{{format}}" == "png" || "{{format}}" == "both" ]]; then
+        mmdc -i "{{filename}}" -o "${output_dir}/${base_name}.png"
+    fi
+
+# Task to watch files and rebuild on change
+watch +filenames:
+    #!/usr/bin/env bash
+    if ! command -v "fswatch" &> /dev/null
+    then
+        echo "fswatch could not be found. Please install it."
+        exit 1
+    fi
+    fswatch -o {{filenames}} | xargs -n1 -I{} just build {}
+
+# Task to watch files, rebuild, and serve
+serve +filenames:
+    #!/usr/bin/env bash
+    trap 'kill $(jobs -p)' EXIT
+    just watch {{filenames}} &
+    python3 -m http.server &
+    wait
