@@ -1,0 +1,86 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.swiper {
+    width: 100%;
+    height: 100%;
+}
+
+.swiper-slide {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.swiper-slide .content {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.swiper-slide h2 {
+    font-size: 1.5rem;
+    margin: 0 0 10px;
+}
+
+.swiper-slide p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.swiper-slide a {
+    display: block;
+    margin-top: 15px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    background: #1e88e5;
+    padding: 10px 15px;
+    border-radius: 5px;
+}
+
+.swiper-slide img.thumbnail {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.swiper-slide .video-thumbnail {
+    position: relative;
+    cursor: pointer;
+}
+
+.swiper-slide .play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.swiper-slide .play-button::after {
+    content: '▶';
+    font-size: 24px;
+    color: white;
+}
