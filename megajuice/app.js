@@ -6,12 +6,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const swiperWrapper = document.querySelector('.swiper-wrapper');
+    const hintLeft = document.getElementById('hint-left');
+    const hintRight = document.getElementById('hint-right');
     const feedUrl = 'feed.xml';
     const parser = new RSSParser();
 
     const swiper = new Swiper('.swiper', {
         direction: 'vertical',
         loop: false,
+        touchRatio: 1,
+        threshold: 5,
+    });
+
+    let horizontalSwipe = false;
+
+    swiper.on('sliderMove', () => {
+        const diffX = swiper.touches.currentX - swiper.touches.startX;
+        const diffY = swiper.touches.currentY - swiper.touches.startY;
+
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            horizontalSwipe = true;
+            if (diffX < 0) {
+                hintLeft.classList.add('show');
+                hintRight.classList.remove('show');
+            } else {
+                hintRight.classList.add('show');
+                hintLeft.classList.remove('show');
+            }
+        } else {
+            horizontalSwipe = false;
+        }
+    });
+
+    swiper.on('touchEnd', () => {
+        if (horizontalSwipe) {
+            const diffX = swiper.touches.currentX - swiper.touches.startX;
+            if (Math.abs(diffX) > 50) {
+                swiper.slideNext();
+            }
+        }
+        hintLeft.classList.remove('show');
+        hintRight.classList.remove('show');
+        horizontalSwipe = false;
     });
 
     const fetchAndDisplayFeed = async () => {
