@@ -15,6 +15,7 @@ Currently, miscellaneous side-projects that I'd like visible in a public reposit
 - [lightsabers](lightsabers)
 - [megajuice](megajuice)
 - [mermaid-utils](mermaid-utils)
+- [skankin-pytest](skankin-pytest)
 
 *4. What if I have a better idea?*
 
