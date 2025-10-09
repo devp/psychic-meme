@@ -21,7 +21,7 @@ build filename format=format_default:
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    base_name=$(basename "{{filename}}" .md)
+    base_name=$(basename "{{filename}}" .mmd)
     output_dir="."
 
     if [[ "{{format}}" == "svg" || "{{format}}" == "both" ]]; then
@@ -40,12 +40,12 @@ watch +filenames:
         echo "fswatch could not be found. Please install it."
         exit 1
     fi
-    fswatch -o {{filenames}} | xargs -n1 -I{} just build {}
+    fswatch -0 {{filenames}} | xargs -0 -n 1 -I {} just build {}
 
 # Task to watch files, rebuild, and serve
 serve +filenames:
     #!/usr/bin/env bash
     trap 'kill $(jobs -p)' EXIT
     just watch {{filenames}} &
-    python3 -m http.server &
+    python3 -m http.server 4040 &
     wait
