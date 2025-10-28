@@ -1,0 +1,1 @@
+https://stats-api.mlssoccer.com/matches/seasons/MLS-SEA-0001K9?match_date[gte]=2025-01-01&match_date[lte]=2025-12-31&competition_id=MLS-COM-000002&per_page=100
