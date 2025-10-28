@@ -516,11 +516,15 @@ def display_ascii_bracket(schedule: List[dict]):
 def main():
     """Main function to fetch and display playoff data"""
     # Determine source
+    source = DEFAULT_URL
+    compressed = True
     if len(sys.argv) > 1:
-        source = sys.argv[1]
-    else:
-        print (f"Fetching url: ${DEFAULT_URL}")
-        source = DEFAULT_URL
+        if sys.argv[1] == '--detailed':
+            compressed = False
+        else
+            source = sys.argv[1]
+            if len(sys.argv) > 2 and sys.argv[2] == '--detailed':
+                compressed = False
     
     try:
         # Load data
@@ -533,6 +537,8 @@ def main():
         
         # Check if user wants compressed view (default now)
         compressed = True
+        if len(sys.argv) == 1 and sys.argv[1] == '--detailed':
+            compressed = False
         if len(sys.argv) > 2 and sys.argv[2] == '--detailed':
             compressed = False
         
