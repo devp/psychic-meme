@@ -349,12 +349,20 @@ def display_ascii_bracket(schedule: List[dict]):
                     'seed': home_info['seed'] or away_info['seed']
                 })
             else:
-                next_match = get_next_match_info(series_matches)
-                detail = ""
-                if next_match:
-                    detail = f"Next: {next_match['date']}"
-                else:
+                # Show wins/losses record for series that have started
+                if home_record[0] + home_record[1] + away_record[0] + away_record[1] > 0:
                     detail = f"[{away_record[0]}-{away_record[1]}] v [{home_record[0]}-{home_record[1]}]"
+                    # Also add next match info if there is one
+                    next_match = get_next_match_info(series_matches)
+                    if next_match:
+                        detail += f"\n  Next: {next_match['date']}"
+                else:
+                    # Only show next match info if no games have been played yet
+                    next_match = get_next_match_info(series_matches)
+                    if next_match:
+                        detail = f"Next: {next_match['date']}"
+                    else:
+                        detail = "TBD"
                 
                 r1_data.append({
                     'display': f"{state_emoji} {away_info['display']} v {home_info['display']}",
@@ -468,42 +476,69 @@ def display_ascii_bracket(schedule: List[dict]):
         
         print(line)
         
-        # Detail line
-        detail_line = ""
+        # Detail line(s) - handle multiline details
+        # Split details on newlines and print each line
+        detail_lines = {}
+        max_detail_lines = 1
         
-        # Wild Card detail
+        # Collect all detail lines
         if row_idx < len(wildcard_data):
-            detail_line += f"  {wildcard_data[row_idx]['detail']:<20}"
-        else:
-            detail_line += " " * 22
-        detail_line += " "
+            detail_lines['wc'] = wildcard_data[row_idx]['detail'].split('\n')
+            max_detail_lines = max(max_detail_lines, len(detail_lines['wc']))
         
-        # Round One detail
         if row_idx < len(r1_data):
-            detail_line += f"  {r1_data[row_idx]['detail']:<26}"
-        else:
-            detail_line += " " * 28
-        detail_line += " "
+            detail_lines['r1'] = r1_data[row_idx]['detail'].split('\n')
+            max_detail_lines = max(max_detail_lines, len(detail_lines['r1']))
         
-        # Conference Semifinals detail
         if row_idx < len(semifinal_data):
-            detail_line += f"  {semifinal_data[row_idx]['detail']:<18}"
-        else:
-            detail_line += " " * 20
-        detail_line += " "
+            detail_lines['sf'] = semifinal_data[row_idx]['detail'].split('\n')
+            max_detail_lines = max(max_detail_lines, len(detail_lines['sf']))
         
-        # Conference Finals detail
         if row_idx < len(final_data):
-            detail_line += f"  {final_data[row_idx]['detail']:<18}"
-        else:
-            detail_line += " " * 20
-        detail_line += " "
+            detail_lines['cf'] = final_data[row_idx]['detail'].split('\n')
+            max_detail_lines = max(max_detail_lines, len(detail_lines['cf']))
         
-        # MLS Cup detail
         if row_idx == 0 and cup_data:
-            detail_line += f"  {cup_data['detail']}"
+            detail_lines['cup'] = cup_data['detail'].split('\n')
+            max_detail_lines = max(max_detail_lines, len(detail_lines['cup']))
         
-        print(detail_line)
+        # Print each detail line
+        for detail_line_idx in range(max_detail_lines):
+            detail_line = ""
+            
+            # Wild Card detail
+            if 'wc' in detail_lines and detail_line_idx < len(detail_lines['wc']):
+                detail_line += f"  {detail_lines['wc'][detail_line_idx]:<20}"
+            else:
+                detail_line += " " * 22
+            detail_line += " "
+            
+            # Round One detail
+            if 'r1' in detail_lines and detail_line_idx < len(detail_lines['r1']):
+                detail_line += f"  {detail_lines['r1'][detail_line_idx]:<26}"
+            else:
+                detail_line += " " * 28
+            detail_line += " "
+            
+            # Conference Semifinals detail
+            if 'sf' in detail_lines and detail_line_idx < len(detail_lines['sf']):
+                detail_line += f"  {detail_lines['sf'][detail_line_idx]:<18}"
+            else:
+                detail_line += " " * 20
+            detail_line += " "
+            
+            # Conference Finals detail
+            if 'cf' in detail_lines and detail_line_idx < len(detail_lines['cf']):
+                detail_line += f"  {detail_lines['cf'][detail_line_idx]:<18}"
+            else:
+                detail_line += " " * 20
+            detail_line += " "
+            
+            # MLS Cup detail
+            if 'cup' in detail_lines and detail_line_idx < len(detail_lines['cup']):
+                detail_line += f"  {detail_lines['cup'][detail_line_idx]}"
+            
+            print(detail_line)
         
         if i + 2 < max_rows:  # Add spacing between matchups
             print()
@@ -521,9 +556,9 @@ def main():
     if len(sys.argv) > 1:
         if sys.argv[1] == '--detailed':
             compressed = False
-        else
+        else:
             source = sys.argv[1]
-            if len(sys.argv) > 2 and sys.argv[2] == '--detailed':
+            if len(sys.argv) > 3 and sys.argv[2] == '--detailed':
                 compressed = False
     
     try:
@@ -534,13 +569,6 @@ def main():
         if not schedule:
             print("No matches found in the data.")
             return
-        
-        # Check if user wants compressed view (default now)
-        compressed = True
-        if len(sys.argv) == 1 and sys.argv[1] == '--detailed':
-            compressed = False
-        if len(sys.argv) > 2 and sys.argv[2] == '--detailed':
-            compressed = False
         
         if compressed:
             display_ascii_bracket(schedule)
