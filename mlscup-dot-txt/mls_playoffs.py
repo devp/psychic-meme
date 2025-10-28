@@ -147,6 +147,35 @@ def get_series_record(series_matches: List[dict], team_id: str) -> tuple:
     return (wins, losses)
 
 
+def get_team_emoji(team_name: str) -> str:
+    """Get emoji for team"""
+    team_emojis = {
+        # TODO: ⚜️🫖🐂🦅
+        'Los Angeles Football Club': '🏴',  # Lightning for LAFC's energy
+        'Inter Miami CF': '🌴',            # Palm tree for Miami
+        'New York City Football Club': '🏙️',  # City skyline
+        'Portland Timbers': '🌲',          # Tree for Timbers
+        'San Diego FC': '🏄',              # surfs up i guess
+        'Vancouver Whitecaps FC': '🏔️',    # literal mountain
+        'Seattle Sounders FC': '🐬',       # not an orca
+        'Minnesota United FC': '❄️',       # Snow for Minnesota
+        'FC Cincinnati': '🔶',            # Orange diamond for FC Cincy colors
+        'Columbus Crew': '🚧',            # CREW
+        'Philadelphia Union': '🐍',       # no steppy
+        'Chicago Fire FC': '🔥',          # Fire for Chicago Fire
+        'Charlotte FC': '👑',             # Crown for Queen City
+        'Nashville SC': '🎸',             # Guitar for Music City
+        'FC Dallas': '🤠',                # Cowboy for Texas
+        'Austin FC': '🌳',                # they like trees
+        'Orlando City': '🏰',             # Castle for Orlando
+        'Real Salt Lake': '🧂',           # lol
+        'TBC Home': '❓',                 # Question mark for TBC
+        'TBC Away': '❓'                  # Question mark for TBC
+    }
+    
+    return team_emojis.get(team_name, '⚽')  # Default soccer ball
+
+
 def get_team_short_name(team_name: str, team_code: str) -> str:
     """Get abbreviated team name"""
     if team_code and team_code != 'TBC':
@@ -177,152 +206,260 @@ def get_team_short_name(team_name: str, team_code: str) -> str:
     return abbrevs.get(team_name, team_name[:3].upper())
 
 
-def display_compressed_bracket(schedule: List[dict]):
-    """Display tournament in compressed bracket format"""
+def get_bracket_team_info(match: dict, is_home: bool) -> dict:
+    """Extract team info for bracket display"""
+    if is_home:
+        team_name = match.get('home_team_name', 'TBC')
+        team_code = match.get('home_team_three_letter_code', '')
+        team_seed = match.get('home_team_seed', '')
+        team_id = match.get('home_team_id', '')
+    else:
+        team_name = match.get('away_team_name', 'TBC')
+        team_code = match.get('away_team_three_letter_code', '')
+        team_seed = match.get('away_team_seed', '')
+        team_id = match.get('away_team_id', '')
+    
+    short_name = get_team_short_name(team_name, team_code)
+    emoji = get_team_emoji(team_name)
+    if team_seed:
+        display_name = f"{emoji}({team_seed}){short_name}"
+    else:
+        display_name = f"{emoji}{short_name}"
+    
+    return {
+        'name': team_name,
+        'short': short_name,
+        'display': display_name,
+        'seed': team_seed,
+        'id': team_id
+    }
+
+
+def get_series_winner(series_matches: List[dict]) -> Optional[str]:
+    """Get the winner of a series, returns team display name or None"""
+    if not series_matches:
+        return None
+    
+    first_match = series_matches[0]
+    home_id = first_match.get('home_team_id')
+    away_id = first_match.get('away_team_id')
+    
+    home_record = get_series_record(series_matches, home_id)
+    away_record = get_series_record(series_matches, away_id)
+    
+    if home_record[0] >= 2:
+        return get_bracket_team_info(first_match, True)['display']
+    elif away_record[0] >= 2:
+        return get_bracket_team_info(first_match, False)['display']
+    
+    return None
+
+
+def get_match_winner(match: dict) -> Optional[str]:
+    """Get winner of a single match"""
+    if match.get('match_status') != 'finalWhistle':
+        return None
+    
+    home_goals = match.get('home_team_goals', 0) + match.get('home_team_penalty_goals', 0)
+    away_goals = match.get('away_team_goals', 0) + match.get('away_team_penalty_goals', 0)
+    
+    if home_goals > away_goals:
+        return get_bracket_team_info(match, True)['display']
+    elif away_goals > home_goals:
+        return get_bracket_team_info(match, False)['display']
+    
+    return None
+
+
+def display_ascii_bracket(schedule: List[dict]):
+    """Display tournament as ASCII bracket"""
     sections = group_by_section(schedule)
     
-    print("\n" + "=" * 100)
-    print("                                MLS CUP PLAYOFFS 2025 - BRACKET VIEW")
-    print("=" * 100)
+    print("\n" + "=" * 120)
+    print("                                    MLS CUP PLAYOFFS 2025 - BRACKET")
+    print("=" * 120)
     
-    # Wild Card Results
+    # Collect data for bracket
+    wildcard_winners = []
+    r1_series = []
+    semifinal_winners = []
+    final_winners = []
+    cup_winner = None
+    
+    # Wild Card results
     if 'Wild Card matches' in sections:
-        print("\n🎯 WILD CARD:")
-        wc_matches = sections['Wild Card matches']
-        for match in wc_matches:
-            home = get_team_short_name(match['home_team_name'], match.get('home_team_three_letter_code', ''))
-            away = get_team_short_name(match['away_team_name'], match.get('away_team_three_letter_code', ''))
-            
-            if match.get('match_status') == 'finalWhistle':
-                result = match.get('result', '0:0')
-                home_goals = match.get('home_team_goals', 0)
-                away_goals = match.get('away_team_goals', 0)
-                
-                if home_goals > away_goals:
-                    winner = f"✅{home}"
-                    loser = f"✗{away}"
-                else:
-                    winner = f"✅{away}"
-                    loser = f"✗{home}"
-                    
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home}: {result} ({date}) → {winner} advances, {loser} eliminated")
+        for match in sections['Wild Card matches']:
+            winner = get_match_winner(match)
+            if winner:
+                wildcard_winners.append(winner)
             else:
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home} - {date}")
+                home = get_bracket_team_info(match, True)['display']
+                away = get_bracket_team_info(match, False)['display']
+                wildcard_winners.append(f"{away}v{home}")
     
-    # Round One Best-of-3 Series
+    # Round One series
     if 'Round One Best-of-3 Series' in sections:
-        print("\n🏆 ROUND ONE (Best of 3):")
-        r1_matches = sections['Round One Best-of-3 Series']
-        
-        # Group by series
         series_dict = defaultdict(list)
-        for match in r1_matches:
+        for match in sections['Round One Best-of-3 Series']:
             series_name = match.get('series_name', 'Unknown')
             series_dict[series_name].append(match)
         
         for series_name, series_matches in series_dict.items():
             series_matches.sort(key=lambda m: m.get('match_type', ''))
-            
-            # Get team info from first match
             first_match = series_matches[0]
-            home_team = get_team_short_name(first_match['home_team_name'], first_match.get('home_team_three_letter_code', ''))
-            away_team = get_team_short_name(first_match['away_team_name'], first_match.get('away_team_three_letter_code', ''))
-            home_seed = first_match.get('home_team_seed', '')
-            away_seed = first_match.get('away_team_seed', '')
             
-            home_display = f"({home_seed}){home_team}" if home_seed else home_team
-            away_display = f"({away_seed}){away_team}" if away_seed else away_team
+            home_info = get_bracket_team_info(first_match, True)
+            away_info = get_bracket_team_info(first_match, False)
             
-            # Calculate series record
             home_record = get_series_record(series_matches, first_match.get('home_team_id'))
             away_record = get_series_record(series_matches, first_match.get('away_team_id'))
             
-            print(f"\n  {away_display} vs {home_display} [{away_record[0]}-{away_record[1]}] vs [{home_record[0]}-{home_record[1]}]")
+            winner = get_series_winner(series_matches)
             
-            # Show match results
-            for i, match in enumerate(series_matches, 1):
-                if match.get('match_status') == 'finalWhistle':
-                    result = match.get('result', '0:0')
-                    pk_info = ""
-                    if match.get('home_team_penalty_goals', 0) > 0 or match.get('away_team_penalty_goals', 0) > 0:
-                        pk_info = f" (PK: {match.get('away_team_penalty_goals', 0)}-{match.get('home_team_penalty_goals', 0)})"
-                    date = format_time_compact(match.get('planned_kickoff_time', ''))
-                    status = "✅"
-                elif match.get('match_status') == 'scheduled':
-                    result = "TBD"
-                    pk_info = ""
-                    date = format_time_compact(match.get('planned_kickoff_time', ''))
-                    status = "⏰"
-                else:
-                    result = "TBD"
-                    pk_info = ""
-                    date = "TBD"
-                    status = "?"
-                    
-                print(f"    G{i}: {result}{pk_info} ({date}) {status}")
-            
-            # Determine series winner if applicable
-            if max(home_record[0], away_record[0]) >= 2:
-                if home_record[0] > away_record[0]:
-                    print(f"    → {home_display} ADVANCES")
-                else:
-                    print(f"    → {away_display} ADVANCES")
-            elif home_record[0] + away_record[0] + home_record[1] + away_record[1] >= 3:
-                print(f"    → Series continues...")
+            r1_series.append({
+                'home': home_info,
+                'away': away_info,
+                'home_record': home_record,
+                'away_record': away_record,
+                'winner': winner,
+                'matches': series_matches
+            })
     
     # Conference Semifinals
     if 'Conference Semifinals' in sections:
-        print("\n🔥 CONFERENCE SEMIFINALS:")
-        cf_matches = sections['Conference Semifinals']
-        for match in cf_matches:
-            home = get_team_short_name(match['home_team_name'], match.get('home_team_three_letter_code', ''))
-            away = get_team_short_name(match['away_team_name'], match.get('away_team_three_letter_code', ''))
-            
-            if match.get('match_status') == 'finalWhistle':
-                result = match.get('result', '0:0')
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home}: {result} ({date}) ✅")
-            else:
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home} - {date} ⏰")
+        for match in sections['Conference Semifinals']:
+            winner = get_match_winner(match)
+            if winner:
+                semifinal_winners.append(winner)
     
-    # Conference Finals
+    # Conference Finals  
     if 'Conference Finals' in sections:
-        print("\n🏅 CONFERENCE FINALS:")
-        cf_matches = sections['Conference Finals']
-        for match in cf_matches:
-            home = get_team_short_name(match['home_team_name'], match.get('home_team_three_letter_code', ''))
-            away = get_team_short_name(match['away_team_name'], match.get('away_team_three_letter_code', ''))
-            
-            if match.get('match_status') == 'finalWhistle':
-                result = match.get('result', '0:0')
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home}: {result} ({date}) ✅")
-            else:
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home} - {date} ⏰")
+        for match in sections['Conference Finals']:
+            winner = get_match_winner(match)
+            if winner:
+                final_winners.append(winner)
     
-    # MLS Cup Final
+    # MLS Cup
     if 'MLS Cup presented by Audi' in sections:
-        print("\n🏆 MLS CUP FINAL:")
-        final_matches = sections['MLS Cup presented by Audi']
-        for match in final_matches:
-            home = get_team_short_name(match['home_team_name'], match.get('home_team_three_letter_code', ''))
-            away = get_team_short_name(match['away_team_name'], match.get('away_team_three_letter_code', ''))
-            
+        for match in sections['MLS Cup presented by Audi']:
+            winner = get_match_winner(match)
+            if winner:
+                cup_winner = winner
+    
+    # Print bracket
+    print("\nWILD CARD         ROUND ONE              CONF SEMIS       CONF FINALS       MLS CUP")
+    print("─" * 120)
+    
+    # Sort series by bracket position for consistent display
+    r1_series.sort(key=lambda s: s['home']['seed'] or 99)
+    
+    # Print bracket rows
+    max_rows = max(len(wildcard_winners), len(r1_series), 4)
+    for i in range(max_rows):
+        line = ""
+        
+        # Wild Card column (18 chars)
+        if i < len(wildcard_winners):
+            wc = wildcard_winners[i]
+            if "v" in wc and not wc.startswith("✅"):
+                line += f"{wc:<18}"
+            else:
+                line += f"✅{wc:<16}"
+        else:
+            line += " " * 18
+        
+        # Connector
+        if i < len(wildcard_winners) or i < len(r1_series):
+            line += "─"
+        else:
+            line += " "
+        
+        # Round One column (23 chars to account for emojis)
+        if i < len(r1_series):
+            series = r1_series[i]
+            if series['winner']:
+                line += f"✅{series['winner']:<21}"
+            else:
+                away_display = series['away']['display']
+                home_display = series['home']['display']
+                line += f"{away_display}v{home_display}"[:23].ljust(23)
+        else:
+            line += " " * 23
+        
+        # Connector  
+        if i < 4:
+            line += "─"
+        else:
+            line += " "
+        
+        # Conference Semifinals column (18 chars)
+        if i < 4:  # 4 conference semifinal spots
+            if i < len(semifinal_winners):
+                line += f"✅{semifinal_winners[i]:<16}"
+            else:
+                line += "❓TBC".ljust(18)
+        else:
+            line += " " * 18
+        
+        # Connector
+        if i < 2:
+            line += "─"
+        else:
+            line += " "
+        
+        # Conference Finals column (18 chars)
+        if i < 2:  # 2 conference final spots
+            if i < len(final_winners):
+                line += f"✅{final_winners[i]:<16}"
+            else:
+                line += "❓TBC".ljust(18)
+        else:
+            line += " " * 18
+        
+        # Connector
+        if i == 0:
+            line += "─"
+        else:
+            line += " "
+        
+        # MLS Cup column
+        if i == 0:  # Only one MLS Cup winner
+            if cup_winner:
+                line += f"🏆{cup_winner}"
+            else:
+                line += "❓TBC"
+        
+        print(line)
+    
+    print("\n" + "─" * 120)
+    
+    # Show detailed series info below bracket
+    print("\nSERIES DETAILS:")
+    print("─" * 50)
+    
+    for series in r1_series:
+        home = series['home']['display']
+        away = series['away']['display']
+        h_rec = series['home_record']
+        a_rec = series['away_record']
+        
+        print(f"{away} vs {home} [{a_rec[0]}-{a_rec[1]}] vs [{h_rec[0]}-{h_rec[1]}]")
+        
+        for i, match in enumerate(series['matches'], 1):
             if match.get('match_status') == 'finalWhistle':
                 result = match.get('result', '0:0')
+                pk_info = ""
+                if match.get('home_team_penalty_goals', 0) > 0 or match.get('away_team_penalty_goals', 0) > 0:
+                    pk_info = f" PK:{match.get('away_team_penalty_goals', 0)}-{match.get('home_team_penalty_goals', 0)}"
                 date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home}: {result} ({date}) ✅ CHAMPION!")
-            else:
+                print(f"  G{i}: {result}{pk_info} ({date}) ✅")
+            elif match.get('match_status') == 'scheduled':
                 date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  {away} @ {home} - {date} ⏰")
+                print(f"  G{i}: TBD ({date}) ⏰")
     
-    print("\n" + "=" * 100)
-    print("Legend: ✅=Final ⏰=Scheduled ✗=Eliminated (seed)=Team Seed [W-L]=Series Record")
-    print("=" * 100)
+    print("\n" + "=" * 120)
+    print("Legend: ✅=Complete ⏰=Scheduled 🏆=Champion (seed)=Team Seed [W-L]=Series Record")
+    print("=" * 120)
 
 
 def main():
@@ -349,7 +486,7 @@ def main():
             compressed = False
         
         if compressed:
-            display_compressed_bracket(schedule)
+            display_ascii_bracket(schedule)
         else:
             # Original detailed view
             print("=" * 70)
