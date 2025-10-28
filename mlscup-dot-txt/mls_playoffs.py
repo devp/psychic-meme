@@ -220,11 +220,10 @@ def get_bracket_team_info(match: dict, is_home: bool) -> dict:
         team_id = match.get('away_team_id', '')
     
     short_name = get_team_short_name(team_name, team_code)
-    emoji = get_team_emoji(team_name)
     if team_seed:
-        display_name = f"{emoji}({team_seed}){short_name}"
+        display_name = f"({team_seed}){short_name}"
     else:
-        display_name = f"{emoji}{short_name}"
+        display_name = short_name
     
     return {
         'name': team_name,
@@ -271,33 +270,60 @@ def get_match_winner(match: dict) -> Optional[str]:
     return None
 
 
+def get_next_match_info(series_matches: List[dict]) -> dict:
+    """Get info about the next match in a series"""
+    for match in series_matches:
+        if match.get('match_status') == 'scheduled':
+            return {
+                'date': format_time_compact(match.get('planned_kickoff_time', '')),
+                'match_type': match.get('match_type', ''),
+                'venue': match.get('stadium_name', 'TBC')
+            }
+    return None
+
+
+def get_series_state_emoji(series_matches: List[dict], home_id: str, away_id: str) -> str:
+    """Get emoji representing series state"""
+    home_record = get_series_record(series_matches, home_id)
+    away_record = get_series_record(series_matches, away_id)
+    
+    if home_record[0] >= 2 or away_record[0] >= 2:
+        return "✅"  # Series complete
+    elif home_record[0] + away_record[0] + home_record[1] + away_record[1] > 0:
+        return "⚽"  # Series in progress
+    else:
+        return "⏰"  # Series not started
+
+
 def display_ascii_bracket(schedule: List[dict]):
-    """Display tournament as ASCII bracket"""
+    """Display tournament as ASCII bracket with integrated details"""
     sections = group_by_section(schedule)
     
-    print("\n" + "=" * 120)
+    print("\n" + "=" * 140)
     print("                                    MLS CUP PLAYOFFS 2025 - BRACKET")
-    print("=" * 120)
+    print("=" * 140)
     
-    # Collect data for bracket
-    wildcard_winners = []
-    r1_series = []
-    semifinal_winners = []
-    final_winners = []
-    cup_winner = None
-    
-    # Wild Card results
+    # Collect Wild Card data
+    wildcard_data = []
     if 'Wild Card matches' in sections:
         for match in sections['Wild Card matches']:
+            home = get_bracket_team_info(match, True)['display']
+            away = get_bracket_team_info(match, False)['display']
             winner = get_match_winner(match)
+            
             if winner:
-                wildcard_winners.append(winner)
+                wildcard_data.append({
+                    'display': f"✅ {winner}",
+                    'detail': f"Advanced from WC"
+                })
             else:
-                home = get_bracket_team_info(match, True)['display']
-                away = get_bracket_team_info(match, False)['display']
-                wildcard_winners.append(f"{away}v{home}")
+                wildcard_data.append({
+                    'display': f"⏰ {away} v {home}",
+                    'detail': format_time_compact(match.get('planned_kickoff_time', ''))
+                })
     
-    # Round One series
+    # Collect Round One series data
+    r1_data = []
     if 'Round One Best-of-3 Series' in sections:
         series_dict = defaultdict(list)
         for match in sections['Round One Best-of-3 Series']:
@@ -310,156 +336,181 @@ def display_ascii_bracket(schedule: List[dict]):
             
             home_info = get_bracket_team_info(first_match, True)
             away_info = get_bracket_team_info(first_match, False)
-            
             home_record = get_series_record(series_matches, first_match.get('home_team_id'))
             away_record = get_series_record(series_matches, first_match.get('away_team_id'))
             
+            state_emoji = get_series_state_emoji(series_matches, first_match.get('home_team_id'), first_match.get('away_team_id'))
             winner = get_series_winner(series_matches)
             
-            r1_series.append({
-                'home': home_info,
-                'away': away_info,
-                'home_record': home_record,
-                'away_record': away_record,
-                'winner': winner,
-                'matches': series_matches
-            })
+            if winner:
+                r1_data.append({
+                    'display': f"✅ {winner}",
+                    'detail': f"Won series",
+                    'seed': home_info['seed'] or away_info['seed']
+                })
+            else:
+                next_match = get_next_match_info(series_matches)
+                detail = ""
+                if next_match:
+                    detail = f"Next: {next_match['date']}"
+                else:
+                    detail = f"[{away_record[0]}-{away_record[1]}] v [{home_record[0]}-{home_record[1]}]"
+                
+                r1_data.append({
+                    'display': f"{state_emoji} {away_info['display']} v {home_info['display']}",
+                    'detail': detail,
+                    'seed': home_info['seed'] or 99
+                })
     
-    # Conference Semifinals
+    # Sort by seed for consistent display
+    r1_data.sort(key=lambda x: int(x.get('seed', 99)))
+    
+    # Collect Conference Semifinals data
+    semifinal_data = []
     if 'Conference Semifinals' in sections:
         for match in sections['Conference Semifinals']:
+            home = get_bracket_team_info(match, True)['display']
+            away = get_bracket_team_info(match, False)['display']
             winner = get_match_winner(match)
+            
             if winner:
-                semifinal_winners.append(winner)
+                semifinal_data.append({
+                    'display': f"✅ {winner}",
+                    'detail': "Advanced"
+                })
+            else:
+                semifinal_data.append({
+                    'display': f"⏰ {away} v {home}",
+                    'detail': format_time_compact(match.get('planned_kickoff_time', ''))
+                })
     
-    # Conference Finals  
+    # Collect Conference Finals data
+    final_data = []
     if 'Conference Finals' in sections:
         for match in sections['Conference Finals']:
+            home = get_bracket_team_info(match, True)['display']
+            away = get_bracket_team_info(match, False)['display']
             winner = get_match_winner(match)
+            
             if winner:
-                final_winners.append(winner)
+                final_data.append({
+                    'display': f"✅ {winner}",
+                    'detail': "To MLS Cup"
+                })
+            else:
+                final_data.append({
+                    'display': f"⏰ {away} v {home}",
+                    'detail': format_time_compact(match.get('planned_kickoff_time', ''))
+                })
     
-    # MLS Cup
+    # Collect MLS Cup data
+    cup_data = None
     if 'MLS Cup presented by Audi' in sections:
         for match in sections['MLS Cup presented by Audi']:
+            home = get_bracket_team_info(match, True)['display']
+            away = get_bracket_team_info(match, False)['display']
             winner = get_match_winner(match)
+            
             if winner:
-                cup_winner = winner
+                cup_data = {
+                    'display': f"🏆 {winner}",
+                    'detail': "CHAMPION!"
+                }
+            else:
+                cup_data = {
+                    'display': f"⏰ {away} v {home}",
+                    'detail': format_time_compact(match.get('planned_kickoff_time', ''))
+                }
     
-    # Print bracket
-    print("\nWILD CARD         ROUND ONE              CONF SEMIS       CONF FINALS       MLS CUP")
-    print("─" * 120)
+    # Print bracket with details
+    print("\nWILD CARD          ROUND ONE (Best of 3)      CONF SEMIS        CONF FINALS       MLS CUP")
+    print("─" * 140)
     
-    # Sort series by bracket position for consistent display
-    r1_series.sort(key=lambda s: s['home']['seed'] or 99)
+    max_rows = max(len(wildcard_data), len(r1_data), len(semifinal_data), len(final_data), 1) * 2  # *2 for detail lines
     
-    # Print bracket rows
-    max_rows = max(len(wildcard_winners), len(r1_series), 4)
-    for i in range(max_rows):
+    for i in range(0, max_rows, 2):  # Step by 2 to handle main + detail lines
+        row_idx = i // 2
+        
+        # Main line
         line = ""
         
-        # Wild Card column (18 chars)
-        if i < len(wildcard_winners):
-            wc = wildcard_winners[i]
-            if "v" in wc and not wc.startswith("✅"):
-                line += f"{wc:<18}"
-            else:
-                line += f"✅{wc:<16}"
+        # Wild Card (22 chars)
+        if row_idx < len(wildcard_data):
+            line += f"{wildcard_data[row_idx]['display']:<22}"
         else:
-            line += " " * 18
+            line += " " * 22
+        line += "─"
         
-        # Connector
-        if i < len(wildcard_winners) or i < len(r1_series):
-            line += "─"
+        # Round One (28 chars)
+        if row_idx < len(r1_data):
+            line += f"{r1_data[row_idx]['display']:<28}"
         else:
-            line += " "
+            line += " " * 28
+        line += "─"
         
-        # Round One column (23 chars to account for emojis)
-        if i < len(r1_series):
-            series = r1_series[i]
-            if series['winner']:
-                line += f"✅{series['winner']:<21}"
-            else:
-                away_display = series['away']['display']
-                home_display = series['home']['display']
-                line += f"{away_display}v{home_display}"[:23].ljust(23)
+        # Conference Semifinals (20 chars)
+        if row_idx < len(semifinal_data):
+            line += f"{semifinal_data[row_idx]['display']:<20}"
         else:
-            line += " " * 23
+            line += " " * 20
+        line += "─"
         
-        # Connector  
-        if i < 4:
-            line += "─"
+        # Conference Finals (20 chars)
+        if row_idx < len(final_data):
+            line += f"{final_data[row_idx]['display']:<20}"
         else:
-            line += " "
+            line += " " * 20
+        line += "─"
         
-        # Conference Semifinals column (18 chars)
-        if i < 4:  # 4 conference semifinal spots
-            if i < len(semifinal_winners):
-                line += f"✅{semifinal_winners[i]:<16}"
-            else:
-                line += "❓TBC".ljust(18)
-        else:
-            line += " " * 18
-        
-        # Connector
-        if i < 2:
-            line += "─"
-        else:
-            line += " "
-        
-        # Conference Finals column (18 chars)
-        if i < 2:  # 2 conference final spots
-            if i < len(final_winners):
-                line += f"✅{final_winners[i]:<16}"
-            else:
-                line += "❓TBC".ljust(18)
-        else:
-            line += " " * 18
-        
-        # Connector
-        if i == 0:
-            line += "─"
-        else:
-            line += " "
-        
-        # MLS Cup column
-        if i == 0:  # Only one MLS Cup winner
-            if cup_winner:
-                line += f"🏆{cup_winner}"
-            else:
-                line += "❓TBC"
+        # MLS Cup
+        if row_idx == 0 and cup_data:
+            line += cup_data['display']
         
         print(line)
-    
-    print("\n" + "─" * 120)
-    
-    # Show detailed series info below bracket
-    print("\nSERIES DETAILS:")
-    print("─" * 50)
-    
-    for series in r1_series:
-        home = series['home']['display']
-        away = series['away']['display']
-        h_rec = series['home_record']
-        a_rec = series['away_record']
         
-        print(f"{away} vs {home} [{a_rec[0]}-{a_rec[1]}] vs [{h_rec[0]}-{h_rec[1]}]")
+        # Detail line
+        detail_line = ""
         
-        for i, match in enumerate(series['matches'], 1):
-            if match.get('match_status') == 'finalWhistle':
-                result = match.get('result', '0:0')
-                pk_info = ""
-                if match.get('home_team_penalty_goals', 0) > 0 or match.get('away_team_penalty_goals', 0) > 0:
-                    pk_info = f" PK:{match.get('away_team_penalty_goals', 0)}-{match.get('home_team_penalty_goals', 0)}"
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  G{i}: {result}{pk_info} ({date}) ✅")
-            elif match.get('match_status') == 'scheduled':
-                date = format_time_compact(match.get('planned_kickoff_time', ''))
-                print(f"  G{i}: TBD ({date}) ⏰")
+        # Wild Card detail
+        if row_idx < len(wildcard_data):
+            detail_line += f"  {wildcard_data[row_idx]['detail']:<20}"
+        else:
+            detail_line += " " * 22
+        detail_line += " "
+        
+        # Round One detail
+        if row_idx < len(r1_data):
+            detail_line += f"  {r1_data[row_idx]['detail']:<26}"
+        else:
+            detail_line += " " * 28
+        detail_line += " "
+        
+        # Conference Semifinals detail
+        if row_idx < len(semifinal_data):
+            detail_line += f"  {semifinal_data[row_idx]['detail']:<18}"
+        else:
+            detail_line += " " * 20
+        detail_line += " "
+        
+        # Conference Finals detail
+        if row_idx < len(final_data):
+            detail_line += f"  {final_data[row_idx]['detail']:<18}"
+        else:
+            detail_line += " " * 20
+        detail_line += " "
+        
+        # MLS Cup detail
+        if row_idx == 0 and cup_data:
+            detail_line += f"  {cup_data['detail']}"
+        
+        print(detail_line)
+        
+        if i + 2 < max_rows:  # Add spacing between matchups
+            print()
     
-    print("\n" + "=" * 120)
-    print("Legend: ✅=Complete ⏰=Scheduled 🏆=Champion (seed)=Team Seed [W-L]=Series Record")
-    print("=" * 120)
+    print("\n" + "=" * 140)
+    print("Legend: ✅=Complete ⚽=In Progress ⏰=Scheduled 🏆=Champion (seed)=Team Seed")
+    print("=" * 140)
 
 
 def main():
