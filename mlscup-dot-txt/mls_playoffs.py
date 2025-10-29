@@ -220,15 +220,14 @@ def get_bracket_team_info(match: dict, is_home: bool) -> dict:
         team_id = match.get('away_team_id', '')
     
     short_name = get_team_short_name(team_name, team_code)
-    if team_seed:
-        display_name = f"({team_seed}){short_name}"
-    else:
-        display_name = short_name
+    emoji = get_team_emoji(team_name)
+    display_name = f"{emoji}{short_name}"
     
     return {
         'name': team_name,
         'short': short_name,
         'display': display_name,
+        'emoji': emoji,
         'seed': team_seed,
         'id': team_id
     }
