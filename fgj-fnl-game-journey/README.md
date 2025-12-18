@@ -14,8 +14,6 @@ Key concepts:
 * macros
 * homoiconicity
 
-## Ideas
+## Process
 
-- neovim IDE config in fennel (incremental alongside lua)
-- developer setup for productive iterations with TIC-80 and fennel
-- develop my first trivial TIC-80 cart
+A working journal will be kept in [blog.md](blog.md).
