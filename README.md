@@ -15,6 +15,10 @@ Currently, miscellaneous side-projects that I'd like visible in a public reposit
 - [lightsabers](lightsabers)
 - [mermaid-utils](mermaid-utils)
 
+And these catch-all folders:
+
+- `cli-utils`
+
 *4. What if I have a better idea?*
 
 Let me know at `dev.purkayastha@gmail.com`.
