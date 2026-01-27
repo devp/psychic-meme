@@ -13,9 +13,7 @@ It does not yet exist.
 Currently, miscellaneous side-projects that I'd like visible in a public repository. Maybe that's what `psychic-meme` was always about.
 
 - [lightsabers](lightsabers)
-- [megajuice](megajuice)
 - [mermaid-utils](mermaid-utils)
-- [skankin-pytest](skankin-pytest)
 
 *4. What if I have a better idea?*
 
