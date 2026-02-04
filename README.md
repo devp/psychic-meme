@@ -14,6 +14,7 @@ Currently, miscellaneous side-projects that I'd like visible in a public reposit
 
 - [lightsabers](lightsabers)
 - [mermaid-utils](mermaid-utils)
+- [prompts-library](prompts-library)
 
 And these catch-all folders:
 
