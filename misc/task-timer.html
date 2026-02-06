@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15-Minute Task Triage Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 30px 0;
+            color: #2563eb;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .timer.warning {
+            color: #dc2626;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .start-btn {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .start-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .stop-btn {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .stop-btn:hover {
+            background: #b91c1c;
+        }
+        
+        .reset-btn {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            background: #4b5563;
+        }
+        
+        .question {
+            background: #eff6ff;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .question h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #1e40af;
+        }
+        
+        .decision-btn {
+            display: inline-block;
+            width: auto;
+            min-width: 100px;
+            margin: 5px;
+            padding: 12px 24px;
+            background: #2563eb;
+            color: white;
+        }
+        
+        .decision-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .outcome {
+            background: #f0fdf4;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #22c55e;
+        }
+        
+        .outcome h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #15803d;
+        }
+        
+        .outcome.delete {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        
+        .outcome.delete h2 {
+            color: #991b1b;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .status {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>15-Minute Task Triage</h1>
+        
+        <div class="status" id="status">Ready to start</div>
+        
+        <div class="timer" id="timer">15:00</div>
+        
+        <button class="start-btn" id="startBtn" onclick="startTimer()">Start Timer</button>
+        <button class="stop-btn hidden" id="stopBtn" onclick="stopTimer()">Stop</button>
+        <button class="reset-btn hidden" id="resetBtn" onclick="resetTimer()">Reset</button>
+        
+        <div id="workflow" class="hidden">
+            <div class="question">
+                <h2>Pick your next task, then click below to start triage:</h2>
+                <button class="decision-btn" onclick="startTriage()">Task Selected</button>
+            </div>
+        </div>
+        
+        <div id="step1" class="question hidden">
+            <h2>Has external deadline or consequence?</h2>
+            <button class="decision-btn" onclick="showStep('deadline')">Yes</button>
+            <button class="decision-btn" onclick="showStep('delegate')">No</button>
+        </div>
+        
+        <div id="deadline" class="question hidden">
+            <h2>Is deadline within 48 hours?</h2>
+            <button class="decision-btn" onclick="showOutcome('pin')">Yes - PIN IT</button>
+            <button class="decision-btn" onclick="showStep('setDeadline')">No</button>
+        </div>
+        
+        <div id="setDeadline" class="question hidden">
+            <h2>Set the real deadline, then:</h2>
+            <button class="decision-btn" onclick="showStep('recurring')">Continue</button>
+        </div>
+        
+        <div id="delegate" class="question hidden">
+            <h2>Can someone else do it?</h2>
+            <button class="decision-btn" onclick="showOutcome('delete')">Yes - DELETE</button>
+            <button class="decision-btn" onclick="showStep('quick')">No</button>
+        </div>
+        
+        <div id="quick" class="question hidden">
+            <h2>Takes less than 5 minutes AND you want to do it now?</h2>
+            <button class="decision-btn" onclick="showOutcome('doNow')">Yes - DO NOW</button>
+            <button class="decision-btn" onclick="showStep('rescheduled')">No</button>
+        </div>
+        
+        <div id="rescheduled" class="question hidden">
+            <h2>Has this been rescheduled more than 2 times?</h2>
+            <button class="decision-btn" onclick="showOutcome('delete')">Yes - DELETE</button>
+            <button class="decision-btn" onclick="showOutcome('push')">No - Push out 2-3 weeks</button>
+        </div>
+        
+        <div id="recurring" class="question hidden">
+            <h2>Is this routine/recurring?</h2>
+            <button class="decision-btn" onclick="showOutcome('makeRecurring')">Yes - Make recurring task</button>
+            <button class="decision-btn" onclick="showOutcome('keepDeadline')">No - Keep with deadline</button>
+        </div>
+        
+        <div id="outcome" class="hidden"></div>
+    </div>
+    
+    <script>
+        let timeLeft = 15 * 60; // 15 minutes in seconds
+        let timerInterval = null;
+        let isRunning = false;
+        
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer').textContent = display;
+            
+            // Change color when under 5 minutes
+            if (timeLeft < 300) {
+                document.getElementById('timer').classList.add('warning');
+            } else {
+                document.getElementById('timer').classList.remove('warning');
+            }
+        }
+        
+        function startTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                document.getElementById('startBtn').classList.add('hidden');
+                document.getElementById('stopBtn').classList.remove('hidden');
+                document.getElementById('resetBtn').classList.remove('hidden');
+                document.getElementById('workflow').classList.remove('hidden');
+                document.getElementById('status').textContent = 'Timer running - No rescheduling allowed!';
+                
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateDisplay();
+                    
+                    if (timeLeft <= 0) {
+                        stopTimer();
+                        document.getElementById('status').textContent = 'Time\'s up! Review tomorrow.';
+                        playAlert();
+                    }
+                }, 1000);
+            }
+        }
+        
+        function stopTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            document.getElementById('stopBtn').classList.add('hidden');
+        }
+        
+        function resetTimer() {
+            stopTimer();
+            timeLeft = 15 * 60;
+            updateDisplay();
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('resetBtn').classList.add('hidden');
+            document.getElementById('workflow').classList.add('hidden');
+            document.getElementById('status').textContent = 'Ready to start';
+            hideAllSteps();
+        }
+        
+        function playAlert() {
+            // Simple beep using Web Audio API
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+        
+        function hideAllSteps() {
+            const steps = ['step1', 'deadline', 'setDeadline', 'delegate', 'quick', 'rescheduled', 'recurring', 'outcome'];
+            steps.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+        }
+        
+        function startTriage() {
+            hideAllSteps();
+            document.getElementById('step1').classList.remove('hidden');
+        }
+        
+        function showStep(stepId) {
+            hideAllSteps();
+            document.getElementById(stepId).classList.remove('hidden');
+        }
+        
+        function showOutcome(action) {
+            hideAllSteps();
+            const outcomeDiv = document.getElementById('outcome');
+            outcomeDiv.classList.remove('hidden');
+            
+            const outcomes = {
+                'pin': { title: '📌 PIN THIS TASK', text: 'Deadline within 48 hours - this stays at the top!', isDelete: false },
+                'delete': { title: '🗑️ DELETE THIS TASK', text: 'Remove it from your list. Someone else can handle it or it\'s not worth doing.', isDelete: true },
+                'doNow': { title: '✅ DO IT NOW', text: 'Quick task - knock it out right now!', isDelete: false },
+                'push': { title: '📅 PUSH OUT 2-3 WEEKS', text: 'Reschedule this task 2-3 weeks from now.', isDelete: false },
+                'makeRecurring': { title: '🔄 MAKE RECURRING TASK', text: 'Set this up as a recurring task with the deadline.', isDelete: false },
+                'keepDeadline': { title: '📋 KEEP WITH DEADLINE', text: 'Keep this task with its set deadline.', isDelete: false }
+            };
+            
+            const outcome = outcomes[action];
+            outcomeDiv.className = outcome.isDelete ? 'outcome delete' : 'outcome';
+            outcomeDiv.innerHTML = `
+                <h2>${outcome.title}</h2>
+                <p>${outcome.text}</p>
+                <button class="decision-btn" onclick="nextTask()">Next Task</button>
+            `;
+        }
+        
+        function nextTask() {
+            hideAllSteps();
+            document.getElementById('workflow').classList.remove('hidden');
+        }
+        
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>
