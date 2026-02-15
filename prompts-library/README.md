@@ -8,3 +8,4 @@ Useful prompts I'd like to share.
 **Coding**
 
 - [CODER-interactive.md](https://github.com/devp/psychic-meme/blob/main/prompts-library/coding/roles/CODER-interactive.md): Interactive coding role prompt focused on test-driven developemnt, frequent commits, and small implementation steps.
+- [DOC-REVIEW-COACH.md](https://github.com/devp/psychic-meme/blob/main/prompts-library/coding/roles/work/DOC-REVIEW-COACH.md) and [SPEC-ANALYSIS-COACH.md](https://github.com/devp/psychic-meme/blob/main/prompts-library/coding/roles/work/SPEC-ANALYSIS-COACH.md) for reviewing code-related documents
