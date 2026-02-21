@@ -2,11 +2,12 @@ CC      ?= gcc
 CFLAGS  ?= -O2 -Wall -Wextra
 LDFLAGS  = -lpng -lz -lm
 TARGET   = weatherstar
+HEADERS  = fb.h font.h icons.h display.h screenshot.h
 
 all: $(TARGET)
 
-$(TARGET): weatherstar.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+$(TARGET): main.c $(HEADERS)
+	$(CC) $(CFLAGS) -o $@ main.c $(LDFLAGS)
 
 screenshot: $(TARGET)
 	./$(TARGET) --no-ansi --screenshot screenshot.png
