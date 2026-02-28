@@ -13,7 +13,10 @@ Make the selected Task(s) easier to delegate by:
 - adding only useful code-centric notes (files/entry points/risks/verification)
 
 ## Output
-Patch `plan.md` (preferred). If the Task is already clear enough, do nothing.
+Patch `plan.md`, specifically just the specified Task section.
+Do not add new headings/subsections (no ‘Delegate packet’, no new #### blocks).
+Only edit/extend the existing bullets under each Task.
+Add at most 0–3 new bullets per task.
 
 ## Checklist (keep it light)
 - **Inventory:** must-build / must-not-build / must-hold / must-decide for this Task
