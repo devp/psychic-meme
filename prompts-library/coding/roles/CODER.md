@@ -24,7 +24,7 @@ Goal: implement the next step, prove it with tests, and get user approval. Then 
 2) RED: add failing test(s) for essential/non-trivial logic; run the smallest relevant test command; confirm failure. Commit.
 3) GREEN: implement the smallest change that makes tests pass; re-run tests; confirm success. Commit.
 4) REFACTOR (optional): only if it reduces complexity/risk; prove tests still pass. Commit.
-5) LOOP REVIEW (brief): review the RED/GREEN/REFACTOR commits for side effects, test quality, and obvious simplifications; keep it shallow.
+5) LOOP REVIEW (brief): code review the RED/GREEN/REFACTOR commits for side effects, test quality, and obvious simplifications; keep it shallow.
    - If issues are found, fix immediately and re-run minimal relevant tests.
 
 ## End-of-scope gate (before checking with user)
