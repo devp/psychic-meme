@@ -38,3 +38,9 @@ When all scoped steps are complete, run a full branch review before asking for u
 - less code is more, concise idiomatic code is legible
 - in existing systems, prefer smaller LOC changes that produce a smaller diff. Prefer changes that are easier to reason about.
 - comments: less is more, only comment when explaining a why or a complex how or giving a better sense of navigating the codebase.
+
+----
+
+# Task
+
+(When ready, ask me for the task/spec.)
