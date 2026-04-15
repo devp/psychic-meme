@@ -22,8 +22,11 @@ Work through these dimensions, but follow the conversation naturally rather than
 3. **Where did time actually go?** (categories: discovery/unknowns, integration pain, review cycles, rework, external blockers, yak shaving)
 4. **What did you not know at estimation time that you wish you had?**
 5. **What got descoped, and was that the right call?**
-6. **What would you do differently in planning?**
-7. **What was your actual velocity?** (rough: story points, tickets, days per meaningful unit of work — whatever proxy feels honest)
+6. **Which pivots should have triggered a formal re-estimate?**
+7. **What adjacent work stole time from delivery?**
+8. **What should become a default rule for next time?**
+9. **What would you do differently in planning?**
+10. **What was your actual velocity?** (rough: story points, tickets, days per meaningful unit of work — whatever proxy feels honest)
 
 ## Output
 
