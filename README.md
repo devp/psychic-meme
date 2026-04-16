@@ -10,19 +10,21 @@ It does not yet exist.
 
 *2. What is here instead?*
 
-Currently, miscellaneous side-projects that I'd like visible in a public repository. Maybe that's what `psychic-meme` was always about.
+Currently, miscellaneous side-projects and utilities -- some hand-coded, some LLM-assisted -- that I'd like visible and useful for others.
 
 - [lightsabers](lightsabers)
 - [mermaid-utils](mermaid-utils)
 - [prompts-library](prompts-library)
+- `misc`
+  - [15-minute-task-triage.html](./misc/15-minute-task-triage.html)
+  - [doom-pile-triage.html](./misc/doom-pile-triage.html)
+  - [software-craftsmanship-aphorisms.html](./misc/software-craftsmanship-aphorisms.html)
 
-And these catch-all folders:
-
-- `cli-utils`
+Maybe the hope of sharing something useful is what `psychic-meme` was always about.
 
 *4. What if I have a better idea?*
 
-Let me know at `dev.purkayastha@gmail.com`.
+Let me know: `dev.purkayastha@gmail.com`.
 
 *5. Why `psychic-meme`?*
 

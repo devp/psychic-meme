@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOOM PILE TRIAGE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0d;
+    --surface: #1a1a16;
+    --border: #2e2e26;
+    --accent: #d4ff4f;
+    --accent2: #ff6b35;
+    --accent3: #4fc3f7;
+    --text: #e8e8d8;
+    --muted: #6b6b58;
+    --danger: #ff4444;
+    --success: #4fff8f;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    background-image: 
+      radial-gradient(ellipse at 20% 10%, rgba(212,255,79,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(255,107,53,0.04) 0%, transparent 50%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(212,255,79,0.3);
+  }
+
+  header p {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+  }
+
+  .triage-container {
+    max-width: 620px;
+    margin: 0 auto;
+  }
+
+  /* FLOW NODE */
+  .node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 0.8rem;
+    position: relative;
+    display: none;
+    animation: slideIn 0.25s ease;
+  }
+
+  .node.active { display: block; }
+  .node.visited {
+    display: block;
+    opacity: 0.35;
+    pointer-events: none;
+    border-style: dashed;
+  }
+  .node.visited::after {
+    content: '✓';
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--success);
+    position: absolute;
+    top: 0.8rem;
+    right: 0.9rem;
+    letter-spacing: 0.1em;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .node-id {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .node-question {
+    font-size: 1.15rem;
+    font-weight: 500;
+    line-height: 1.45;
+    margin-bottom: 1.1rem;
+    color: var(--text);
+  }
+
+  .node-tip {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: -0.6rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .choice-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.65rem 1rem;
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .choice-btn:hover {
+    background: rgba(212,255,79,0.06);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .choice-btn .arrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  /* OUTCOME NODES */
+  .outcome {
+    border-radius: 4px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 0.8rem;
+    display: none;
+    animation: slideIn 0.25s ease;
+  }
+
+  .outcome.active { display: block; }
+
+  .outcome.trash { border: 1px solid var(--danger); background: rgba(255,68,68,0.06); }
+  .outcome.donate { border: 1px solid var(--accent3); background: rgba(79,195,247,0.06); }
+  .outcome.file { border: 1px solid var(--accent); background: rgba(212,255,79,0.06); }
+  .outcome.act { border: 1px solid var(--accent2); background: rgba(255,107,53,0.06); }
+  .outcome.home { border: 1px solid var(--success); background: rgba(79,255,143,0.06); }
+  .outcome.defer { border: 1px solid var(--muted); background: rgba(107,107,88,0.08); }
+
+  .outcome-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+  }
+
+  .outcome.trash .outcome-label { color: var(--danger); }
+  .outcome.donate .outcome-label { color: var(--accent3); }
+  .outcome.file .outcome-label { color: var(--accent); }
+  .outcome.act .outcome-label { color: var(--accent2); }
+  .outcome.home .outcome-label { color: var(--success); }
+  .outcome.defer .outcome-label { color: var(--muted); }
+
+  .outcome-detail {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--text);
+    opacity: 0.75;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .btn-reset:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .btn-next {
+    background: var(--accent);
+    border: none;
+    color: var(--bg);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.55rem 1.1rem;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    display: none;
+  }
+
+  .btn-next.visible { display: block; }
+  .btn-next:hover { background: #e8ff70; }
+
+  /* PROGRESS */
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  /* ITEM COUNTER */
+  .counter {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .counter span { color: var(--accent); }
+
+  /* SUMMARY */
+  .summary {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    animation: slideIn 0.3s ease;
+  }
+
+  .summary.visible { display: block; }
+
+  .summary h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+  }
+
+  .summary-item {
+    text-align: center;
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .summary-count { font-size: 1.4rem; font-weight: 700; display: block; }
+  .summary-label { color: var(--muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1rem 0;
+  }
+
+  /* THE STACK METAPHOR */
+  .stack-indicator {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+  }
+
+  .stack-indicator::before { content: '▸ '; color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="triage-container">
+  <header>
+    <h1>DOOM PILE</h1>
+    <p>single-item triage protocol · desk zone edition</p>
+  </header>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <div class="counter" id="counter">
+    Pick up one item. Then answer.
+  </div>
+
+  <!-- FLOW NODES -->
+  <div class="node active" id="node-start">
+    <div class="node-id">01 · EXISTENCE CHECK</div>
+    <div class="node-question">Can you identify what this item actually is?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="go('node-use')"><span class="arrow">→</span> Yes, I know what it is</button>
+      <button class="choice-btn" onclick="go('outcome-trash')"><span class="arrow">→</span> No — mystery object, no idea</button>
+    </div>
+  </div>
+
+  <div class="node" id="node-use">
+    <div class="node-id">02 · USE CHECK</div>
+    <div class="node-question">Have you used or needed this in the last 12 months?</div>
+    <div class="node-tip">Or: is there a concrete upcoming moment you'll use it?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="go('node-where')"><span class="arrow">→</span> Yes, used it / will use it soon</button>
+      <button class="choice-btn" onclick="go('node-value')"><span class="arrow">→</span> No, but feels important</button>
+      <button class="choice-btn" onclick="go('outcome-trash')"><span class="arrow">→</span> No, and honestly… no</button>
+    </div>
+  </div>
+
+  <div class="node" id="node-value">
+    <div class="node-id">03 · VALUE CHECK</div>
+    <div class="node-question">Is it replacing it expensive, sentimental, or legally needed?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="go('node-where')"><span class="arrow">→</span> Expensive / irreplaceable / legal doc</button>
+      <button class="choice-btn" onclick="go('node-someone')"><span class="arrow">→</span> Sentimental but not practically needed</button>
+      <button class="choice-btn" onclick="go('outcome-donate')"><span class="arrow">→</span> Could be useful to someone else</button>
+      <button class="choice-btn" onclick="go('outcome-trash')"><span class="arrow">→</span> None of the above — just inertia</button>
+    </div>
+  </div>
+
+  <div class="node" id="node-someone">
+    <div class="node-id">04 · SENTIMENTAL AUDIT</div>
+    <div class="node-question">Does keeping it serve you — or just avoid the decision?</div>
+    <div class="node-tip">Be honest. "Maybe someday" is the pile's favorite lie.</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="go('node-where')"><span class="arrow">→</span> Actually meaningful — I want it</button>
+      <button class="choice-btn" onclick="go('outcome-donate')"><span class="arrow">→</span> It's avoidance. Let it go.</button>
+    </div>
+  </div>
+
+  <div class="node" id="node-where">
+    <div class="node-id">05 · HOME CHECK</div>
+    <div class="node-question">Does this item have a defined home (a spot, drawer, bin)?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="go('outcome-home')"><span class="arrow">→</span> Yes — it has a place</button>
+      <button class="choice-btn" onclick="go('node-paperwork')"><span class="arrow">→</span> It's paperwork / a document</button>
+      <button class="choice-btn" onclick="go('node-act')"><span class="arrow">→</span> No home yet — it's actionable</button>
+      <button class="choice-btn" onclick="go('outcome-defer')"><span class="arrow">→</span> No home — needs a system later</button>
+    </div>
+  </div>
+
+  <div class="node" id="node-paperwork">
+    <div class="node-id">06 · PAPER TRIAGE</div>
+    <div class="node-question">What kind of document is it?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="go('outcome-file')"><span class="arrow">→</span> Record to keep (legal, IEP, financial, insurance)</button>
+      <button class="choice-btn" onclick="go('outcome-act')"><span class="arrow">→</span> Requires action (bill, form, reply needed)</button>
+      <button class="choice-btn" onclick="go('outcome-trash')"><span class="arrow">→</span> Read, reference, or expired — can be purged</button>
+    </div>
+  </div>
+
+  <div class="node" id="node-act">
+    <div class="node-id">07 · ACTION CHECK</div>
+    <div class="node-question">Can you act on this right now (under 2 min)?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="go('outcome-act-now')"><span class="arrow">→</span> Yes — do it now</button>
+      <button class="choice-btn" onclick="go('outcome-act')"><span class="arrow">→</span> No — needs to be scheduled / captured in Todoist</button>
+    </div>
+  </div>
+
+  <!-- OUTCOMES -->
+  <div class="outcome trash" id="outcome-trash">
+    <div class="outcome-label">🗑 Trash / Recycle</div>
+    <div class="outcome-detail">This item is done. Bin it now — don't put it down first. If it has personal data, shred or delete.</div>
+  </div>
+
+  <div class="outcome donate" id="outcome-donate">
+    <div class="outcome-label">📦 Donate / Rehome</div>
+    <div class="outcome-detail">Drop directly into your donation bin or bag. If it's a specific person's item, text them now while you're holding it.</div>
+  </div>
+
+  <div class="outcome file" id="outcome-file">
+    <div class="outcome-label">🗂 File It</div>
+    <div class="outcome-detail">Goes into the filing system immediately. Key categories for your desk zone: IEP/Reid docs, financial, household, archive. No "to file" pile — file it now.</div>
+  </div>
+
+  <div class="outcome act" id="outcome-act">
+    <div class="outcome-label">📋 Capture the Action</div>
+    <div class="outcome-detail">Add to Todoist before you set the item down. Give it a due date. Then put the item somewhere intentional (a pending tray) or file it if it's just a reference.</div>
+  </div>
+
+  <div class="outcome act" id="outcome-act-now">
+    <div class="outcome-label">⚡ Do It Now</div>
+    <div class="outcome-detail">Two minutes max. Send the text, toss the wrapper, plug in the cord, write the note. Done items don't return to the pile.</div>
+  </div>
+
+  <div class="outcome home" id="outcome-home">
+    <div class="outcome-label">✅ Return to Home</div>
+    <div class="outcome-detail">Put it away right now — don't set it aside to "put away later." That's how the pile formed.</div>
+  </div>
+
+  <div class="outcome defer" id="outcome-defer">
+    <div class="outcome-label">🕐 Defer with a Date</div>
+    <div class="outcome-detail">This item needs a home but you can't create one right now. Capture a task: "Find home for [X]" in Todoist with a due date. Then put it in a clearly labeled holding zone — not back in the pile.</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-reset" onclick="resetFlow()">↺ Reset</button>
+    <button class="btn-next visible" id="btnNext" onclick="nextItem()">Next Item →</button>
+  </div>
+
+  <div class="summary" id="summary">
+    <h3>SESSION COMPLETE</h3>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="summary-count" id="s-trash" style="color:var(--danger)">0</span>
+        <span class="summary-label">Trashed</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-count" id="s-donate" style="color:var(--accent3)">0</span>
+        <span class="summary-label">Donated</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-count" id="s-file" style="color:var(--accent)">0</span>
+        <span class="summary-label">Filed</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-count" id="s-act" style="color:var(--accent2)">0</span>
+        <span class="summary-label">Actions</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-count" id="s-home" style="color:var(--success)">0</span>
+        <span class="summary-label">Put Away</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-count" id="s-defer" style="color:var(--muted)">0</span>
+        <span class="summary-label">Deferred</span>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--muted);text-align:center">
+      Every item decided = pile shrinks. 
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const history = [];
+  let itemCount = 0;
+  const stats = { trash: 0, donate: 0, file: 0, act: 0, home: 0, defer: 0 };
+  let currentOutcome = null;
+
+  const outcomeMap = {
+    'outcome-trash': 'trash',
+    'outcome-donate': 'donate',
+    'outcome-file': 'file',
+    'outcome-act': 'act',
+    'outcome-act-now': 'act',
+    'outcome-home': 'home',
+    'outcome-defer': 'defer'
+  };
+
+  function go(targetId) {
+    const current = history.length ? history[history.length - 1] : 'node-start';
+    
+    // Mark current as visited
+    const currentEl = document.getElementById(current);
+    if (currentEl) {
+      currentEl.classList.remove('active');
+      currentEl.classList.add('visited');
+    }
+
+    history.push(targetId);
+
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      targetEl.classList.add('active');
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Check if outcome
+    if (targetId.startsWith('outcome-')) {
+      currentOutcome = targetId;
+      updateProgress(100);
+      document.getElementById('btnNext').classList.add('visible');
+    } else {
+      updateProgress(getNodeProgress(targetId));
+    }
+  }
+
+  function getNodeProgress(nodeId) {
+    const order = ['node-start','node-use','node-value','node-someone','node-where','node-paperwork','node-act'];
+    const idx = order.indexOf(nodeId);
+    return idx >= 0 ? Math.round((idx / order.length) * 85) : 50;
+  }
+
+  function updateProgress(pct) {
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+
+  function nextItem() {
+    // Record stats
+    if (currentOutcome && outcomeMap[currentOutcome]) {
+      stats[outcomeMap[currentOutcome]]++;
+      updateSummary();
+    }
+
+    itemCount++;
+    currentOutcome = null;
+
+    // Clear all nodes/outcomes
+    document.querySelectorAll('.node, .outcome').forEach(el => {
+      el.classList.remove('active', 'visited');
+    });
+
+    history.length = 0;
+    document.getElementById('node-start').classList.add('active');
+    updateProgress(0);
+
+    document.getElementById('counter').innerHTML = 
+      `Item <span>${itemCount + 1}</span> · ${itemCount} decided so far`;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (itemCount >= 1) {
+      document.getElementById('summary').classList.add('visible');
+    }
+  }
+
+  function updateSummary() {
+    document.getElementById('s-trash').textContent = stats.trash;
+    document.getElementById('s-donate').textContent = stats.donate;
+    document.getElementById('s-file').textContent = stats.file;
+    document.getElementById('s-act').textContent = stats.act;
+    document.getElementById('s-home').textContent = stats.home;
+    document.getElementById('s-defer').textContent = stats.defer;
+  }
+
+  function resetFlow() {
+    if (!confirm('Reset session and clear stats?')) return;
+    itemCount = 0;
+    currentOutcome = null;
+    Object.keys(stats).forEach(k => stats[k] = 0);
+    updateSummary();
+    history.length = 0;
+
+    document.querySelectorAll('.node, .outcome').forEach(el => {
+      el.classList.remove('active', 'visited');
+    });
+    document.getElementById('node-start').classList.add('active');
+    document.getElementById('counter').textContent = 'Pick up one item. Then answer.';
+    document.getElementById('summary').classList.remove('visible');
+    updateProgress(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>

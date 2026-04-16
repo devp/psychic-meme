@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aphorisms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #100e0c;
+    }
+
+    #quote-container {
+      position: fixed;
+      max-width: min(640px, 68vw);
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      user-select: none;
+      /* transition set by JS after first paint */
+    }
+
+    .quote-text {
+      font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+      font-size: clamp(1.2rem, 2.1vw, 1.95rem);
+      color: #d8d0bc;
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.75;
+      letter-spacing: 0.01em;
+    }
+
+    .quote-meta {
+      margin-top: 1.7em;
+    }
+
+    .quote-attribution {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(0.75rem, 1.05vw, 0.92rem);
+      color: #d8d0bc;
+      font-weight: 400;
+      font-style: normal;
+      letter-spacing: 0.04em;
+    }
+
+    .quote-pattern {
+      margin-top: 0.45em;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(0.62rem, 0.85vw, 0.78rem);
+      color: #d8d0bc;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    /*
+      Secret "next" trigger — invisible 80×80 area in the bottom-right corner.
+      No visual hint except the cursor changes to pointer on hover.
+    */
+    #next-btn {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 80px;
+      height: 80px;
+      background: transparent;
+      border: none;
+      cursor: default;
+      z-index: 9999;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #next-btn:hover {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="quote-container">
+  <p class="quote-text" id="quote-text"></p>
+  <div class="quote-meta">
+    <p class="quote-attribution" id="quote-attribution"></p>
+    <p class="quote-pattern" id="quote-pattern"></p>
+  </div>
+</div>
+
+<!-- Secret: hover bottom-right corner to manually advance -->
+<button id="next-btn" aria-hidden="true" tabindex="-1"></button>
+
+<script>
+// ---------------------------------------------------------------------------
+// Edit this array to change quotes. Fields:
+//   quote        — the text (required)
+//   attribution  — speaker/author, or null
+//   pattern      — pattern / chapter name from the book, or null
+// ---------------------------------------------------------------------------
+const aphorisms = [
+  // Aphorism data — primarily sourced from "Apprenticeship Patterns" by Hoover & Oshineye
+  {
+    quote: "For every step you take toward mastery, your destination moves two steps further away. Embrace mastery as a lifelong endeavor. Learn to love the journey.",
+    attribution: "George Leonard, Mastery",
+    pattern: "The Long Road"
+  },
+  {
+    quote: "As a rule, each step should have a feeling of entrance. This is beginner's mind — the state of becoming.",
+    attribution: "Shunryu Suzuki, Zen Mind, Beginner's Mind",
+    pattern: "The White Belt"
+  },
+  {
+    quote: "In order to climb, you must leave the sure footing, letting go of what you already do well and possibly slipping downward into a ravine. If you never let go of what you already do well, you may continue to make steady progress, but you'll never get off the plateau.",
+    attribution: "Jerry Weinberg, Becoming a Technical Leader",
+    pattern: "The White Belt"
+  },
+  {
+    quote: "Tomorrow I need to look stupider and feel better about it. This staying quiet and trying to guess what's going on isn't working so well.",
+    attribution: "Jake Scruggs",
+    pattern: "Expose Your Ignorance"
+  },
+  {
+    quote: "Show the people who are depending on you that the learning process is part of delivering software. Let them see you grow.",
+    attribution: "Apprenticeship Patterns",
+    pattern: "Expose Your Ignorance"
+  },
+  {
+    quote: "Like bare patches in a garden, ignorance can be reduced by cultivating your seeds of knowledge. Water your seeds through experimentation, practice, and reading.",
+    attribution: "Apprenticeship Patterns",
+    pattern: "Expose Your Ignorance"
+  },
+  {
+    quote: "Expertise is a by-product of the long road we're all on, but it is not the destination.",
+    attribution: "Apprenticeship Patterns",
+    pattern: "Expose Your Ignorance"
+  },
+  {
+    quote: "If you've never fallen on your face, odds are you haven't attempted anything worth a damn.",
+    attribution: "Christopher Hawkins",
+    pattern: "The Deep End"
+  },
+  {
+    quote: "It's not just a question of conquering a summit previously unknown, but of tracing, step by step, a new pathway to it.",
+    attribution: "Gustav Mahler",
+    pattern: "The Long Road"
+  },
+  {
+    quote: "To become truly good at programming is a life's work, an ongoing enterprise of learning and practicing.",
+    attribution: "Ron Jeffries et al., Extreme Programming Installed",
+    pattern: "The Long Road"
+  },
+  {
+    quote: "He who knows not and knows that he knows not, is unlearned — teach him! He who knows and knows not that he knows, is asleep — awaken him! He who knows and knows that he knows, is enlightened — follow him!",
+    attribution: "Arab proverb",
+    pattern: "Foreword"
+  },
+  {
+    quote: "All the advice that has come out of our revolution does not help much until it becomes second nature. The craftsmanship movement in software recognizes that making this stuff second nature isn't, well, second nature.",
+    attribution: "Ward Cunningham",
+    pattern: "Foreword"
+  },
+  {
+    quote: "You shouldn't be wedded to any particular technology, but have a broad enough background and experience base to allow you to choose good solutions in particular situations.",
+    attribution: "Dave Thomas and Andy Hunt, The Pragmatic Programmer",
+    pattern: "Your First Language"
+  },
+  {
+    quote: "Wearing the white belt is based on the realization that while the black belt knows the way, the white belt has no choice but to learn the way.",
+    attribution: "Apprenticeship Patterns",
+    pattern: "The White Belt"
+  },
+  {
+    quote: "Craftsmen learn from the apprentices, even as the apprentices learn from them. Enthusiastic beginners not only renew the craftsmen, but also challenge the craftsmen by bringing in new ideas from the outside.",
+    attribution: "Pete McBreen, Software Craftsmanship",
+    pattern: "Unleash Your Enthusiasm"
+  },
+  {
+    quote: "Nothing is more powerful than a community of talented people working on related problems.",
+    attribution: "Paul Graham, Hackers & Painters",
+    pattern: "Kindred Spirits"
+  },
+  {
+    quote: "Be the lion's tail rather than the fox's head.",
+    attribution: "Tractate Avot",
+    pattern: "Be the Worst"
+  },
+  {
+    quote: "If we let ourselves, we shall always be waiting for some distraction or other to end before we can really get down to our work. The only people who achieve much are those who want knowledge so they seek it while the conditions are still unfavourable. Favourable conditions never come.",
+    attribution: "C. S. Lewis",
+    pattern: "Expand Your Bandwidth"
+  },
+  {
+    quote: "We can all benefit by doing occasional 'toy' programs, when artificial restrictions are set up, so that we are forced to push our abilities to the limit.",
+    attribution: "Donald Knuth, The Art of Computer Programming",
+    pattern: "Practice, Practice, Practice"
+  },
+  {
+    quote: "In software we do our practicing on the job, and that's why we make mistakes on the job. We need to find ways of splitting the practice from the profession. We need practice sessions.",
+    attribution: "Dave Thomas",
+    pattern: "Practice, Practice, Practice"
+  },
+  {
+    quote: "Self-examination is hard, but I believe we can learn more from studying our failures than from our successes.",
+    attribution: "Norm Kerth, Project Retrospectives",
+    pattern: "Reflect As You Work"
+  },
+  {
+    quote: "In a time of drastic change it is the learners who inherit the future. The learned usually find themselves equipped to live in a world that no longer exists.",
+    attribution: "Eric Hoffer, Reflections on the Human Condition",
+    pattern: "Familiar Tools"
+  },
+  {
+    quote: "Craftsmen take pride most in skills that mature. This is why simple imitation is not a sustaining satisfaction; the skill has to evolve.",
+    attribution: "Richard Sennett, The Craftsman",
+    pattern: "Conclusion"
+  },
+  {
+    quote: "Just because they're not on your road doesn't mean they've gotten lost.",
+    attribution: "H. Jackson Brown Jr., Life's Little Instruction Book",
+    pattern: "A Different Road"
+  },
+  {
+    quote: "The fundamental learning situation is one in which a person learns by helping someone who really knows what he is doing.",
+    attribution: "Christopher Alexander et al., A Pattern Language",
+    pattern: "What Is Apprenticeship?"
+  },
+  {
+    quote: "Apprenticeship makes a difference because it instills a lifelong passion to master the craft. It instills a passion for perpetual learning and, in the process, enables the apprentice to become a great developer.",
+    attribution: "Pete McBreen, Software Craftsmanship",
+    pattern: "Introduction"
+  },
+  {
+    quote: "We in the software industry are working with a more or less invisible product, yet this very invisibility only heightens our need for feedback.",
+    attribution: "Jerry Weinberg",
+    pattern: "Create Feedback Loops"
+  },
+  {
+    quote: "The traveler whose main path of mastery coincides with career and livelihood is fortunate; others must find space and time outside regular working hours for a preferred practice that brings mastery but not a living wage.",
+    attribution: "George Leonard, Mastery",
+    pattern: "Nurture Your Passion"
+  },
+  {
+    quote: "To only a fraction of the human race does God give the privilege of earning one's bread doing what one would have pursued free, for passion. I am very thankful.",
+    attribution: "Frederick Brooks, The Mythical Man-Month",
+    pattern: "Sustainable Motivations"
+  },
+  {
+    quote: "If you come to me with a cup that is already full, how can you expect me to give you something to drink?",
+    attribution: "Zen teaching",
+    pattern: "Emptying the Cup"
+  },
+  {
+    quote: "A pattern language gives each person who uses it the power to create an infinite variety of new and unique buildings, just as his ordinary language gives him the power to create an infinite variety of sentences.",
+    attribution: "Christopher Alexander, The Timeless Way of Building",
+    pattern: "Introduction"
+  },
+  {
+    quote: "I actually had grown attached to feeling ignorant on a daily basis; it let me know I was in the right place. I was growing.",
+    attribution: "Dave Hoover",
+    pattern: "Expose Your Ignorance"
+  },
+  {
+    quote: "The best way to learn a language is to work with an expert in it. One expert is all it takes, but you need one.",
+    attribution: "Ralph Johnson",
+    pattern: "Your First Language"
+  },
+  // Fake quotes, too...
+  {
+    quote: "🪽🍞 🪽🍞 🪽🍞",
+    attribution: "Berkeley Systems",
+    pattern: "Save Your Screen",
+  }
+];
+
+// ---------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------
+const QUOTE_DURATION_MS = 15 * 60 * 1000; // 15 minutes between automatic advances
+const FADE_MS           = 2200;            // fade-out + fade-in duration each
+const SPEED             = 1;             // px/sec; 0.4 => very slow drift, ~24 px/min
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let idx      = 0;
+let x        = 0,  y        = 0;
+let vx       = 1,  vy       = 1;   // unit direction (set on init)
+let lastTs   = null;
+let timer    = null;
+let fading   = false;
+
+const container = document.getElementById('quote-container');
+const qText     = document.getElementById('quote-text');
+const qAttr     = document.getElementById('quote-attribution');
+const qPat      = document.getElementById('quote-pattern');
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function setContent(i) {
+  const a = aphorisms[i];
+  qText.textContent = '\u201c' + a.quote + '\u201d';
+  qAttr.textContent = a.attribution ? '\u2014\u00a0' + a.attribution : '';
+  qPat.textContent  = a.pattern  || '';
+}
+
+function initPosition() {
+  const pad = 52;
+  const w   = container.offsetWidth  || 500;
+  const h   = container.offsetHeight || 200;
+  const maxX = Math.max(pad + 1, window.innerWidth  - w - pad);
+  const maxY = Math.max(pad + 1, window.innerHeight - h - pad);
+  x = pad + Math.random() * (maxX - pad);
+  y = pad + Math.random() * (maxY - pad);
+  container.style.left = x + 'px';
+  container.style.top  = y + 'px';
+}
+
+// ---------------------------------------------------------------------------
+// Animation loop — runs forever, independent of quote changes
+// ---------------------------------------------------------------------------
+function animate(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.1); // cap delta to avoid jumps
+  lastTs = ts;
+
+  x += vx * SPEED * dt;
+  y += vy * SPEED * dt;
+
+  const pad = 44;
+  const w   = container.offsetWidth;
+  const h   = container.offsetHeight;
+
+  if (x < pad)                           { x  = pad;                           vx =  Math.abs(vx); }
+  if (y < pad)                           { y  = pad;                           vy =  Math.abs(vy); }
+  if (x + w > window.innerWidth  - pad)  { x  = window.innerWidth  - pad - w; vx = -Math.abs(vx); }
+  if (y + h > window.innerHeight - pad)  { y  = window.innerHeight - pad - h; vy = -Math.abs(vy); }
+
+  container.style.left = x + 'px';
+  container.style.top  = y + 'px';
+
+  requestAnimationFrame(animate);
+}
+
+// ---------------------------------------------------------------------------
+// Quote advance (fade out → swap content → fade in)
+// ---------------------------------------------------------------------------
+function advance() {
+  if (fading) return;
+  fading = true;
+  clearTimeout(timer);
+
+  container.style.opacity = '0';
+
+  setTimeout(() => {
+    // Pick next quote
+    //idx = (idx + 1) % aphorisms.length;
+    // Pick a random quote
+    idx = Math.floor(Math.random() * aphorisms.length);
+    setContent(idx);
+    container.style.opacity = '1';
+    setTimeout(() => { fading = false; }, FADE_MS);
+  }, FADE_MS);
+
+  timer = setTimeout(advance, QUOTE_DURATION_MS);
+}
+
+// ---------------------------------------------------------------------------
+// Initialise
+// ---------------------------------------------------------------------------
+function init() {
+  // Pick a random quote
+  idx = Math.floor(Math.random() * aphorisms.length);
+  setContent(idx);
+
+  // Start invisible, no transition yet (avoid flash)
+  container.style.transition = 'none';
+  container.style.opacity    = '0';
+  container.style.left       = '0px';
+  container.style.top        = '0px';
+
+  // Two rAF passes guarantee layout is computed (offsetWidth/Height available)
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      initPosition();
+
+      // Random drift angle
+      const angle = Math.random() * 2 * Math.PI;
+      vx = Math.cos(angle);
+      vy = Math.sin(angle);
+
+      // Engage fade transition and appear
+      container.style.transition = `opacity ${FADE_MS}ms ease-in-out`;
+      container.style.opacity    = '1';
+
+      // Start drift
+      requestAnimationFrame(animate);
+
+      // Schedule first automatic advance
+      timer = setTimeout(advance, QUOTE_DURATION_MS);
+    });
+  });
+
+  // Secret next-quote button (bottom-right corner, invisible until hover)
+  document.getElementById('next-btn').addEventListener('click', advance);
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
