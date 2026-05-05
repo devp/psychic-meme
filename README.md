@@ -19,6 +19,7 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
   - [15-minute-task-triage.html](./misc/15-minute-task-triage.html)
   - [doom-pile-triage.html](./misc/doom-pile-triage.html)
   - [software-craftsmanship-aphorisms.html](./misc/software-craftsmanship-aphorisms.html)
+  - [kids-sleep-window-estimator.html](./misc/kids-sleep-window-estimator.html)
 
 Maybe the hope of sharing something useful is what `psychic-meme` was always about.
 

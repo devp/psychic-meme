@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Kids Sleep Window Estimator</title>
+  <style>
+    :root {
+      --bg: #f7f5ef;
+      --card: #ffffff;
+      --text: #222;
+      --muted: #666;
+      --line: #ddd7ca;
+      --accent: #4b6f5a;
+      --accent2: #d88c52;
+      --danger: #b84949;
+      --soft: #eef3ee;
+      --warn: #fff1df;
+      --bad: #fae7e7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.35;
+    }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px;
+      padding-bottom: 48px;
+    }
+    h1 {
+      font-size: 1.55rem;
+      margin: 8px 0 4px;
+      letter-spacing: -0.02em;
+    }
+    h2 {
+      font-size: 1.05rem;
+      margin: 0 0 12px;
+    }
+    p {
+      margin: 8px 0;
+      color: var(--muted);
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      margin: 14px 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 650;
+      margin: 14px 0 6px;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font: inherit;
+      background: white;
+      color: var(--text);
+    }
+    input[type="range"] {
+      padding: 0;
+      accent-color: var(--accent);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pill {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .result {
+      border-radius: 16px;
+      padding: 14px;
+      margin-top: 12px;
+      background: var(--soft);
+      border: 1px solid #d8e3d8;
+    }
+    .result.warn {
+      background: var(--warn);
+      border-color: #efd2a8;
+    }
+    .result.bad {
+      background: var(--bad);
+      border-color: #edb9b9;
+    }
+    .big {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 4px 0;
+    }
+    .small {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      height: 24px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #eee;
+      border: 1px solid var(--line);
+      margin: 10px 0 4px;
+      position: relative;
+    }
+    .seg { height: 100%; }
+    .seg.ok { background: #dbeadd; }
+    .seg.warn { background: #ffe1b8; }
+    .seg.bad { background: #f0b3b3; }
+    .legend {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      border: 0;
+      border-radius: 13px;
+      background: var(--accent);
+      color: white;
+      font-weight: 750;
+      font-size: 1rem;
+    }
+    button.secondary {
+      background: #eee8dc;
+      color: #333;
+    }
+    details {
+      margin-top: 10px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    code {
+      background: #f1eee7;
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+    .preset-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 560px) {
+      main { padding: 14px; }
+      .grid { grid-template-columns: 1fr; }
+      .big { font-size: 1.35rem; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Kids Sleep Window Estimator</h1>
+  <p>Offline-friendly model for estimating overtired / second-wind risk windows. Not a cortisol measurement or medical tool.</p>
+
+  <div class="card">
+    <h2>Presets</h2>
+    <div class="preset-buttons">
+      <button type="button" onclick="loadPreset('younger')">3½yo current</button>
+      <button type="button" onclick="loadPreset('older')">7yo current</button>
+    </div>
+    <button class="secondary" type="button" onclick="saveToUrl()">Copy current settings into URL</button>
+  </div>
+
+  <div class="card">
+    <h2>Inputs</h2>
+
+    <div class="grid">
+      <div>
+        <label for="age">Age</label>
+        <select id="age">
+          <option value="3.5">3½ years</option>
+          <option value="4">4 years</option>
+          <option value="5">5 years</option>
+          <option value="6">6 years</option>
+          <option value="7">7 years</option>
+          <option value="8">8 years</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div>
+        <label for="wake">Wake time</label>
+        <input id="wake" type="time" value="08:00" />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label for="napEnd">Nap end time</label>
+        <input id="napEnd" type="time" value="14:00" />
+      </div>
+      <div>
+        <label for="napMinutes">Nap length: <span id="napLabel">0</span> min</label>
+        <input id="napMinutes" type="range" min="0" max="180" step="5" value="0" />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label for="activity">Physical / stimulation load: <span id="activityLabel">medium</span></label>
+        <input id="activity" type="range" min="0" max="3" step="1" value="2" />
+      </div>
+      <div>
+        <label for="sleepDebt">Sleep debt: <span id="debtLabel">moderate</span></label>
+        <input id="sleepDebt" type="range" min="0" max="3" step="1" value="1" />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label for="transition">Pickup / evening transition load: <span id="transitionLabel">medium</span></label>
+        <input id="transition" type="range" min="0" max="3" step="1" value="1" />
+      </div>
+      <div>
+        <label for="targetShift">Wake shift from today: <span id="shiftLabel">0</span> min</label>
+        <input id="targetShift" type="range" min="-120" max="120" step="15" value="0" />
+      </div>
+    </div>
+
+    <details>
+      <summary>Advanced knobs</summary>
+      <div class="grid">
+        <div>
+          <label for="customCapacity">Custom all-day wake capacity, hours</label>
+          <input id="customCapacity" type="number" min="6" max="16" step="0.25" value="10.5" />
+        </div>
+        <div>
+          <label for="customPostNap">Custom post-nap capacity, hours</label>
+          <input id="customPostNap" type="number" min="3" max="9" step="0.25" value="6" />
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>Estimated windows</h2>
+    <div id="output"></div>
+  </div>
+
+  <div class="card">
+    <h2>Formula</h2>
+    <p><code>risk_start = anchor + capacity + nap_bonus - sleep_debt - activity - transition</code></p>
+    <p class="small">
+      If there is no nap, anchor is wake time and capacity is all-day wake capacity.
+      If there is a nap, anchor is nap end and capacity is post-nap capacity.
+      The model estimates overtired / activated behavior risk, not actual cortisol concentration.
+    </p>
+  </div>
+</main>
+
+<script>
+  const els = {};
+  for (const id of [
+    "age","wake","napEnd","napMinutes","activity","sleepDebt","transition","targetShift",
+    "customCapacity","customPostNap","output",
+    "napLabel","activityLabel","debtLabel","transitionLabel","shiftLabel"
+  ]) els[id] = document.getElementById(id);
+
+  const loadLabels = ["low", "light", "medium", "high"];
+
+  const presets = {
+    younger: {
+      age: "3.5", wake: "08:00", napEnd: "14:00", napMinutes: 0,
+      activity: 2, sleepDebt: 2, transition: 2, targetShift: 0
+    },
+    older: {
+      age: "7", wake: "07:00", napEnd: "14:00", napMinutes: 0,
+      activity: 2, sleepDebt: 1, transition: 2, targetShift: 0
+    }
+  };
+
+  function minsFromTime(t) {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function timeFromMins(mins) {
+    mins = ((Math.round(mins) % 1440) + 1440) % 1440;
+    let h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const ampm = h >= 12 ? "PM" : "AM";
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+  }
+
+  function clamp(n, a, b) {
+    return Math.max(a, Math.min(b, n));
+  }
+
+  function ageDefaults(ageValue) {
+    if (ageValue === "custom") {
+      return {
+        allDay: Number(els.customCapacity.value),
+        postNap: Number(els.customPostNap.value),
+        minSleep: null,
+        maxSleep: null
+      };
+    }
+    const age = Number(ageValue);
+    if (age < 5) {
+      return { allDay: 10.5, postNap: 6.0, minSleep: 10, maxSleep: 13 };
+    }
+    if (age < 7) {
+      return { allDay: 12.0, postNap: 7.0, minSleep: 9, maxSleep: 12 };
+    }
+    return { allDay: 13.0, postNap: 7.5, minSleep: 9, maxSleep: 12 };
+  }
+
+  function napBonus(minutes) {
+    if (minutes <= 0) return 0;
+    if (minutes < 40) return 0.5;
+    if (minutes < 80) return 1.0;
+    return 1.5;
+  }
+
+  function loadPenalty(level, type) {
+    const l = Number(level);
+    if (type === "activity") return [0, 15, 30, 45][l];
+    if (type === "debt") return [0, 30, 60, 90][l];
+    if (type === "transition") return [0, 15, 30, 45][l];
+    return 0;
+  }
+
+  function calc() {
+    els.napLabel.textContent = els.napMinutes.value;
+    els.activityLabel.textContent = loadLabels[els.activity.value];
+    els.debtLabel.textContent = loadLabels[els.sleepDebt.value];
+    els.transitionLabel.textContent = loadLabels[els.transition.value];
+    els.shiftLabel.textContent = els.targetShift.value;
+
+    const age = els.age.value;
+    const defaults = ageDefaults(age);
+    const wake = minsFromTime(els.wake.value) + Number(els.targetShift.value);
+    const napEnd = minsFromTime(els.napEnd.value) + Number(els.targetShift.value);
+    const napMin = Number(els.napMinutes.value);
+
+    const hasNap = napMin > 0;
+    const anchor = hasNap ? napEnd : wake;
+    const baseCapacityH = hasNap ? defaults.postNap : defaults.allDay;
+    const capacity = baseCapacityH * 60 + (hasNap ? napBonus(napMin) * 60 : 0);
+
+    const activityPenalty = loadPenalty(els.activity.value, "activity");
+    const debtPenalty = loadPenalty(els.sleepDebt.value, "debt");
+    const transitionPenalty = loadPenalty(els.transition.value, "transition");
+
+    const riskStart = anchor + capacity - activityPenalty - debtPenalty - transitionPenalty;
+    const riskPeakStart = riskStart + 60;
+    const riskPeakEnd = riskStart + 120;
+    const latestBedtimeStart = riskStart - 60;
+    const latestAsleep = riskStart - 30;
+    const lowDemandStart = riskStart - 90;
+
+    const className =
+      timeFromMins(riskStart).includes("10:") || timeFromMins(riskStart).includes("11:") ? "bad" :
+      Number(els.sleepDebt.value) >= 2 ? "warn" : "";
+
+    const idealSleep = defaults.minSleep
+      ? `${defaults.minSleep}–${defaults.maxSleep}h/day recommended range`
+      : "custom age settings";
+
+    const formulaText =
+      `${timeFromMins(anchor)} + ${baseCapacityH.toFixed(1)}h` +
+      `${hasNap ? ` + ${napBonus(napMin).toFixed(1)}h nap bonus` : ""}` +
+      ` - ${(activityPenalty + debtPenalty + transitionPenalty)} min penalties`;
+
+    els.output.innerHTML = `
+      <div class="result ${className}">
+        <div class="row">
+          <span class="pill">${hasNap ? "nap day" : "no nap day"}</span>
+          <span class="small">${idealSleep}</span>
+        </div>
+
+        <p class="small">Low-demand buffer</p>
+        <div class="big">${timeFromMins(lowDemandStart)} – ${timeFromMins(latestBedtimeStart)}</div>
+
+        <p class="small">Latest easier bedtime start</p>
+        <div class="big">${timeFromMins(latestBedtimeStart)} – ${timeFromMins(latestAsleep)}</div>
+
+        <p class="small">Overtired / second-wind risk begins</p>
+        <div class="big">${timeFromMins(riskStart)}</div>
+
+        <p class="small">Likely peak risk window</p>
+        <div class="big">${timeFromMins(riskPeakStart)} – ${timeFromMins(riskPeakEnd)}</div>
+
+        ${timeline(riskStart, riskPeakStart, riskPeakEnd)}
+        <div class="legend">
+          <span><span class="dot" style="background:#dbeadd"></span>lower risk</span>
+          <span><span class="dot" style="background:#ffe1b8"></span>rising risk</span>
+          <span><span class="dot" style="background:#f0b3b3"></span>peak risk</span>
+        </div>
+
+        <p class="small"><strong>Computed as:</strong> ${formulaText}</p>
+      </div>
+    `;
+  }
+
+  function timeline(riskStart, peakStart, peakEnd) {
+    const dayStart = 6 * 60;
+    const dayEnd = 24 * 60;
+    const slots = [];
+    for (let i = 0; i < 24; i++) {
+      const t = dayStart + i * ((dayEnd - dayStart) / 24);
+      let klass = "ok";
+      if (t >= riskStart && t < peakStart) klass = "warn";
+      if (t >= peakStart && t < peakEnd) klass = "bad";
+      slots.push(`<div class="seg ${klass}" title="${timeFromMins(t)}"></div>`);
+    }
+    return `<div class="timeline" aria-label="Risk timeline from 6am to midnight">${slots.join("")}</div>`;
+  }
+
+  function loadPreset(name) {
+    const p = presets[name];
+    for (const [k, v] of Object.entries(p)) {
+      if (els[k]) els[k].value = v;
+    }
+    calc();
+  }
+
+  async function saveToUrl() {
+    const data = {};
+    for (const k of ["age","wake","napEnd","napMinutes","activity","sleepDebt","transition","targetShift","customCapacity","customPostNap"]) {
+      data[k] = els[k].value;
+    }
+    const encoded = btoa(JSON.stringify(data));
+    const url = location.href.split("#")[0] + "#settings=" + encoded;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("Copied URL with current settings.");
+    } catch {
+      prompt("Copy this URL:", url);
+    }
+  }
+
+  function loadFromHash() {
+    const m = location.hash.match(/settings=([^&]+)/);
+    if (!m) return false;
+    try {
+      const data = JSON.parse(atob(m[1]));
+      for (const [k, v] of Object.entries(data)) {
+        if (els[k]) els[k].value = v;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  for (const el of Object.values(els)) {
+    if (el && el.addEventListener) el.addEventListener("input", calc);
+  }
+
+  if (!loadFromHash()) loadPreset("younger");
+  calc();
+</script>
+</body>
+</html>
