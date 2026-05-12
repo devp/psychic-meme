@@ -23,11 +23,14 @@
 
     #quote-container {
       position: fixed;
+      left: 0;
+      top: 0;
       max-width: min(640px, 68vw);
       text-align: center;
       opacity: 0;
       pointer-events: none;
       user-select: none;
+      will-change: transform;
       /* transition set by JS after first paint */
     }
 
@@ -39,6 +42,7 @@
       font-style: italic;
       line-height: 1.75;
       letter-spacing: 0.01em;
+      text-shadow: 0 0 60px rgba(216, 208, 188, 0.12);
     }
 
     .quote-meta {
@@ -85,9 +89,19 @@
     #next-btn:hover {
       cursor: pointer;
     }
+
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 38%, rgba(16, 14, 12, 0.72) 100%);
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
+
+<div id="vignette"></div>
 
 <div id="quote-container">
   <p class="quote-text" id="quote-text"></p>
@@ -383,8 +397,7 @@ function initPosition() {
   const maxY = Math.max(pad + 1, window.innerHeight - h - pad);
   x = pad + Math.random() * (maxX - pad);
   y = pad + Math.random() * (maxY - pad);
-  container.style.left = x + 'px';
-  container.style.top  = y + 'px';
+  container.style.transform = `translate(${x}px, ${y}px)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -407,8 +420,7 @@ function animate(ts) {
   if (x + w > window.innerWidth  - pad)  { x  = window.innerWidth  - pad - w; vx = -Math.abs(vx); }
   if (y + h > window.innerHeight - pad)  { y  = window.innerHeight - pad - h; vy = -Math.abs(vy); }
 
-  container.style.left = x + 'px';
-  container.style.top  = y + 'px';
+  container.style.transform = `translate(${x}px, ${y}px)`;
 
   requestAnimationFrame(animate);
 }
@@ -447,8 +459,6 @@ function init() {
   // Start invisible, no transition yet (avoid flash)
   container.style.transition = 'none';
   container.style.opacity    = '0';
-  container.style.left       = '0px';
-  container.style.top        = '0px';
 
   // Two rAF passes guarantee layout is computed (offsetWidth/Height available)
   requestAnimationFrame(() => {
