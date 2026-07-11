@@ -2,6 +2,7 @@ const listEl = document.getElementById("domain-list");
 const emptyMsg = document.getElementById("empty-msg");
 const form = document.getElementById("add-form");
 const input = document.getElementById("domain-input");
+const errorMsg = document.getElementById("error-msg");
 
 function normalizeDomain(raw) {
   let value = raw.trim().toLowerCase();
@@ -19,7 +20,15 @@ function normalizeDomain(raw) {
 }
 
 async function render() {
-  const domains = await getAllowedDomains();
+  let domains = await getAllowedDomains();
+
+  // Purge any previously-allowed domain that's since been hard-blocklisted.
+  const purged = domains.filter((d) => !hostnameIsBlocked(d, HARD_BLOCKLIST));
+  if (purged.length !== domains.length) {
+    domains = purged;
+    await setAllowedDomains(domains);
+  }
+
   listEl.innerHTML = "";
   emptyMsg.hidden = domains.length > 0;
 
@@ -44,8 +53,16 @@ async function render() {
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  errorMsg.hidden = true;
+
   const domain = normalizeDomain(input.value);
   if (!domain) return;
+
+  if (hostnameIsBlocked(domain, HARD_BLOCKLIST)) {
+    errorMsg.textContent = `"${domain}" is permanently blocked and cannot be allow-listed.`;
+    errorMsg.hidden = false;
+    return;
+  }
 
   const domains = await getAllowedDomains();
   if (!domains.includes(domain)) {

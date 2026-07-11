@@ -13,6 +13,7 @@
   input[type="text"] { flex: 1; padding: 4px 6px; font-size: 13px; }
   button[type="submit"] { padding: 4px 10px; }
   p.empty { color: #888; font-size: 12px; }
+  p.error { color: #c00; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -23,7 +24,9 @@
     <input type="text" id="domain-input" placeholder="example.com" />
     <button type="submit">Add</button>
   </form>
+  <p class="error" id="error-msg" hidden></p>
   <script src="common.js"></script>
+  <script src="blocklist.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

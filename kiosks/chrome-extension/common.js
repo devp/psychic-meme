@@ -18,3 +18,10 @@ function hostnameIsAllowed(hostname, allowedDomains) {
     (domain) => hostname === domain || hostname.endsWith("." + domain)
   );
 }
+
+// Same exact/subdomain matching, applied against the hard-coded blocklist.
+function hostnameIsBlocked(hostname, blockedDomains) {
+  return blockedDomains.some(
+    (domain) => hostname === domain || hostname.endsWith("." + domain)
+  );
+}
