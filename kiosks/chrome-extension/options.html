@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Site Allow List</title>
+<style>
+  body { font-family: system-ui, sans-serif; width: 320px; padding: 12px; }
+  h1 { font-size: 14px; margin: 0 0 8px; }
+  ul { list-style: none; margin: 0 0 8px; padding: 0; max-height: 240px; overflow-y: auto; }
+  li { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+  li button { border: none; background: none; color: #c00; cursor: pointer; font-size: 13px; }
+  form { display: flex; gap: 6px; }
+  input[type="text"] { flex: 1; padding: 4px 6px; font-size: 13px; }
+  button[type="submit"] { padding: 4px 10px; }
+  p.empty { color: #888; font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>Allowed domains</h1>
+  <ul id="domain-list"></ul>
+  <p class="empty" id="empty-msg" hidden>No domains allowed yet — all navigation is blocked.</p>
+  <form id="add-form">
+    <input type="text" id="domain-input" placeholder="example.com" />
+    <button type="submit">Add</button>
+  </form>
+  <script src="common.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

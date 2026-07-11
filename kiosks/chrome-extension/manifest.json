@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Site Allow List",
+  "version": "1.0.0",
+  "description": "Blocks navigation to any domain not on a manually maintained allow list.",
+  "permissions": ["webNavigation", "storage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_popup": "options.html",
+    "default_title": "Site Allow List"
+  }
+}
