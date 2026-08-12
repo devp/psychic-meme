@@ -10,6 +10,8 @@ the design document; this README is how you build and run the thing.
 **Status:** builds have to happen on a Mac — AppKit and WebKit only exist in the
 macOS SDK — and this tree has not been through a macOS toolchain yet. Treat the
 [testing checklist](#testing) as outstanding rather than passed.
+[`HANDOFF.md`](HANDOFF.md) is the pick-up-here doc: first-compile suspects,
+first-launch checks, and what was deliberately left undone.
 
 ## Layout
 
