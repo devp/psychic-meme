@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Kiosk lockdown test page</title>
+    <style>
+      body {
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, sans-serif;
+        margin: 0 auto;
+        max-width: 46rem;
+        padding: 2rem 1.5rem 4rem;
+        color: #1c1c1e;
+      }
+      h1 { font-size: 1.5rem; }
+      section { border-top: 1px solid #d8d8dc; padding: 1rem 0; }
+      h2 { font-size: 1rem; margin: 0 0 0.35rem; }
+      p { margin: 0.35rem 0; }
+      .expect { color: #6b6b70; font-size: 0.9rem; }
+      a, button {
+        font-size: 0.95rem;
+        margin-right: 0.5rem;
+      }
+      button { padding: 0.3rem 0.7rem; }
+      #log {
+        background: #f4f4f6;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.85rem;
+        margin-top: 1.5rem;
+        min-height: 4rem;
+        padding: 0.75rem;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Kiosk lockdown test page</h1>
+    <p class="expect">
+      Drives the checklist in <code>kiosk-webview-spec.md</code> §11. Every case
+      below should fail to escape the single window. Anything that opens a second
+      window, a Finder window, or a system dialog is a bug.
+    </p>
+
+    <section>
+      <h2>1. <code>target="_blank"</code></h2>
+      <p><a href="https://example.com/" target="_blank" rel="noopener">example.com in a new tab</a></p>
+      <p class="expect">
+        Expect: loads in place (default config) or nothing happens. Never a second window.
+      </p>
+    </section>
+
+    <section>
+      <h2>2. <code>window.open()</code></h2>
+      <p>
+        <button onclick="report('window.open ->', window.open('https://example.com/', '_blank'))">
+          window.open (user gesture)
+        </button>
+        <button onclick="report('deferred window.open ->', setTimeout(() => window.open('https://example.com/'), 300))">
+          window.open (no gesture, 300ms later)
+        </button>
+      </p>
+      <p class="expect">Expect: returns null, no window. The deferred one is also blocked by
+        <code>javaScriptCanOpenWindowsAutomatically = false</code>.</p>
+    </section>
+
+    <section>
+      <h2>3. cmd-click / middle-click</h2>
+      <p><a href="https://example.com/">plain link — cmd-click and middle-click it</a></p>
+      <p class="expect">Expect: same as case 1. Both reach the app as a new-window navigation.</p>
+    </section>
+
+    <section>
+      <h2>4. Context menu</h2>
+      <p class="expect">
+        Right-click the link above and this paragraph. Expect: no menu at all
+        (default), or a single "Reload" item with <code>allowReloadContextMenu</code>.
+        Never "Open Link in New Window", "Download Linked File", "View Source" or
+        "Inspect Element".
+      </p>
+    </section>
+
+    <section>
+      <h2>5. Non-allowlisted host</h2>
+      <p><a href="https://www.iana.org/help/example-domains">iana.org (off the allowlist)</a></p>
+      <p class="expect">
+        Expect with <code>allowedHosts: ["example.com"]</code>: blocked, page unchanged,
+        one "blocked navigation" line in <code>Console.app</code>.
+      </p>
+    </section>
+
+    <section>
+      <h2>6. Subdomain of an allowlisted host</h2>
+      <p><a href="https://www.example.com/">www.example.com</a></p>
+      <p class="expect">Expect: allowed — allow-listing a domain allows its subdomains.</p>
+    </section>
+
+    <section>
+      <h2>7. Downloads</h2>
+      <p>
+        <a href="data:application/octet-stream;base64,S2lvc2sgZG93bmxvYWQgdGVzdAo=" download="kiosk-test.bin">
+          download an attachment
+        </a>
+      </p>
+      <p class="expect">Expect: nothing. No save panel, no Downloads folder, no Finder window.</p>
+    </section>
+
+    <section>
+      <h2>8. File picker</h2>
+      <p><input type="file" /></p>
+      <p class="expect">Expect: clicking Choose File opens nothing.</p>
+    </section>
+
+    <section>
+      <h2>9. JS dialogs</h2>
+      <p>
+        <button onclick="alert('kiosk alert'); log('alert returned')">alert</button>
+        <button onclick="report('confirm ->', confirm('kiosk confirm'))">confirm</button>
+        <button onclick="report('prompt ->', prompt('kiosk prompt', 'default'))">prompt</button>
+      </p>
+      <p class="expect">
+        Expect with <code>showJavaScriptDialogs: false</code>: no UI, and the log line
+        appears immediately (false / null) — the page is never left hanging.
+      </p>
+    </section>
+
+    <section>
+      <h2>10. <code>window.close()</code></h2>
+      <p><button onclick="window.close()">window.close()</button></p>
+      <p class="expect">Expect: the kiosk reloads its home URL. The window does not close.</p>
+    </section>
+
+    <section>
+      <h2>11. Non-web schemes</h2>
+      <p>
+        <a href="mailto:someone@example.com">mailto:</a>
+        <a href="file:///etc/hosts">file:///etc/hosts</a>
+      </p>
+      <p class="expect">
+        Expect: both blocked, no other application launches. (<code>file:</code> is
+        allowed only when the home URL is itself a file: URL — as it is when you are
+        reading this page, so expect /etc/hosts to load in that case.)
+      </p>
+    </section>
+
+    <section>
+      <h2>12. Keyboard</h2>
+      <p class="expect">
+        Try cmd-N, cmd-T, cmd-shift-T, cmd-W, cmd-M, cmd-H, cmd-Q, F11, ctrl-cmd-F:
+        all no-ops. cmd-R reloads (default). The configured quit hotkey
+        (cmd-opt-shift-Q by default) quits. cmd-opt-esc still force-quits — that one
+        is the window server's and cannot be intercepted.
+      </p>
+    </section>
+
+    <div id="log">log:</div>
+
+    <script>
+      function log(message) {
+        document.getElementById("log").textContent += "\n" + message;
+      }
+      function report(label, value) {
+        log(label + " " + String(value));
+      }
+      window.addEventListener("error", (event) => log("error: " + event.message));
+    </script>
+  </body>
+</html>

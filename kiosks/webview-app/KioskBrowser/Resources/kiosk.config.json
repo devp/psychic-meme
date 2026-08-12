@@ -1,0 +1,11 @@
+{
+  "url": "https://example.com/kiosk",
+  "allowedHosts": ["example.com"],
+  "allowExternalInSystemBrowser": false,
+  "persistCookies": true,
+  "fullscreen": true,
+  "resizable": false,
+  "reloadOnFailureSeconds": 5,
+  "allowDevToolsInDebugBuilds": false,
+  "quitHotkey": "cmd+opt+shift+Q"
+}
