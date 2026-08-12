@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Install to ~/Library/LaunchAgents/ on the dedicated kiosk account, then:
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.forgreatjustice.kioskbrowser.plist
+
+  KeepAlive is the point: a kiosk that crashes must come back, not sit on a
+  desktop. Edit the executable path and the url argument below per deployment.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>net.forgreatjustice.kioskbrowser</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Applications/KioskBrowser.app/Contents/MacOS/KioskBrowser</string>
+		<string>--url=https://example.com/kiosk</string>
+		<string>--allowed-hosts=example.com</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ProcessType</key>
+	<string>Interactive</string>
+	<key>StandardOutPath</key>
+	<string>/tmp/kioskbrowser.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/kioskbrowser.log</string>
+</dict>
+</plist>

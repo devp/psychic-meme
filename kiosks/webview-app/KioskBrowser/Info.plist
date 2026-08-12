@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>KioskBrowser</string>
+	<key>CFBundleDisplayName</key>
+	<string>Kiosk</string>
+	<key>CFBundleExecutable</key>
+	<string>KioskBrowser</string>
+	<key>CFBundleIdentifier</key>
+	<string>net.forgreatjustice.kioskbrowser</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>12.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<!-- true hides the Dock icon and the cmd-tab entry: the kiosk deployment
+	     default. The build.sh "lsuielement" flag flips it; it is false here so
+	     a development build can be reached and quit like a normal app. -->
+	<key>LSUIElement</key>
+	<false/>
+</dict>
+</plist>
