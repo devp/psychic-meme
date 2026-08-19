@@ -23,5 +23,3 @@ Lost, maybe worth re-creating :
 
 - Skill `/grwm`: reads my work journal + task list + calendar => suggests best impact for AM + focuses for today
 - Skill `/reality-check`: prompt to coach me through midday brain fog to identify the most important smallest next-action to work on.
-- Code review coach: I had a dense prompt to help me get through code review without being blocked, but this is itself stuck on existential questions
-  about what is the nature of good code review, and adapting to the code review norms of my next workplace.
