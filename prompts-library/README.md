@@ -18,8 +18,5 @@ Experimental/WIP:
 - tech/PROJECT-AUDITOR-RETRO.md
 - tech/TASK-RETRO.md
 - executive-functioning-assistant.md (this might just be whimsical)
-
-Lost, maybe worth re-creating :
-
-- Skill `/grwm`: reads my work journal + task list + calendar => suggests best impact for AM + focuses for today
-- Skill `/reality-check`: prompt to coach me through midday brain fog to identify the most important smallest next-action to work on.
+- claude-skills/grwm (recreated from "lost" list, needs a few real mornings to prove out)
+- claude-skills/reality-check (recreated from "lost" list, needs a few real mornings to prove out)
