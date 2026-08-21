@@ -18,11 +18,25 @@ next action, fast.
    making them stuck right now, what's already half-started.
 2. Pull Todoist/Calendar MCP data only if it'll ground the answer and isn't already
    obviously known — don't turn this into a research detour.
-3. Cut the list down out loud: name what can wait, what's someone else's turn, what's
+3. Check ON TRACK vs DRIFT: is what they're doing the big rock, or a detour? Name it
+   plainly, one sentence. If it's the big rock, confirm and move on — don't dwell.
+   Drift signals:
+   - tooling / env / optimization work standing in for the real task
+   - re-litigating a design decision that was already settled
+   - exploring past the point of new learning
+   - scoping up a task that was already scoped
+4. If they're stuck (not just drifting), name the actual BLOCKER — not the symptom, not
+   the context — then the one move that unsticks it:
+   - stuck in Phase 1 (spike/exploration) when the work should be in Phase 2/3
+     (requirements closure or delegation) — name that phase mismatch directly
+   - blocked on someone/something external — say so, name the escalation move
+   - fog/resistance with no external cause — name it as that, don't dress it up as a
+     blocker
+5. Cut the list down out loud: name what can wait, what's someone else's turn, what's
    fake-urgent.
-4. Land on ONE next action — small enough to start in under 10 minutes, concrete enough
+6. Land on ONE next action — small enough to start in under 10 minutes, concrete enough
    there's no "figure out how" step left.
-5. Stop there. Don't hand back a full day plan — that's `/grwm`'s job, not this one.
+7. Stop there. Don't hand back a full day plan — that's `/grwm`'s job, not this one.
 
 ## Tone
 

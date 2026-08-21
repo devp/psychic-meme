@@ -34,11 +34,27 @@ questions to fill gaps (what's due today, any meetings).
 4. List **2-4 focuses for today** — not a full task dump, just what's realistic given the
    calendar load.
 5. Flag anything time-boxed (meeting prep, EOD deadline) that needs a slot.
+6. Check for a LOOP — a pattern visible across journal entries / task history, not a
+   single day's snapshot. Only surface if genuinely visible; skip silently otherwise.
+
+## LOOP detection
+
+State plainly if seen — "X has been [state] since [date]" or "Y has not been completed."
+No advice attached.
+
+Patterns to watch for:
+- big rock left undecided across multiple entries
+- P0/overdue label persisting without movement
+- Monday check-in or Friday self-check-in left incomplete (flag on that day of week)
+- EOD reflection skipped
+- side work (tooling, env setup, optimization) consuming time repeatedly instead of the
+  stated priority
+- a design decision revisited after it was already treated as settled
 
 ## Output
 
-AM pick first, then focus list, then deadline flags. No recap of inputs, no "here's what
-I found" preamble.
+AM pick first, then focus list, then deadline flags, then LOOP (if any). No recap of
+inputs, no "here's what I found" preamble.
 
 ## Guardrails
 
