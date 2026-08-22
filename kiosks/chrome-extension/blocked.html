@@ -7,7 +7,8 @@
   body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #1a1a1a; color: #eee; }
   .card { max-width: 480px; text-align: center; padding: 24px; }
   h1 { font-size: 20px; }
-  code { display: block; margin-top: 8px; word-break: break-all; color: #f88; }
+  code { display: block; margin-top: 8px; word-break: break-all; color: #f88; user-select: all; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .label { display: block; margin-top: 16px; font-size: 12px; color: #888; text-align: left; }
   a { color: #6cf; }
 </style>
 </head>
@@ -15,12 +16,29 @@
   <div class="card">
     <h1>Navigation blocked</h1>
     <p>This site isn't on your allow list.</p>
+    <span class="label">URL</span>
     <code id="blocked-url"></code>
+    <span class="label" id="decoded-label" hidden>Decoded</span>
+    <code id="blocked-url-decoded" hidden></code>
     <p><a href="options.html">Manage allow list</a></p>
   </div>
   <script>
     const params = new URLSearchParams(location.search);
-    document.getElementById("blocked-url").textContent = params.get("url") || "";
+    const raw = params.get("url") || "";
+    document.getElementById("blocked-url").textContent = raw;
+
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      // malformed escape sequence — leave decoded === raw, skip the row
+    }
+    if (decoded !== raw) {
+      document.getElementById("decoded-label").hidden = false;
+      const el = document.getElementById("blocked-url-decoded");
+      el.textContent = decoded;
+      el.hidden = false;
+    }
   </script>
 </body>
 </html>
