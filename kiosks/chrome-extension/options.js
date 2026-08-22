@@ -23,7 +23,9 @@ async function render() {
   let domains = await getAllowedDomains();
 
   // Purge any previously-allowed domain that's since been hard-blocklisted.
-  const purged = domains.filter((d) => !hostnameIsBlocked(d, HARD_BLOCKLIST));
+  const purged = domains.filter(
+    (d) => !hostnameIsBlocked(d, HARD_BLOCKLIST) || hostnameIsAllowed(d, HARD_BLOCKLIST_EXCEPTIONS)
+  );
   if (purged.length !== domains.length) {
     domains = purged;
     await setAllowedDomains(domains);
@@ -58,7 +60,7 @@ form.addEventListener("submit", async (e) => {
   const domain = normalizeDomain(input.value);
   if (!domain) return;
 
-  if (hostnameIsBlocked(domain, HARD_BLOCKLIST)) {
+  if (hostnameIsBlocked(domain, HARD_BLOCKLIST) && !hostnameIsAllowed(domain, HARD_BLOCKLIST_EXCEPTIONS)) {
     errorMsg.textContent = `"${domain}" is permanently blocked and cannot be allow-listed.`;
     errorMsg.hidden = false;
     return;

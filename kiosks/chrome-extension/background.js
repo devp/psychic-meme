@@ -18,7 +18,10 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   // Only gate http(s) navigations — leave chrome://, extension pages, etc. alone.
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-  if (hostnameIsBlocked(url.hostname, HARD_BLOCKLIST)) {
+  if (
+    hostnameIsBlocked(url.hostname, HARD_BLOCKLIST) &&
+    !hostnameIsAllowed(url.hostname, HARD_BLOCKLIST_EXCEPTIONS)
+  ) {
     redirectToBlocked(details.tabId, details.url);
     return;
   }
