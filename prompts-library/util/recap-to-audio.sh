@@ -7,6 +7,7 @@ cd "$repo" || exit 1
 
 in="/tmp/transcript.txt"
 engine="${RECAP_TTS_ENGINE:-gcloud}"
+pause_ms="${RECAP_PAUSE_MS:-1500}"
 
 rm -f "$in"
 claude -p "Use the pr-recap skill to generate a recap for: $*" \
@@ -16,22 +17,37 @@ claude -p "Use the pr-recap skill to generate a recap for: $*" \
 
 mkdir -p "$HOME/recaps"
 
+# Slug for the filename: sha/PR-number args resolve to their subject/title
+# (raw SHAs aren't readable), branch/ref names are used as-is.
+first_ref="$1"
+if [[ "$first_ref" =~ ^[0-9a-f]{7,40}$ || "$first_ref" =~ ^HEAD([~^][0-9]*)*$ ]]; then
+  slug_src=$(git log -1 --format=%s "$first_ref" 2>/dev/null || true)
+elif [[ "$first_ref" =~ ^[0-9]+$ ]]; then
+  slug_src=$(gh pr view "$first_ref" --json title -q '.title' 2>/dev/null || true)
+else
+  slug_src="$first_ref"
+fi
+slug=$(printf '%s' "${slug_src:-recap}" | tr '[:upper:]' '[:lower:]' \
+  | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//' | cut -c1-50)
+[ -n "$slug" ] || slug="recap"
+stamp="$(date +%Y%m%d-%H%M)-${slug}"
+
 case "$engine" in
   say)
-    out="$HOME/recaps/recap-$(date +%Y%m%d-%H%M).m4a"
-    sed 's/{{PAUSE}}/[[slnc 600]]/g' "$in" > /tmp/recap-say.txt
+    out="$HOME/recaps/recap-${stamp}.m4a"
+    sed "s/{{PAUSE}}/[[slnc ${pause_ms}]]/g" "$in" > /tmp/recap-say.txt
     say -f /tmp/recap-say.txt -r 165 -o /tmp/recap.aiff --data-format=BEI16@22050
     afconvert /tmp/recap.aiff "$out" -d aac -f mp4f
     ;;
   gcloud)
-    out="$HOME/recaps/recap-$(date +%Y%m%d-%H%M).mp3"
+    out="$HOME/recaps/recap-${stamp}.mp3"
     voice="${GOOGLE_TTS_VOICE:-en-US-Neural2-C}"
     lang="${GOOGLE_TTS_LANG:-en-US}"
     project="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
 
     # Sync synthesize API caps input around 5000 bytes; long recaps may need chunking.
     ssml=$(sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$in" \
-      | sed 's|{{PAUSE}}|<break time="600ms"/>|g')
+      | sed "s|{{PAUSE}}|<break time=\"${pause_ms}ms\"/>|g")
     ssml="<speak>${ssml}</speak>"
 
     payload=$(jq -n --arg ssml "$ssml" --arg voice "$voice" --arg lang "$lang" \
