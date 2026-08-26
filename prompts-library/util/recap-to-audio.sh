@@ -27,6 +27,7 @@ case "$engine" in
     out="$HOME/recaps/recap-$(date +%Y%m%d-%H%M).mp3"
     voice="${GOOGLE_TTS_VOICE:-en-US-Neural2-C}"
     lang="${GOOGLE_TTS_LANG:-en-US}"
+    project="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
 
     # Sync synthesize API caps input around 5000 bytes; long recaps may need chunking.
     ssml=$(sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$in" \
@@ -40,7 +41,7 @@ case "$engine" in
 
     token=$(gcloud auth print-access-token)
     headers=(-H "Authorization: Bearer $token" -H "Content-Type: application/json; charset=utf-8")
-    [ -n "${GOOGLE_CLOUD_PROJECT:-}" ] && headers+=(-H "x-goog-user-project: $GOOGLE_CLOUD_PROJECT")
+    [ -n "$project" ] && headers+=(-H "x-goog-user-project: $project")
 
     resp=$(curl -sS -X POST "${headers[@]}" -d "$payload" \
       "https://texttospeech.googleapis.com/v1/text:synthesize")
