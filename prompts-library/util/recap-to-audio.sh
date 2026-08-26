@@ -73,4 +73,9 @@ case "$engine" in
     ;;
 esac
 
+dest_dir="$(dirname "$out")"
+if [ -x "$dest_dir/.hooks/reindex.sh" ]; then
+  "$dest_dir/.hooks/reindex.sh" "$dest_dir"
+fi
+
 echo "$out"
