@@ -31,8 +31,11 @@ while listening, not looking at a screen.
 - No code blocks, no diff excerpts, no tables, no bullet-heavy variable
   lists — anything meant to be visually scanned.
 - Write it as if narrating to someone who can't see the screen.
+- Insert the literal marker `{{PAUSE}}` right before each transition
+  (before "Next up...", before the closing prioritized summary). This
+  becomes a note-taking pause in the audio — place it, don't narrate it.
 
 ## Output location
 Write the final transcript to `/tmp/transcript.txt` (plain text, no
-markdown formatting characters — no `#`, `*`, backticks) unless the user
-specifies another path.
+markdown formatting characters — no `#`, `*`, backticks — `{{PAUSE}}`
+markers are the one exception) unless the user specifies another path.

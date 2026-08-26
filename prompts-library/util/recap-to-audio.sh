@@ -19,7 +19,8 @@ mkdir -p "$HOME/recaps"
 case "$engine" in
   say)
     out="$HOME/recaps/recap-$(date +%Y%m%d-%H%M).m4a"
-    say -f "$in" -o /tmp/recap.aiff --data-format=BEI16@22050
+    sed 's/{{PAUSE}}/[[slnc 600]]/g' "$in" > /tmp/recap-say.txt
+    say -f /tmp/recap-say.txt -r 165 -o /tmp/recap.aiff --data-format=BEI16@22050
     afconvert /tmp/recap.aiff "$out" -d aac -f mp4f
     ;;
   gcloud)
@@ -28,8 +29,14 @@ case "$engine" in
     lang="${GOOGLE_TTS_LANG:-en-US}"
 
     # Sync synthesize API caps input around 5000 bytes; long recaps may need chunking.
-    payload=$(jq -n --rawfile text "$in" --arg voice "$voice" --arg lang "$lang" \
-      '{input: {text: $text}, voice: {languageCode: $lang, name: $voice}, audioConfig: {audioEncoding: "MP3"}}')
+    ssml=$(sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$in" \
+      | sed 's|{{PAUSE}}|<break time="600ms"/>|g')
+    ssml="<speak>${ssml}</speak>"
+
+    payload=$(jq -n --arg ssml "$ssml" --arg voice "$voice" --arg lang "$lang" \
+      '{input: {ssml: $ssml}, voice: {languageCode: $lang, name: $voice},
+        audioConfig: {audioEncoding: "MP3", speakingRate: 0.92,
+                       effectsProfileId: ["headphone-class-device"]}}')
 
     token=$(gcloud auth print-access-token)
     headers=(-H "Authorization: Bearer $token" -H "Content-Type: application/json; charset=utf-8")
