@@ -44,28 +44,91 @@ case "$engine" in
     voice="${GOOGLE_TTS_VOICE:-en-US-Neural2-C}"
     lang="${GOOGLE_TTS_LANG:-en-US}"
     project="${GOOGLE_CLOUD_PROJECT:-$(gcloud config get-value project 2>/dev/null)}"
-
-    # Sync synthesize API caps input around 5000 bytes; long recaps may need chunking.
-    ssml=$(sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$in" \
-      | sed "s|{{PAUSE}}|<break time=\"${pause_ms}ms\"/>|g")
-    ssml="<speak>${ssml}</speak>"
-
-    payload=$(jq -n --arg ssml "$ssml" --arg voice "$voice" --arg lang "$lang" \
-      '{input: {ssml: $ssml}, voice: {languageCode: $lang, name: $voice},
-        audioConfig: {audioEncoding: "MP3", speakingRate: 0.92,
-                       effectsProfileId: ["headphone-class-device"]}}')
+    # Sync text:synthesize hard-caps input.ssml at 5000 bytes. Split the
+    # transcript into sub-limit chunks (prefer {{PAUSE}} / paragraph / sentence
+    # boundaries), synth each, then concat the MP3s. Budget under 5000 leaves
+    # headroom for the <speak> wrapper and <break> tag expansion.
+    chunk_bytes="${RECAP_TTS_CHUNK_BYTES:-4000}"
+    chunk_pfx="/tmp/recap-chunk-"
 
     token=$(gcloud auth print-access-token)
     headers=(-H "Authorization: Bearer $token" -H "Content-Type: application/json; charset=utf-8")
     [ -n "$project" ] && headers+=(-H "x-goog-user-project: $project")
 
-    resp=$(curl -sS -X POST "${headers[@]}" -d "$payload" \
-      "https://texttospeech.googleapis.com/v1/text:synthesize")
+    rm -f "${chunk_pfx}"*.txt /tmp/recap-part-*.mp3
 
-    audio=$(jq -r '.audioContent // empty' <<< "$resp")
-    [ -n "$audio" ] || { echo "TTS request failed: $(jq -c '.error // .' <<< "$resp")" >&2; exit 1; }
+    # awk writes each chunk to its own zero-padded file (BSD awk can't emit NUL,
+    # so no read -d '' pipeline). LC_ALL=C makes length() count bytes.
+    LC_ALL=C awk -v lim="$chunk_bytes" -v pfx="$chunk_pfx" '
+      BEGIN { RS = ""; buf = ""; k = 0 }
+      function emit(   f) {
+        if (buf == "") return
+        f = sprintf("%s%03d.txt", pfx, ++k)
+        printf "%s", buf > f; close(f); buf = ""
+      }
+      function add(t,   n, i, s, p) {
+        if (buf != "" && length(buf) + length(t) > lim) emit()
+        if (length(t) > lim) {
+          n = split(t, p, /\. /)
+          for (i = 1; i <= n; i++) {
+            s = p[i]; if (i < n) s = s ". "
+            if (buf != "" && length(buf) + length(s) > lim) emit()
+            buf = buf s
+          }
+        } else {
+          buf = buf t
+        }
+      }
+      {
+        m = split($0, segs, /\{\{PAUSE\}\}/)
+        for (j = 1; j <= m; j++) {
+          add(segs[j])
+          if (j < m) add(" {{PAUSE}} ")
+        }
+        add("\n\n")
+      }
+      END { emit() }
+    ' "$in"
 
-    base64 -D <<< "$audio" > "$out"
+    parts=()
+    idx=0
+    for cf in "${chunk_pfx}"*.txt; do
+      [ -e "$cf" ] || { echo "chunker produced no output, aborting" >&2; exit 1; }
+      idx=$((idx + 1))
+      ssml=$(sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' "$cf" \
+        | sed "s|{{PAUSE}}|<break time=\"${pause_ms}ms\"/>|g")
+      ssml="<speak>${ssml}</speak>"
+
+      payload=$(jq -n --arg ssml "$ssml" --arg voice "$voice" --arg lang "$lang" \
+        '{input: {ssml: $ssml}, voice: {languageCode: $lang, name: $voice},
+          audioConfig: {audioEncoding: "MP3", speakingRate: 0.92,
+                         effectsProfileId: ["headphone-class-device"]}}')
+
+      resp=$(curl -sS -X POST "${headers[@]}" -d "$payload" \
+        "https://texttospeech.googleapis.com/v1/text:synthesize")
+
+      audio=$(jq -r '.audioContent // empty' <<< "$resp")
+      [ -n "$audio" ] || { echo "TTS request failed (chunk $idx): $(jq -c '.error // .' <<< "$resp")" >&2; exit 1; }
+
+      part="/tmp/recap-part-${idx}.mp3"
+      base64 -D <<< "$audio" > "$part"
+      parts+=("$part")
+    done
+    rm -f "${chunk_pfx}"*.txt
+
+    [ "${#parts[@]}" -gt 0 ] || { echo "no audio produced, aborting" >&2; exit 1; }
+
+    if [ "${#parts[@]}" -eq 1 ]; then
+      mv "${parts[0]}" "$out"
+    elif command -v ffmpeg >/dev/null 2>&1; then
+      list=/tmp/recap-concat.txt; : > "$list"
+      for p in "${parts[@]}"; do printf "file '%s'\n" "$p" >> "$list"; done
+      ffmpeg -y -f concat -safe 0 -i "$list" -c copy "$out" >/dev/null 2>&1
+      rm -f "$list" "${parts[@]}"
+    else
+      cat "${parts[@]}" > "$out"
+      rm -f "${parts[@]}"
+    fi
     ;;
   *)
     echo "unknown RECAP_TTS_ENGINE: $engine (want say|gcloud)" >&2
