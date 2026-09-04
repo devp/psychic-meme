@@ -65,13 +65,64 @@
     input.style.height = Math.min(input.scrollHeight, visibleHeight() * 0.4) + "px";
   }
 
+  function copyText(text, btn) {
+    function flash(ok) {
+      if (!btn) return;
+      var original = btn.textContent;
+      btn.textContent = ok ? "✓" : "✕";
+      btn.classList.add("copied");
+      setTimeout(function () {
+        btn.textContent = original;
+        btn.classList.remove("copied");
+      }, 900);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        function () { flash(true); },
+        function () { flash(false); }
+      );
+      return;
+    }
+    // fallback for browsers/contexts without the async Clipboard API
+    try {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      flash(ok);
+    } catch (e) {
+      flash(false);
+    }
+  }
+
   function renderEntryInto(container, source, resultText, isError) {
     var entry = document.createElement("div");
     entry.className = "entry";
 
     var prompt = document.createElement("div");
     prompt.className = "prompt";
-    prompt.textContent = source;
+
+    var copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "copy-caret";
+    copyBtn.textContent = ">";
+    copyBtn.setAttribute("aria-label", "Copy this input");
+    copyBtn.title = "Copy";
+    copyBtn.addEventListener("click", function () {
+      copyText(source, copyBtn);
+    });
+    prompt.appendChild(copyBtn);
+
+    var promptText = document.createElement("span");
+    promptText.className = "prompt-text";
+    promptText.textContent = source;
+    prompt.appendChild(promptText);
+
     entry.appendChild(prompt);
 
     var result = document.createElement("div");
