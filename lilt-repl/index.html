@@ -34,6 +34,7 @@
   <button class="tab" data-tab="lil" role="tab" aria-selected="false">lil</button>
   <button class="tab" data-tab="lilquickref" role="tab" aria-selected="false">quickref</button>
   <button class="tab" data-tab="lilt" role="tab" aria-selected="false">cli</button>
+  <button class="tab" data-tab="log" role="tab" aria-selected="false">log</button>
 </nav>
 
 <main class="panels">
@@ -63,6 +64,13 @@
 
   <section class="panel doc-panel" data-panel="lilt">
     <div class="doc-content" data-doc-src="docs/lilt.md"></div>
+  </section>
+
+  <section class="panel list-panel" data-panel="log">
+    <div class="transcript-toolbar">
+      <button type="button" id="new-session-btn" class="secondary-btn">+ New session</button>
+    </div>
+    <div class="transcript-list" id="transcript-list"></div>
   </section>
 </main>
 
@@ -98,15 +106,39 @@
 
     <fieldset>
       <legend>Session</legend>
-      <button type="button" id="clear-output-btn" class="secondary-btn">Clear output</button>
+      <div class="button-row">
+        <button type="button" id="clear-output-btn" class="secondary-btn">Clear output</button>
+        <button type="button" id="settings-new-session-btn" class="secondary-btn">New session</button>
+      </div>
     </fieldset>
 
     <button type="submit" class="close-btn">Done</button>
   </form>
 </dialog>
 
+<dialog id="transcript-dialog">
+  <div class="transcript-dialog-inner">
+    <header class="transcript-dialog-header">
+      <input
+        id="transcript-name-input"
+        type="text"
+        placeholder="Untitled session"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+      <button type="button" id="transcript-delete-btn" class="icon-btn" aria-label="Delete session">🗑</button>
+    </header>
+    <div class="output transcript-view" id="transcript-view-output"></div>
+    <form method="dialog" class="settings-form transcript-dialog-footer">
+      <button type="submit" class="close-btn">Close</button>
+    </form>
+  </div>
+</dialog>
+
 <script src="vendor/marked.min.js"></script>
 <script src="docs.js"></script>
+<script src="transcripts.js"></script>
 <script src="app.js"></script>
 <script>
 if ("serviceWorker" in navigator) {

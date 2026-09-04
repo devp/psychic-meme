@@ -179,7 +179,8 @@ body {
   flex-direction: column;
 }
 
-.doc-panel.active {
+.doc-panel.active,
+.list-panel.active {
   display: block;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -364,6 +365,114 @@ body {
 
 .doc-content img {
   max-width: 100%;
+}
+
+/* ---- transcripts ---- */
+.transcript-toolbar {
+  padding: 0.75rem 0.9rem 0.4rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+}
+
+.transcript-list {
+  padding: 0 0.9rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.transcript-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--bg-alt);
+  cursor: pointer;
+}
+
+.transcript-row.current {
+  border-color: var(--accent);
+}
+
+.transcript-row-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.transcript-row-meta {
+  color: var(--fg-dim);
+  font-size: 0.78rem;
+  margin-top: 0.15rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ---- transcript detail dialog ---- */
+dialog#transcript-dialog {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0;
+  background: var(--bg-alt);
+  color: var(--fg);
+  width: min(92vw, 30rem);
+  height: min(82vh, 42rem);
+}
+
+dialog#transcript-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.transcript-dialog-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.transcript-dialog-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+#transcript-name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+#transcript-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.transcript-view {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.transcript-dialog-footer {
+  flex: 0 0 auto;
+  padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  flex-direction: row;
+  justify-content: flex-end;
 }
 
 /* ---- settings dialog ---- */

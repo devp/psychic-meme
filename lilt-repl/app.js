@@ -26,6 +26,9 @@
   var form = document.getElementById("input-form");
   var input = document.getElementById("input");
 
+  var activeTranscript = window.lilTranscripts.ensureActive();
+  var activeId = activeTranscript.id;
+
   function scrollToBottom() {
     output.scrollTop = output.scrollHeight;
   }
@@ -35,7 +38,7 @@
     input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.4) + "px";
   }
 
-  function addEntry(source, resultText, isError) {
+  function renderEntryInto(container, source, resultText, isError) {
     var entry = document.createElement("div");
     entry.className = "entry";
 
@@ -49,8 +52,19 @@
     result.textContent = resultText;
     entry.appendChild(result);
 
-    output.appendChild(entry);
+    container.appendChild(entry);
+    return entry;
+  }
+
+  function addEntry(source, resultText, isError) {
+    renderEntryInto(output, source, resultText, isError);
     scrollToBottom();
+    window.lilTranscripts.appendEntry(activeId, {
+      input: source,
+      output: resultText,
+      isError: !!isError,
+      ts: Date.now(),
+    });
   }
 
   function addHint(text) {
@@ -61,9 +75,24 @@
   }
 
   function evaluate(source) {
-    // checkpoint 2: still just an echo, wired up for real in a later checkpoint
+    // checkpoint 3: still just an echo, wired up for real in a later checkpoint
     return source;
   }
+
+  function replayActiveTranscript() {
+    output.innerHTML = "";
+    if (activeTranscript.entries.length === 0) {
+      addHint("this is a stub: it just echoes back what you type.");
+    } else {
+      activeTranscript.entries.forEach(function (e) {
+        renderEntryInto(output, e.input, e.output, e.isError);
+      });
+    }
+    scrollToBottom();
+  }
+
+  replayActiveTranscript();
+  autoGrow();
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -84,12 +113,130 @@
 
   input.addEventListener("input", autoGrow);
 
-  addHint("this is a stub: it just echoes back what you type.");
-  autoGrow();
+  function startNewSession() {
+    var t = window.lilTranscripts.createNew("");
+    activeTranscript = t;
+    activeId = t.id;
+    output.innerHTML = "";
+    addHint("new session started.");
+    renderTranscriptList();
+  }
 
   document.getElementById("clear-output-btn").addEventListener("click", function () {
     output.innerHTML = "";
+    window.lilTranscripts.clearEntries(activeId);
     addHint("cleared.");
+    renderTranscriptList();
+  });
+
+  document.getElementById("new-session-btn").addEventListener("click", startNewSession);
+  document.getElementById("settings-new-session-btn").addEventListener("click", startNewSession);
+
+  // ---- transcripts tab ----
+  var transcriptList = document.getElementById("transcript-list");
+  var transcriptDialog = document.getElementById("transcript-dialog");
+  var transcriptNameInput = document.getElementById("transcript-name-input");
+  var transcriptViewOutput = document.getElementById("transcript-view-output");
+  var transcriptDeleteBtn = document.getElementById("transcript-delete-btn");
+  var viewingId = null;
+
+  function formatDate(ts) {
+    var d = new Date(ts);
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  function renderTranscriptList() {
+    var all = window.lilTranscripts.getAll();
+    transcriptList.innerHTML = "";
+
+    if (all.length === 0) {
+      var empty = document.createElement("p");
+      empty.className = "hint";
+      empty.textContent = "No sessions yet.";
+      transcriptList.appendChild(empty);
+      return;
+    }
+
+    all.forEach(function (t) {
+      var isCurrent = t.id === activeId;
+      var row = document.createElement("div");
+      row.className = "transcript-row" + (isCurrent ? " current" : "");
+      row.setAttribute("role", "button");
+      row.tabIndex = 0;
+
+      var main = document.createElement("div");
+      main.className = "transcript-row-main";
+
+      var nameEl = document.createElement("div");
+      nameEl.className = "transcript-row-name";
+      nameEl.textContent = t.name || "Untitled session";
+      main.appendChild(nameEl);
+
+      var metaEl = document.createElement("div");
+      metaEl.className = "transcript-row-meta";
+      var count = t.entries.length + (t.entries.length === 1 ? " entry" : " entries");
+      metaEl.textContent = (isCurrent ? "current · " : "") + count + " · " + formatDate(t.updatedAt);
+      main.appendChild(metaEl);
+
+      row.appendChild(main);
+
+      function open() {
+        openTranscriptDialog(t.id);
+      }
+      row.addEventListener("click", open);
+      row.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      });
+
+      transcriptList.appendChild(row);
+    });
+  }
+
+  function openTranscriptDialog(id) {
+    var t = window.lilTranscripts.get(id);
+    if (!t) return;
+    viewingId = id;
+    transcriptNameInput.value = t.name || "";
+    transcriptViewOutput.innerHTML = "";
+    if (t.entries.length === 0) {
+      var p = document.createElement("p");
+      p.className = "hint";
+      p.textContent = "(empty)";
+      transcriptViewOutput.appendChild(p);
+    } else {
+      t.entries.forEach(function (e) {
+        renderEntryInto(transcriptViewOutput, e.input, e.output, e.isError);
+      });
+    }
+    transcriptDialog.showModal();
+  }
+
+  transcriptNameInput.addEventListener("change", function () {
+    if (!viewingId) return;
+    window.lilTranscripts.rename(viewingId, transcriptNameInput.value.trim());
+    renderTranscriptList();
+  });
+
+  transcriptDeleteBtn.addEventListener("click", function () {
+    if (!viewingId) return;
+    if (!window.confirm("Delete this saved session? This can't be undone.")) return;
+    var wasActive = viewingId === activeId;
+    window.lilTranscripts.remove(viewingId);
+    transcriptDialog.close();
+    viewingId = null;
+    if (wasActive) {
+      startNewSession();
+    } else {
+      renderTranscriptList();
+    }
   });
 
   // ---- tabs ----
@@ -111,6 +258,9 @@
     var panel = document.querySelector('.panel[data-panel="' + name + '"]');
     if (panel && panel.classList.contains("doc-panel") && window.lilDocs) {
       window.lilDocs.renderDoc(panel);
+    }
+    if (name === "log") {
+      renderTranscriptList();
     }
     if (name === "repl" && !(opts && opts.silent)) {
       input.focus();
@@ -137,21 +287,17 @@
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     storageSet(STORAGE.theme, theme);
-    document
-      .querySelectorAll(".swatch")
-      .forEach(function (b) {
-        b.setAttribute("aria-checked", b.getAttribute("data-theme") === theme ? "true" : "false");
-      });
+    document.querySelectorAll(".swatch").forEach(function (b) {
+      b.setAttribute("aria-checked", b.getAttribute("data-theme") === theme ? "true" : "false");
+    });
   }
 
   function applyFont(font) {
     document.documentElement.setAttribute("data-font", font);
     storageSet(STORAGE.font, font);
-    document
-      .querySelectorAll("#font-toggle button")
-      .forEach(function (b) {
-        b.setAttribute("aria-checked", b.getAttribute("data-font") === font ? "true" : "false");
-      });
+    document.querySelectorAll("#font-toggle button").forEach(function (b) {
+      b.setAttribute("aria-checked", b.getAttribute("data-font") === font ? "true" : "false");
+    });
   }
 
   document.querySelectorAll(".swatch").forEach(function (b) {

@@ -1,10 +1,11 @@
-var CACHE = "lilt-repl-v2";
+var CACHE = "lilt-repl-v3";
 var ASSETS = [
   "./",
   "index.html",
   "style.css",
   "app.js",
   "docs.js",
+  "transcripts.js",
   "vendor/marked.min.js",
   "docs/lil.md",
   "docs/lilquickref.md",
