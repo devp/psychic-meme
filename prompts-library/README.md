@@ -11,6 +11,7 @@ Useful:
 
 Experimental/WIP:
 
+- claude-skills/code-review-skim
 - tech/CODE-REVIEW-PARTNER.md
 - tech/SPEC-ANALYSIS-COACH.md
 - tech/DOC-REVIEW-COACH.md
