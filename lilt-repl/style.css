@@ -209,14 +209,38 @@ body {
 }
 
 .entry .prompt {
+  display: flex;
+  gap: 0.4em;
   color: var(--fg-dim);
+}
+
+.entry .prompt-text {
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.entry .prompt::before {
-  content: "> ";
+.copy-caret {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
   color: var(--accent);
+  font-family: inherit;
+  font-size: 1em;
+  line-height: inherit;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.copy-caret:hover,
+.copy-caret:focus-visible {
+  opacity: 1;
+}
+
+.copy-caret.copied {
+  color: var(--fg-dim);
 }
 
 .entry .result {
