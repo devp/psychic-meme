@@ -1,0 +1,13 @@
+{
+  "name": "lilt — lil REPL",
+  "short_name": "lilt",
+  "description": "An offline-friendly REPL for lil, the Decker scripting language.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#12141a",
+  "theme_color": "#12141a",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

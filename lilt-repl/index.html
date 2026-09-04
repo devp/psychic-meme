@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="dusk" data-font="mono">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12141a">
+<title>lilt</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem("lilt-repl:theme");
+    var font = localStorage.getItem("lilt-repl:font");
+    if (theme) document.documentElement.setAttribute("data-theme", theme);
+    if (font) document.documentElement.setAttribute("data-font", font);
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<header class="app-header">
+  <h1>lilt</h1>
+  <button id="settings-btn" class="icon-btn" type="button" aria-label="Options" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9.4 4a7.5 7.5 0 0 0-.14-1.42l2.02-1.58a.75.75 0 0 0 .18-.96l-1.92-3.32a.75.75 0 0 0-.9-.33l-2.38.96a7.6 7.6 0 0 0-1.23-.72l-.36-2.53a.75.75 0 0 0-.74-.64h-3.86a.75.75 0 0 0-.74.64l-.36 2.53c-.44.18-.85.42-1.23.72l-2.38-.96a.75.75 0 0 0-.9.33L2.54 8.04a.75.75 0 0 0 .18.96l2.02 1.58a7.5 7.5 0 0 0 0 2.84L2.72 15a.75.75 0 0 0-.18.96l1.92 3.32c.19.32.58.45.9.33l2.38-.96c.38.3.79.54 1.23.72l.36 2.53c.06.37.38.64.74.64h3.86c.36 0 .68-.27.74-.64l.36-2.53c.44-.18.85-.42 1.23-.72l2.38.96c.32.12.71-.01.9-.33l1.92-3.32a.75.75 0 0 0-.18-.96l-2.02-1.58c.09-.46.14-.94.14-1.42Z"/>
+    </svg>
+  </button>
+</header>
+
+<nav class="tabs" id="tabs" role="tablist">
+  <button class="tab active" data-tab="repl" role="tab" aria-selected="true">repl</button>
+  <button class="tab" data-tab="lil" role="tab" aria-selected="false">lil</button>
+  <button class="tab" data-tab="lilquickref" role="tab" aria-selected="false">quickref</button>
+  <button class="tab" data-tab="lilt" role="tab" aria-selected="false">cli</button>
+  <button class="tab" data-tab="log" role="tab" aria-selected="false">log</button>
+</nav>
+
+<main class="panels">
+  <section class="panel repl-panel active" data-panel="repl">
+    <div class="output" id="output" aria-live="polite"></div>
+    <form class="input-row" id="input-form">
+      <textarea
+        id="input"
+        rows="1"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        placeholder="1+2"
+      ></textarea>
+      <button type="submit" id="run-btn" aria-label="Run">Run</button>
+    </form>
+  </section>
+
+  <section class="panel doc-panel" data-panel="lil">
+    <div class="doc-content" data-doc-src="docs/lil.md"></div>
+  </section>
+
+  <section class="panel doc-panel" data-panel="lilquickref">
+    <div class="doc-content" data-doc-src="docs/lilquickref.md"></div>
+  </section>
+
+  <section class="panel doc-panel" data-panel="lilt">
+    <div class="doc-content" data-doc-src="docs/lilt.md"></div>
+  </section>
+
+  <section class="panel list-panel" data-panel="log">
+    <div class="transcript-toolbar">
+      <button type="button" id="new-session-btn" class="secondary-btn">+ New session</button>
+    </div>
+    <div class="transcript-list" id="transcript-list"></div>
+  </section>
+</main>
+
+<dialog id="settings-dialog">
+  <form method="dialog" class="settings-form">
+    <h2>Options</h2>
+
+    <fieldset>
+      <legend>Theme</legend>
+      <div class="theme-swatches" id="theme-swatches" role="radiogroup">
+        <button type="button" class="swatch" data-theme="dusk" role="radio" aria-checked="true">
+          <span class="swatch-preview swatch-dusk"></span>dusk
+        </button>
+        <button type="button" class="swatch" data-theme="paper" role="radio" aria-checked="false">
+          <span class="swatch-preview swatch-paper"></span>paper
+        </button>
+        <button type="button" class="swatch" data-theme="terminal" role="radio" aria-checked="false">
+          <span class="swatch-preview swatch-terminal"></span>terminal
+        </button>
+        <button type="button" class="swatch" data-theme="sepia" role="radio" aria-checked="false">
+          <span class="swatch-preview swatch-sepia"></span>sepia
+        </button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Text</legend>
+      <div class="segmented" id="font-toggle" role="radiogroup">
+        <button type="button" data-font="mono" role="radio" aria-checked="true">Mono</button>
+        <button type="button" data-font="sans" role="radio" aria-checked="false">Prose</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Session</legend>
+      <div class="button-row">
+        <button type="button" id="clear-output-btn" class="secondary-btn">Clear output</button>
+        <button type="button" id="settings-new-session-btn" class="secondary-btn">New session</button>
+      </div>
+    </fieldset>
+
+    <button type="submit" class="close-btn">Done</button>
+  </form>
+</dialog>
+
+<dialog id="transcript-dialog">
+  <div class="transcript-dialog-inner">
+    <header class="transcript-dialog-header">
+      <input
+        id="transcript-name-input"
+        type="text"
+        placeholder="Untitled session"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+      <button type="button" id="transcript-delete-btn" class="icon-btn" aria-label="Delete session">🗑</button>
+    </header>
+    <div class="output transcript-view" id="transcript-view-output"></div>
+    <form method="dialog" class="settings-form transcript-dialog-footer">
+      <button type="submit" class="close-btn">Close</button>
+    </form>
+  </div>
+</dialog>
+
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/lil.js"></script>
+<script src="interpreter.js"></script>
+<script src="docs.js"></script>
+<script src="transcripts.js"></script>
+<script src="app.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
