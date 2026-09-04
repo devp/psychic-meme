@@ -74,15 +74,10 @@
     output.appendChild(hint);
   }
 
-  function evaluate(source) {
-    // checkpoint 3: still just an echo, wired up for real in a later checkpoint
-    return source;
-  }
-
   function replayActiveTranscript() {
     output.innerHTML = "";
     if (activeTranscript.entries.length === 0) {
-      addHint("this is a stub: it just echoes back what you type.");
+      addHint("lil REPL — try 1+2 or show[1,2,3]. Reference tabs above; log tab keeps your history.");
     } else {
       activeTranscript.entries.forEach(function (e) {
         renderEntryInto(output, e.input, e.output, e.isError);
@@ -98,7 +93,8 @@
     e.preventDefault();
     var source = input.value;
     if (source.trim() === "") return;
-    addEntry(source, evaluate(source));
+    var result = window.lilRepl.evaluate(source);
+    addEntry(source, result.text, result.isError);
     input.value = "";
     autoGrow();
     input.focus();

@@ -1,4 +1,4 @@
-var CACHE = "lilt-repl-v3";
+var CACHE = "lilt-repl-v4";
 var ASSETS = [
   "./",
   "index.html",
@@ -6,7 +6,9 @@ var ASSETS = [
   "app.js",
   "docs.js",
   "transcripts.js",
+  "interpreter.js",
   "vendor/marked.min.js",
+  "vendor/lil.js",
   "docs/lil.md",
   "docs/lilquickref.md",
   "docs/lilt.md",
