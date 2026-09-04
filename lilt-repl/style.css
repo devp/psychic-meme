@@ -74,7 +74,7 @@ html[data-font="sans"] {
   box-sizing: border-box;
 }
 
-html, body {
+html {
   height: 100%;
 }
 
@@ -86,6 +86,15 @@ body {
   display: flex;
   flex-direction: column;
   overscroll-behavior-y: contain;
+  /* Pin to the layout viewport and size from JS (app.js) using
+     visualViewport, which is the only thing that reliably reports the
+     visible height once the on-screen keyboard is up. Without this the
+     keyboard just overlaps the bottom of a height:100% column instead of
+     shrinking it, hiding the input bar and the tail of the output log. */
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  height: var(--app-height, 100dvh);
 }
 
 /* ---- header ---- */

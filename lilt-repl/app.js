@@ -21,6 +21,33 @@
     } catch (e) {}
   }
 
+  // ---- keep the app's actual height in sync with the visible viewport ----
+  // On mobile, opening the keyboard shrinks the *visual* viewport but not
+  // the layout viewport, so a plain 100dvh/100% column doesn't resize and
+  // the keyboard just covers the input bar and the tail of the output log
+  // instead of the layout making room for it. visualViewport reports the
+  // real visible height; mirror it into a CSS var body's height reads.
+  function visibleHeight() {
+    var vv = window.visualViewport;
+    return vv ? vv.height : window.innerHeight;
+  }
+
+  function syncAppHeight() {
+    document.documentElement.style.setProperty("--app-height", visibleHeight() + "px");
+    // if the repl is on-screen, keep its latest line above the keyboard
+    // rather than letting the newly-shrunk viewport hide it
+    var replPanel = document.querySelector('.panel[data-panel="repl"]');
+    if (replPanel && replPanel.classList.contains("active")) {
+      scrollToBottom();
+    }
+  }
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", syncAppHeight);
+  } else {
+    window.addEventListener("resize", syncAppHeight);
+  }
+
   // ---- REPL ----
   var output = document.getElementById("output");
   var form = document.getElementById("input-form");
@@ -35,7 +62,7 @@
 
   function autoGrow() {
     input.style.height = "auto";
-    input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.4) + "px";
+    input.style.height = Math.min(input.scrollHeight, visibleHeight() * 0.4) + "px";
   }
 
   function renderEntryInto(container, source, resultText, isError) {
@@ -88,6 +115,7 @@
 
   replayActiveTranscript();
   autoGrow();
+  syncAppHeight();
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
