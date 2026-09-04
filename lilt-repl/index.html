@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>lilt</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>lilt</h1>
+</header>
+
+<main class="repl">
+  <div class="output" id="output" aria-live="polite"></div>
+
+  <form class="input-row" id="input-form">
+    <textarea
+      id="input"
+      rows="1"
+      autocomplete="off"
+      autocapitalize="off"
+      autocorrect="off"
+      spellcheck="false"
+      placeholder="type something…"
+    ></textarea>
+    <button type="submit" id="run-btn" aria-label="Run">Run</button>
+  </form>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
