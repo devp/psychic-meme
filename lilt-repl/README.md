@@ -17,8 +17,9 @@ offline (add it to your home screen for the full effect).
   [JohnEarnest/Decker](https://github.com/JohnEarnest/Decker)) for browser use.
 - `transcripts.js` -- autosaves REPL sessions to `localStorage`; the "log" tab lets you name,
   view, and delete them.
-- `docs/`, `docs.js`, `vendor/marked.min.js` -- the Lil language reference, quick reference, and
-  Lilt CLI docs, rendered client-side for offline reading.
+- `docs/`, `docs.js`, `vendor/marked.min.js` -- the Lil language reference, quick reference,
+  Lilt CLI docs, and the full Decker platform reference, rendered client-side for offline
+  reading.
 - `manifest.webmanifest`, `sw.js`, `icons/` -- installable/offline support.
 
 See `NOTICE.md` for third-party attributions.
@@ -39,7 +40,10 @@ greet["world"]
 ```
 
 The "lil" and "quickref" tabs have the full language reference if you get stuck on syntax;
-"cli" is background on the original command-line Lilt REPL this one is modeled after.
+"cli" is background on the original command-line Lilt REPL this one is modeled after; "decker"
+is the full reference for the platform Lil scripts normally run inside of (cards, widgets,
+events, and so on) -- useful context even though this REPL only evaluates bare Lil expressions,
+not full decks.
 
 ## Known gaps
 
