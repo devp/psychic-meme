@@ -79,6 +79,20 @@
   </section>
 </main>
 
+<button id="doc-index-btn" class="fab" type="button" aria-label="Jump to section" aria-haspopup="dialog" hidden>
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="currentColor" d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h10v2H4v-2Z"/>
+  </svg>
+</button>
+
+<dialog id="doc-index-dialog">
+  <form method="dialog" class="settings-form doc-index-form">
+    <h2>Jump to section</h2>
+    <div class="doc-index-list" id="doc-index-list"></div>
+    <button type="submit" class="close-btn">Close</button>
+  </form>
+</dialog>
+
 <dialog id="settings-dialog">
   <form method="dialog" class="settings-form">
     <h2>Options</h2>

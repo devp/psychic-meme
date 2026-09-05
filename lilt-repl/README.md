@@ -43,7 +43,9 @@ The "lil" and "quickref" tabs have the full language reference if you get stuck 
 "cli" is background on the original command-line Lilt REPL this one is modeled after; "decker"
 is the full reference for the platform Lil scripts normally run inside of (cards, widgets,
 events, and so on) -- useful context even though this REPL only evaluates bare Lil expressions,
-not full decks.
+not full decks. On any doc tab, the small round button in the bottom corner opens a
+jump-to-section list -- handy since an installed home-screen app has no browser chrome, so
+there's no native find-in-page.
 
 ## Known gaps
 
