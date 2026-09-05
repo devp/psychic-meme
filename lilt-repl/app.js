@@ -314,6 +314,41 @@
     }
   });
 
+  // ---- doc jump-to-section (also the find-in-page workaround when this
+  // app is installed standalone, since there's no browser chrome then) ----
+  var docIndexBtn = document.getElementById("doc-index-btn");
+  var docIndexDialog = document.getElementById("doc-index-dialog");
+  var docIndexList = document.getElementById("doc-index-list");
+
+  docIndexBtn.addEventListener("click", function () {
+    var panel = document.querySelector(".panel.active");
+    var items = window.lilDocs ? window.lilDocs.getIndex(panel) : [];
+    docIndexList.innerHTML = "";
+    if (items.length === 0) {
+      var empty = document.createElement("p");
+      empty.className = "hint";
+      empty.textContent = "No sections found.";
+      docIndexList.appendChild(empty);
+    } else {
+      items.forEach(function (item) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "doc-index-item level-" + item.level;
+        btn.textContent = item.text;
+        btn.addEventListener("click", function () {
+          var heading = panel.querySelector("#" + CSS.escape(item.id));
+          // these docs are long enough that a smooth-scroll animation over
+          // the full distance would feel sluggish; jump instantly, like a
+          // normal anchor link
+          if (heading) heading.scrollIntoView({ block: "start" });
+          docIndexDialog.close();
+        });
+        docIndexList.appendChild(btn);
+      });
+    }
+    docIndexDialog.showModal();
+  });
+
   // ---- tabs ----
   var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
   var panels = Array.prototype.slice.call(document.querySelectorAll(".panel"));
@@ -331,9 +366,11 @@
       p.classList.toggle("active", p.getAttribute("data-panel") === name);
     });
     var panel = document.querySelector('.panel[data-panel="' + name + '"]');
-    if (panel && panel.classList.contains("doc-panel") && window.lilDocs) {
+    var isDocPanel = !!(panel && panel.classList.contains("doc-panel"));
+    if (isDocPanel && window.lilDocs) {
       window.lilDocs.renderDoc(panel);
     }
+    docIndexBtn.hidden = !isDocPanel;
     if (name === "log") {
       renderTranscriptList();
     }

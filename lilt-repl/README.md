@@ -39,7 +39,9 @@ greet["world"]
 ```
 
 The "lil" and "quickref" tabs have the full language reference if you get stuck on syntax;
-"cli" is background on the original command-line Lilt REPL this one is modeled after.
+"cli" is background on the original command-line Lilt REPL this one is modeled after. On any
+doc tab, the small round button in the bottom corner opens a jump-to-section list -- handy
+since an installed home-screen app has no browser chrome, so there's no native find-in-page.
 
 ## Known gaps
 
