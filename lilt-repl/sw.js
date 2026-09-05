@@ -12,6 +12,7 @@ var ASSETS = [
   "docs/lil.md",
   "docs/lilquickref.md",
   "docs/lilt.md",
+  "docs/decker.md",
   "manifest.webmanifest",
   "icons/icon.svg",
 ];

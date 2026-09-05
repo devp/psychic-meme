@@ -7,7 +7,7 @@
   is a from-scratch wrapper around it (modeled on Decker's own `js/repl.js`) that drops the
   Node/filesystem-specific bindings that don't apply in a browser. MIT licensed, © John
   Earnest; see `vendor/lil.LICENSE.txt`.
-- **`docs/lil.md`, `docs/lilquickref.md`, `docs/lilt.md`** — the Lil language reference,
-  quick reference, and Lilt CLI docs, vendored from
+- **`docs/lil.md`, `docs/lilquickref.md`, `docs/lilt.md`, `docs/decker.md`** — the Lil language
+  reference, quick reference, Lilt CLI docs, and the Decker platform reference, vendored from
   [JohnEarnest/Decker](https://github.com/JohnEarnest/Decker) (`docs/`) for offline use.
   MIT licensed, © John Earnest.
