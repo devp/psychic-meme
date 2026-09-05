@@ -76,26 +76,42 @@
         btn.classList.remove("copied");
       }, 900);
     }
+
+    // iOS home-screen ("standalone") PWAs have a long history of the async
+    // Clipboard API feature-detecting as present but not reliably writing
+    // to the system clipboard, so try the old execCommand trick first --
+    // it works broadly, standalone mode included -- and only fall back to
+    // navigator.clipboard if execCommand isn't there at all.
+    function viaExecCommand() {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.top = "0";
+        ta.style.left = "0";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.setSelectionRange(0, text.length);
+        var ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    if (viaExecCommand()) {
+      flash(true);
+      return;
+    }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(
         function () { flash(true); },
         function () { flash(false); }
       );
-      return;
-    }
-    // fallback for browsers/contexts without the async Clipboard API
-    try {
-      var ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      var ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      flash(ok);
-    } catch (e) {
+    } else {
       flash(false);
     }
   }
