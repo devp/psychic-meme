@@ -13,6 +13,7 @@ It does not yet exist.
 Currently, miscellaneous side-projects and utilities -- some hand-coded, some LLM-assisted -- that I'd like visible and useful for others.
 
 - [lightsabers](lightsabers)
+- [lilt-repl](lilt-repl) -- an offline-friendly, mobile-optimized REPL for lil, Decker's scripting language
 - [mermaid-utils](mermaid-utils)
 - [prompts-library](prompts-library)
 - `misc`
