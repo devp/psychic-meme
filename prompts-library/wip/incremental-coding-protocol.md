@@ -7,9 +7,7 @@
 3. Write the **minimum** code to pass that one test. Stop there — don't
    pull in the next piece of functionality yet.
 4. Run it. Confirm it passes.
-5. In 1–2 sentences, state what just changed and why, *before* moving on —
-   not as a summary at the end, but as narration in the moment.
-6. Only then propose the next increment. Wait for a go-ahead if the next
+5. Only then propose the next increment. Wait for a go-ahead if the next
    step involves a design choice; proceed automatically if it's a purely
    mechanical continuation (e.g. next test case in an obvious sequence).
 
