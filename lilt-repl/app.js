@@ -224,6 +224,7 @@
   var transcriptNameInput = document.getElementById("transcript-name-input");
   var transcriptViewOutput = document.getElementById("transcript-view-output");
   var transcriptDeleteBtn = document.getElementById("transcript-delete-btn");
+  var transcriptExportBtn = document.getElementById("transcript-export-btn");
   var viewingId = null;
 
   function formatDate(ts) {
@@ -309,6 +310,40 @@
     if (!viewingId) return;
     window.lilTranscripts.rename(viewingId, transcriptNameInput.value.trim());
     renderTranscriptList();
+  });
+
+  // Render a transcript as plain lil source: each input verbatim, with what it
+  // produced trailing as '#' comments. Comments are inert to the interpreter,
+  // so the result can be pasted straight back in and rerun -- and the recorded
+  // output is right there to compare the rerun against.
+  function exportTranscript(t) {
+    var out = [
+      '# lilt-repl export: "' + (t.name || "Untitled session") + '" -- ' + new Date().toISOString(),
+      "# Lines starting with # are comments (inert). The => lines show what",
+      "# this produced last time, for comparing against a rerun.",
+      "",
+    ];
+    t.entries.forEach(function (e) {
+      out.push(e.input);
+      if (e.output !== "") {
+        if (e.isError) {
+          out.push("# ERROR: " + e.output);
+        } else {
+          var lines = e.output.split("\n");
+          lines.forEach(function (line, i) {
+            out.push((i === lines.length - 1 ? "# => " : "# ") + line);
+          });
+        }
+      }
+      out.push("");
+    });
+    return out.join("\n");
+  }
+
+  transcriptExportBtn.addEventListener("click", function () {
+    if (!viewingId) return;
+    var t = window.lilTranscripts.get(viewingId);
+    if (t) copyText(exportTranscript(t), transcriptExportBtn);
   });
 
   transcriptDeleteBtn.addEventListener("click", function () {
