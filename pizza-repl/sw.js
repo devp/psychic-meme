@@ -1,4 +1,4 @@
-var CACHE = "lilt-repl-v9";
+var CACHE = "pizza-repl-v1";
 var ASSETS = [
   "./",
   "index.html",

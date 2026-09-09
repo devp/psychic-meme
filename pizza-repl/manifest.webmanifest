@@ -1,7 +1,7 @@
 {
-  "name": "lilt — lil REPL",
-  "short_name": "lilt",
-  "description": "An offline-friendly REPL for lil, the Decker scripting language.",
+  "name": "pizza-repl",
+  "short_name": "pizza-repl",
+  "description": "A REPL for pizza rats. Try out some languages in your phone browser, offline. Runs decker-lil today.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

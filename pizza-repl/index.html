@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#12141a">
-<title>lilt</title>
+<title>pizza-repl</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
@@ -21,7 +21,7 @@
 </head>
 <body>
 <header class="app-header">
-  <h1>lilt</h1>
+  <h1>pizza-repl</h1>
   <button id="settings-btn" class="icon-btn" type="button" aria-label="Options" aria-haspopup="dialog">
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
       <path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9.4 4a7.5 7.5 0 0 0-.14-1.42l2.02-1.58a.75.75 0 0 0 .18-.96l-1.92-3.32a.75.75 0 0 0-.9-.33l-2.38.96a7.6 7.6 0 0 0-1.23-.72l-.36-2.53a.75.75 0 0 0-.74-.64h-3.86a.75.75 0 0 0-.74.64l-.36 2.53c-.44.18-.85.42-1.23.72l-2.38-.96a.75.75 0 0 0-.9.33L2.54 8.04a.75.75 0 0 0 .18.96l2.02 1.58a7.5 7.5 0 0 0 0 2.84L2.72 15a.75.75 0 0 0-.18.96l1.92 3.32c.19.32.58.45.9.33l2.38-.96c.38.3.79.54 1.23.72l.36 2.53c.06.37.38.64.74.64h3.86c.36 0 .68-.27.74-.64l.36-2.53c.44-.18.85-.42 1.23-.72l2.38.96c.32.12.71-.01.9-.33l1.92-3.32a.75.75 0 0 0-.18-.96l-2.02-1.58c.09-.46.14-.94.14-1.42Z"/>
@@ -64,6 +64,12 @@
   </section>
 
   <section class="panel doc-panel" data-panel="lilt">
+    <p class="doc-note">
+      Heads up: this documents <em>Lilt</em>, John Earnest's real command-line REPL for lil.
+      pizza-repl is a separate, unofficial thing — the filesystem and CLI bits below
+      (<code>-e</code>, <code>LIL_HOME</code>, <code>read</code>/<code>write</code>, <code>exit</code>)
+      don't exist here. It's included as background on the language.
+    </p>
     <div class="doc-content" data-doc-src="docs/lilt.md"></div>
   </section>
 
@@ -129,6 +135,19 @@
         <button type="button" id="clear-output-btn" class="secondary-btn">Clear output</button>
         <button type="button" id="settings-new-session-btn" class="secondary-btn">New session</button>
       </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>About</legend>
+      <p class="about-text">
+        A REPL for pizza rats. Runs <strong>decker-lil</strong> today, more stuff in the future.
+      </p>
+      <p class="about-text">
+        Lil and Decker are by John Earnest — see
+        <a href="https://beyondloom.com/decker/" target="_blank" rel="noopener">beyondloom.com/decker</a>.
+        This is an unofficial browser REPL built on his interpreter, not affiliated with him
+        and not the official <em>Lilt</em> CLI.
+      </p>
     </fieldset>
 
     <button type="submit" class="close-btn">Done</button>

@@ -1,6 +1,10 @@
 (function () {
   "use strict";
 
+  // These keys (and the ones in transcripts.js) still say "lilt-repl", from
+  // before the rename. Deliberate: localStorage is origin-scoped, so renaming
+  // them would strand every existing transcript and setting. They're invisible
+  // plumbing, so the fossil is cheaper than a migration.
   var STORAGE = {
     theme: "lilt-repl:theme",
     font: "lilt-repl:font",
@@ -318,7 +322,7 @@
   // output is right there to compare the rerun against.
   function exportTranscript(t) {
     var out = [
-      '# lilt-repl export: "' + (t.name || "Untitled session") + '" -- ' + new Date().toISOString(),
+      '# pizza-repl export: "' + (t.name || "Untitled session") + '" -- ' + new Date().toISOString(),
       "# Lines starting with # are comments (inert). The => lines show what",
       "# this produced last time, for comparing against a rerun.",
       "",

@@ -1,5 +1,9 @@
 # Third-party code
 
+pizza-repl is not affiliated with or endorsed by John Earnest or the Decker project. It's an
+unofficial browser REPL built on his MIT-licensed Lil interpreter, and is distinct from *Lilt*,
+his own command-line REPL.
+
 - **`vendor/marked.min.js`** — [marked](https://github.com/markedjs/marked), used to render
   the reference docs client-side. MIT licensed; see `vendor/marked.LICENSE.md`.
 - **`vendor/lil.js`** — the Lil language interpreter, vendored unmodified from
