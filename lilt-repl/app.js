@@ -101,6 +101,11 @@
   }
 
   function renderEntryInto(container, source, resultText, isError) {
+    // entries rendered into the live log can hand their source back to the
+    // input box; ones rendered into the transcript-view dialog can't, since
+    // the input is behind the modal and nothing would visibly happen
+    var isLive = container === output;
+
     var entry = document.createElement("div");
     entry.className = "entry";
 
@@ -111,10 +116,16 @@
     copyBtn.type = "button";
     copyBtn.className = "copy-caret";
     copyBtn.textContent = ">";
-    copyBtn.setAttribute("aria-label", "Copy this input");
-    copyBtn.title = "Copy";
+    copyBtn.setAttribute("aria-label", isLive ? "Copy this input, and reuse it if the input box is empty" : "Copy this input");
+    copyBtn.title = isLive ? "Copy / reuse" : "Copy";
     copyBtn.addEventListener("click", function () {
       copyText(source, copyBtn);
+      // the usual reason to tap a caret is "run that again" -- so refill the
+      // input, but only when it's empty, to never clobber work in progress
+      if (isLive && input.value.trim() === "") {
+        input.value = source;
+        autoGrow();
+      }
     });
     prompt.appendChild(copyBtn);
 
