@@ -1,4 +1,4 @@
-var CACHE = "lilt-repl-v7";
+var CACHE = "lilt-repl-v8";
 var ASSETS = [
   "./",
   "index.html",
