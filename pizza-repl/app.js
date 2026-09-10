@@ -1,14 +1,12 @@
 (function () {
   "use strict";
 
-  // These keys (and the ones in transcripts.js) still say "lilt-repl", from
-  // before the rename. Deliberate: localStorage is origin-scoped, so renaming
-  // them would strand every existing transcript and setting. They're invisible
-  // plumbing, so the fossil is cheaper than a migration.
+  // Note: index.html has an inline script that reads the theme/font keys before
+  // this file loads, to set the theme before first paint. Keep them in sync.
   var STORAGE = {
-    theme: "lilt-repl:theme",
-    font: "lilt-repl:font",
-    tab: "lilt-repl:tab",
+    theme: "pizza-repl:theme",
+    font: "pizza-repl:font",
+    tab: "pizza-repl:tab",
   };
 
   function storageGet(key, fallback) {
@@ -316,23 +314,81 @@
     renderTranscriptList();
   });
 
+  // Does this source use the REPL's "_" (last result) variable? Matched as a
+  // standalone token, so my_var and "_" inside a longer name don't count.
+  function usesLastResult(source) {
+    return /(^|[^A-Za-z0-9_])_([^A-Za-z0-9_]|$)/.test(source);
+  }
+
+  // lil lets end-of-input close a string or a bracketed call, so `"hello` and
+  // `show[1,2` are perfectly valid on their own -- they don't error. But they
+  // only work as the *last* thing in a program: concatenated into a replay,
+  // they run on and swallow whatever follows. Scan for that, mirroring lil's
+  // tokenizer (# comments to end of line, \" and \\ escapes inside strings).
+  function hasUnterminated(source) {
+    var inString = false, inComment = false, depth = 0;
+    for (var i = 0; i < source.length; i++) {
+      var c = source[i];
+      if (inComment) {
+        if (c === "\n") inComment = false;
+      } else if (inString) {
+        if (c === "\\") i++;
+        else if (c === '"') inString = false;
+      } else if (c === '"') {
+        inString = true;
+      } else if (c === "#") {
+        inComment = true;
+      } else if (c === "[" || c === "(") {
+        depth++;
+      } else if (c === "]" || c === ")") {
+        if (depth > 0) depth--;
+      }
+    }
+    return inString || depth > 0;
+  }
+
   // Render a transcript as plain lil source: each input verbatim, with what it
   // produced trailing as '#' comments. Comments are inert to the interpreter,
   // so the result can be pasted straight back in and rerun -- and the recorded
   // output is right there to compare the rerun against.
+  //
+  // Entries that *failed* get their input commented out too. They didn't parse
+  // the first time, so leaving them live would break the replay: an unclosed
+  // block swallows everything after it looking for its `end`, an unterminated
+  // string eats the rest of the file, `1+` grabs the next statement as its
+  // operand. Commenting keeps the record without arming the landmine.
   function exportTranscript(t) {
     var out = [
       '# pizza-repl export: "' + (t.name || "Untitled session") + '" -- ' + new Date().toISOString(),
       "# Lines starting with # are comments (inert). The => lines show what",
       "# this produced last time, for comparing against a rerun.",
-      "",
     ];
+    if (t.entries.some(function (e) { return usesLastResult(e.input); })) {
+      out.push("#");
+      out.push("# Heads up: this uses _, which won't replay faithfully. Pasting the");
+      out.push("# whole transcript runs it as one program, so _ is only rebound at");
+      out.push("# the end rather than after each line.");
+    }
+    out.push("");
+
     t.entries.forEach(function (e) {
-      out.push(e.input);
-      if (e.output !== "") {
-        if (e.isError) {
-          out.push("# ERROR: " + e.output);
-        } else {
+      var unsafe = e.isError || hasUnterminated(e.input);
+      if (unsafe) {
+        out.push(
+          e.isError
+            ? "# (this errored -- commented out so it can't break the replay)"
+            : "# (unterminated string or bracket: fine on its own, but it would" +
+              " swallow what follows -- commented out)"
+        );
+        e.input.split("\n").forEach(function (line) {
+          out.push("# " + line);
+        });
+        if (e.output !== "") {
+          out.push((e.isError ? "# ERROR: " : "# was: ") + e.output.split("\n").join(" / "));
+        }
+      } else {
+        out.push(e.input);
+        if (e.output !== "") {
           var lines = e.output.split("\n");
           lines.forEach(function (line, i) {
             out.push((i === lines.length - 1 ? "# => " : "# ") + line);
