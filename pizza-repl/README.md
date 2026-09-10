@@ -1,20 +1,28 @@
-# lilt-repl
+# pizza-repl
 
-A browser-based, offline-friendly REPL for [Lil](https://beyondloom.com/decker/lil.html),
-the scripting language behind [Decker](https://beyondloom.com/decker/). Built as a mobile-first
-alternative to the [Lilt](https://beyondloom.com/decker/lilt.html) command-line REPL, optimized
-for a phone in portrait mode.
+A REPL for pizza rats. For trying out some languages in your phone browser/PWA, with
+affordances for the phone in your pocket. Runs decker-lil today, more stuff in the future.
 
-Open `index.html` (or the deployed URL) and start typing lil expressions. It's a static site with
-no build step and no server-side component -- everything, including the interpreter and the
-language reference docs, is vendored locally so it keeps working after the first load, even
-offline (add it to your home screen for the full effect).
+Open `index.html` (or the deployed URL) and start typing. It's a static site with no build step
+and no server-side component -- everything, including the interpreter and the language reference
+docs, is vendored locally so it keeps working after the first load, even offline (add it to your
+home screen for the full effect).
+
+**Not affiliated with Decker.** [Lil](https://beyondloom.com/decker/lil.html) and
+[Decker](https://beyondloom.com/decker/) are by John Earnest. This is an unofficial browser REPL
+built on his MIT-licensed interpreter — it is *not* [Lilt](https://beyondloom.com/decker/lilt.html),
+his real command-line REPL, and doesn't have Lilt's filesystem or CLI bindings.
 
 ## What's here
 
+The shell is deliberately only loosely tied to lil: the entire contract between it and the
+language is one function (`window.lilRepl.evaluate(source)` → `{text, isError}`), which is what
+makes "more stuff in the future" plausible without a rewrite.
+
 - `index.html`, `style.css`, `app.js` -- the REPL shell: tabs, themes, the input/output log.
 - `interpreter.js` + `vendor/lil.js` -- wraps the vendored Lil interpreter (from
-  [JohnEarnest/Decker](https://github.com/JohnEarnest/Decker)) for browser use.
+  [JohnEarnest/Decker](https://github.com/JohnEarnest/Decker)) for browser use. This is the
+  language-specific layer; swapping it is most of what a second language would take.
 - `transcripts.js` -- autosaves REPL sessions to `localStorage`; the "log" tab lets you name,
   view, and delete them.
 - `docs/`, `docs.js`, `vendor/marked.min.js` -- the Lil language reference, quick reference,
@@ -40,7 +48,8 @@ greet["world"]
 ```
 
 The "lil" and "quickref" tabs have the full language reference if you get stuck on syntax;
-"cli" is background on the original command-line Lilt REPL this one is modeled after; "decker"
+"cli" is background on Earnest's command-line Lilt REPL, which this one borrows its shape from
+(the tab carries a note that its CLI-specific features don't exist here); "decker"
 is the full reference for the platform Lil scripts normally run inside of (cards, widgets,
 events, and so on) -- useful context even though this REPL only evaluates bare Lil expressions,
 not full decks. On any doc tab, the small round button in the bottom corner opens a

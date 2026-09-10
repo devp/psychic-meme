@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  // Pre-rename key names, kept on purpose -- see the note in app.js. Renaming
+  // these would orphan every transcript already saved on the device.
   var KEY = "lilt-repl:transcripts";
   var ACTIVE_KEY = "lilt-repl:activeTranscriptId";
 
