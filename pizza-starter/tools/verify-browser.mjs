@@ -22,6 +22,10 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 
+/** Tabs are a role, not a data attribute -- the two variants mark them up differently. */
+const clickTab = (/** @type {string} */ name) =>
+  page.getByRole("tab", { name, exact: true }).click();
+
 await page.goto(URL, { waitUntil: "networkidle" });
 
 // --- seeding -------------------------------------------------------------
@@ -45,7 +49,7 @@ ok("add item works after re-render", afterAdd === 7, `${afterAdd} items`);
 ok("count updates on add", (await page.locator("pizza-checklist .count").innerText()) === "1 of 7 done");
 
 // --- delete --------------------------------------------------------------
-await page.locator("button[data-remove]").last().click();
+await page.locator('.checklist button[aria-label="Delete"]').last().click();
 await page.waitForTimeout(60);
 ok("delete works", (await page.locator(".checklist li").count()) === 6);
 
@@ -55,13 +59,13 @@ await page.waitForTimeout(120);
 ok("state persists across reload", (await page.locator("pizza-checklist .count").innerText()) === "1 of 6 done");
 
 // --- tabs ----------------------------------------------------------------
-await page.click('[data-tab="about"]');
+await clickTab("about");
 await page.waitForTimeout(60);
 ok("tab switches panel", await page.locator('.panel[data-panel="about"]').isVisible());
 await page.reload({ waitUntil: "networkidle" });
 await page.waitForTimeout(120);
 ok("active tab persists", await page.locator('.panel[data-panel="about"]').isVisible());
-await page.click('[data-tab="list"]');
+await clickTab("list");
 
 // --- theme ---------------------------------------------------------------
 await page.click("#settings-btn");
@@ -103,7 +107,7 @@ await ctx.setOffline(false);
 
 // --- append-log: the travelling component ---------------------------------
 // Driven through its property interface, which is the whole point of it.
-await page.click('[data-tab="log"]');
+await clickTab("log");
 await page.waitForTimeout(60);
 
 /** @param {{id: string, text: string}[]} items */
@@ -166,7 +170,7 @@ const stayedPut = await page.evaluate(
 );
 ok("does not yank you down when scrolled up", stayedPut < 8, `scrollTop=${stayedPut}`);
 
-await page.click('[data-tab="list"]');
+await clickTab("list");
 await page.waitForTimeout(60);
 
 // --- the comparison probe ------------------------------------------------

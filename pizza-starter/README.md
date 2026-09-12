@@ -28,6 +28,7 @@ The two things it gives you that nothing off the shelf does:
 
 ```sh
 just serve                      # http://localhost:8000 -- a service worker needs http://, not file://
+just serve variants/lit         # the other variant
 just check                      # typecheck + precache verification
 ```
 
@@ -41,7 +42,8 @@ yours, and step six is deleting it.
 ```
 lib/viewport.js      keyboard/viewport handling, autoGrow, Enter-to-submit
 lib/store.js         localStorage with subscribers: scalars and record lists
-variants/vanilla/    custom elements + a small reactive base class
+variants/vanilla/    custom elements + a small reactive base class, zero deps
+variants/lit/        the same app on Lit (6.8KB gzipped, vendored)
   state.js           this app's stores, imported by this app's components
   components/append-log.js
                      append-only log built to travel: correct for aria-live
@@ -50,8 +52,13 @@ tools/               the precache verifier
 ```
 
 Both libs are framework-agnostic on purpose — plain functions, no DOM
-framework, no custom elements. A second variant (Lit) is planned and will
-share them unchanged.
+framework, no custom elements. Both variants use them unchanged, which is the
+evidence that the seam is in the right place.
+
+Which variant to start from is in [COMPARISON.md](COMPARISON.md), with measured
+numbers rather than opinion. Short version: they're within 44 code lines of each
+other, and the difference that actually matters is that a re-render in the
+vanilla variant destroys a focused text input.
 
 ## The rules this follows
 

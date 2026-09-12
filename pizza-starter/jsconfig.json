@@ -12,5 +12,5 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": ["lib/**/*.js", "variants/**/*.js", "tools/**/*.mjs"],
-  "exclude": ["**/vendor/**", "**/sw.js", "tools/verify-browser.mjs", "node_modules"]
+  "exclude": ["**/vendor/**", "**/sw.js", "tools/check-sw.mjs", "tools/verify-browser.mjs", "node_modules"]
 }

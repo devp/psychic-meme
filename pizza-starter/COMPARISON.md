@@ -4,85 +4,93 @@ Two axes, measured rather than argued. Filled in as each variant lands.
 
 ## Axis 1 — component layer
 
-Line counts are **code lines** (blank and comment lines excluded), with totals
-in brackets. The distinction matters: this base class reads as 120 lines but is
-62 of code — the rest explains hazards, and those comments earned their place
-twice over (see below).
+Both variants: same app, same libs, same CSS, same 27-check browser suite, light
+DOM either way. Line counts are **code lines** (blank and comment excluded),
+totals in brackets.
 
-| | vanilla (`variants/vanilla`) | lit (`variants/lit`) |
+| | vanilla | lit |
 |---|---|---|
-| status | **done, refined** | not started |
-| dependency | none | `lit-core`, ~5KB vendored |
-| `reactive-element.js` | **62** (120) | n/a |
-| `state.js` | 12 (26) | — |
-| `components/append-log.js` | **46** (93) | — |
-| `components/checklist.js` | 82 (118) | — |
-| `components/tabs.js` | 17 (24) | — |
-| `app.js` | 65 (105) | — |
+| status | **done** | **done** |
+| dependency | none | `lit-core.min.js` — 17.4KB raw, **6.8KB gzipped** |
+| `reactive-element.js` | 62 (120) | — |
+| `state.js` | 12 (26) | 12 (26) |
+| `components/tabs.js` | **17** (24) | 35 (47) |
+| `components/checklist.js` | **82** (118) | 93 (126) |
+| `components/append-log.js` | 46 (93) | **35** (64) |
+| `app.js` | 66 (106) | 66 (106) |
+| **component-layer total** | **285** | **241** |
+| browser suite | 27/27 | 27/27 |
 
-### The focus probe
+### The focus probe — decisive, and the reason to care
 
-Both variants implement the same checklist with a text input next to a live
-count, because that's where the two approaches visibly diverge.
-
-**Measured on vanilla** (automated, headless Chromium):
+Same scripted interaction on both: type `half-typed` into the add field, then
+toggle a checkbox elsewhere.
 
 ```
-type "half-typed" into the add field, then toggle a checkbox elsewhere
-  focus before toggle : the text input
-  focus after toggle  : BODY
-  input value after   : "" (empty)
+vanilla   focus before=text  after=BODY   value-after=""
+lit       focus before=text  after=INPUT  value-after="half-typed"
 ```
 
-Confirmed as predicted. The vanilla variant re-renders by replacing
-`innerHTML`, which destroys the focused element — caret, selection and
-half-typed text with it. Lit updates only the changed bindings and should
-leave a focused input alone.
+Vanilla's `innerHTML` rebuild destroys the focused element, taking the caret and
+the half-typed text with it. Lit updates only the changed bindings and leaves
+the input alone. For a checklist you tick, this is invisible. For anything with
+a live-updating view around a text field — which includes every REPL — it is the
+whole ballgame.
 
-This is the finding, not a bug to route around. It's the clearest statement of
-what ~5KB of templating actually buys: for a checklist you tick, it doesn't
-matter; for anything with a live-updating view around a text field, it does.
+### The counterintuitive part
 
-### `<append-log>` — the appendy-aggregation pattern
+Lit wins on total code, but **not** because its components are smaller. They're
+*bigger*:
 
-46 code lines in the vanilla variant. It exists because a whole-list re-render
-is wrong for a growing log in two ways that only surface after shipping:
+- `tabs.js` **17 → 35**. `ReactiveElement.track()` auto-tears-down subscriptions;
+  Lit needs a matched `connectedCallback`/`disconnectedCallback` pair and a
+  field to hold the unsubscribe. That boilerplate doubled the file.
+- `checklist.js` **82 → 93**. Inline `@change`/`@click` bindings on each row are
+  more verbose than three delegated handlers registered once.
 
-- **`aria-live`.** A log is `role="log"` + `aria-live="polite"`. Replacing its
-  innerHTML makes a screen reader re-announce the entire history every time one
-  line arrives. This is the real justification.
-- **Scroll.** Rebuilding throws away where the reader was.
+Lit wins *only* because the 62-line base class stops existing. Net −44 code
+lines for +6.8KB gzipped. If you were going to write more than a handful of
+components, the per-component tax would eventually overtake the one-time base
+class saving — worth knowing before treating "fewer lines" as settled.
 
-So it appends the tail when the new array extends the old by a common prefix,
-and only falls back to a full rebuild (with `aria-busy` set) on a reset or
-reorder. Verified: a marked DOM node survives an append and is destroyed by a
-non-prefix change; scroll stays pinned when following and doesn't move when the
-reader has scrolled up.
+### `<append-log>`: 46 → 35, not "nearly free"
 
-**This is the number to watch in Phase B.** Lit's keyed `repeat()` does keyed
-diffing already, so the Lit version may be a fraction of 46 lines — which would
-be the clearest single statement of what the dependency buys.
+**My prediction was wrong and the measurement corrects it.** I expected Lit's
+keyed `repeat()` to make this component almost disappear. It removed two things:
+the prefix comparison that decides append-vs-rebuild, and the `aria-busy` dance
+(with keyed diffing, a wholesale replacement is just removed keys plus added
+ones, which already announces correctly).
 
-### What the vanilla approach forces
+What it did **not** remove, because no framework knows about them:
 
-- **Event delegation is mandatory, not stylistic.** Replacing `innerHTML`
-  orphans every listener on a child, so listeners go on the host and dispatch
-  via `closest()`. `ReactiveElement.on()` makes that the path of least
-  resistance.
-- **Escaping is mandatory.** Building HTML from user text means `esc()` on
-  every interpolation. Lit escapes by construction.
-- **Class fields silently break reactivity — twice.** Declaring a reactive
-  property as a class field (`record = null`, or even a bare `record;`) creates
-  an *own* property that shadows the `defineProperty` accessor, and assignments
-  stop re-rendering with no error. Both times the symptom was an empty list and
-  a green typecheck. Now warned about in the base class; Lit's `static
-  properties` has the same hazard shape and should be checked for it.
-- **Config injection used to need a `configure()` method.** Defining an element
-  upgrades it instantly, so `setup()` ran before `app.js` could assign a store.
-  **Resolved** by importing app state rather than injecting it (see SKELETON.md
-  §4) — the method and its ceremony are gone.
-- **TS can't infer `defineProperty` accessors.** Reactive properties need an
-  explicit cast at the point of use, since the accessor is installed at runtime.
+- scroll pinning — decide "was the reader at the bottom" before the DOM changes,
+  restore after (`willUpdate`/`updated` in Lit, inline in vanilla)
+- setting `role="log"` and `aria-live="polite"`
+
+So 24% smaller, not 90%. The accessibility reasoning that justifies the
+component is identical in both; only the node-identity bookkeeping goes away.
+
+### What each approach forces
+
+| | vanilla | lit |
+|---|---|---|
+| escaping | `esc()` at every interpolation, by hand | by construction |
+| event handlers | delegated from the host via `this.on()`, because `innerHTML` orphans child listeners | bound inline; nothing to orphan |
+| markup hooks | needs `data-remove`, `data-tab` etc. **purely so delegation can find the target** | none |
+| subscription teardown | `track()`, one line | manual lifecycle pair |
+| reactive property declared as a class field | shadows the accessor, silently stops re-rendering | same hazard shape; both variants initialize in the constructor to avoid it |
+
+The markup-hooks row surfaced by accident: the browser suite's selectors turned
+out to encode vanilla's implementation (`button[data-remove]`, `[data-tab=...]`),
+and Lit has no such attributes. The suite now selects by role and `aria-label`,
+which is fairer and better testing regardless.
+
+### Infrastructure finding
+
+Two service workers could not share one `tsc` program: they're classic scripts,
+so their top-level `const`s collide in a single global scope, and a service
+worker needs `lib: WebWorker` which conflicts with the app's `lib: DOM` anyway.
+Hence `tools/check-sw.mjs`, which typechecks each one in its own program.
 
 ## Axis 2 — offline layer
 

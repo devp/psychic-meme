@@ -35,7 +35,8 @@ const onDisk = new Set([
   "./",
   ...walk(variantDir)
     .map((f) => posix(relative(variantDir, f)))
-    .filter((f) => f !== "sw.js"),
+    // sw.js manages its own update; .d.ts files are dev-only, never served
+    .filter((f) => f !== "sw.js" && !f.endsWith(".d.ts")),
   ...readdirSync(libDir)
     .filter((f) => f.endsWith(".js"))
     .map((f) => `../../lib/${f}`),

@@ -5,12 +5,23 @@ variant := "variants/vanilla"
 # Everything that must pass before you commit. Checks only -- nothing is rewritten.
 check:
     npx tsc -p jsconfig.json
-    npx tsc -p jsconfig.sw.json
-    node tools/verify-precache.mjs {{variant}}
+    node tools/check-sw.mjs variants/vanilla/sw.js variants/lit/sw.js
+    node tools/verify-precache.mjs variants/vanilla
+    node tools/verify-precache.mjs variants/lit
 
 # Serve a variant. A service worker needs http://, not file://.
 serve dir=variant:
     cd {{dir}} && python3 -m http.server 8000
+
+# Re-vendor Lit into variants/lit/vendor/. One-shot: run it on a version bump,
+# then the output is yours. Needs `npm i -D esbuild` first.
+vendor-lit:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    printf 'export { LitElement, html, css, nothing, svg } from "lit";\nexport { repeat } from "lit/directives/repeat.js";\n' > .lit-entry.js
+    npx esbuild .lit-entry.js --bundle --format=esm --minify --legal-comments=inline \
+        --outfile=variants/lit/vendor/lit-core.min.js
+    rm -f .lit-entry.js
 
 # Prove the precache tripwire actually works.
 check-tripwire:
