@@ -7,8 +7,16 @@ importScripts("vendor/workbox.js", "precache-manifest.js");
 const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
 
 // Revision-stamped precache: entries whose content hash changed are re-fetched,
-// the rest are left alone. Failures are per-asset, not all-or-nothing, and
-// `./` resolves to index.html via the default directoryIndex.
+// the rest are left alone. `./` resolves to index.html via the default
+// directoryIndex.
+//
+// CAUTION, measured: this is ALL-OR-NOTHING. precacheAndRoute installs its own
+// install handler, and one entry that fails to cache rejects it, so the worker
+// never activates and you get no offline at all -- silently. The hand-rolled
+// worker in variants/vanilla deliberately avoids that with Promise.allSettled.
+// The mitigation here is that the manifest is globbed from disk, so a bad path
+// can't normally enter it; the exposure is a file deleted after generation or a
+// partial deploy. See COMPARISON.md, axis 2.
 workbox.precacheAndRoute(self.__PRECACHE);
 
 // Any navigation -- deep link, refresh on an unknown path, a url carrying
