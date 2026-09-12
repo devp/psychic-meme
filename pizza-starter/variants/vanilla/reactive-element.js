@@ -11,6 +11,13 @@
 export class ReactiveElement extends HTMLElement {
   /**
    * Property names that trigger a re-render when assigned.
+   *
+   * WARNING: never also declare one of these as a class field. `record = null`
+   * (or even a bare `record;`) creates an *own* property that shadows the
+   * accessor installed below, and assignments silently stop re-rendering.
+   * Initialize in the constructor instead -- by then the accessor exists, so
+   * the assignment goes through it. This has bitten twice.
+   *
    * @type {string[]}
    */
   static reactive = [];
@@ -53,27 +60,6 @@ export class ReactiveElement extends HTMLElement {
   disconnectedCallback() {
     this._teardowns.forEach((fn) => fn());
     this._teardowns = [];
-  }
-
-  /**
-   * Inject config (stores, options) after definition, and re-run setup so the
-   * element actually subscribes to what you just gave it.
-   *
-   * This exists because of an ordering trap: elements written in index.html are
-   * upgraded the instant customElements.define() runs, so connectedCallback --
-   * and therefore setup() -- fires before app.js can assign a store. Rather
-   * than have components reach for globals, configure them explicitly.
-   *
-   * @param {Record<string, any>} props
-   */
-  configure(props) {
-    Object.assign(this, props);
-    if (this.isConnected) {
-      this._teardowns.forEach((fn) => fn());
-      this._teardowns = [];
-      this.setup();
-      this.schedule();
-    }
   }
 
   /** Subscribe to stores here; anything registered is torn down on removal. */

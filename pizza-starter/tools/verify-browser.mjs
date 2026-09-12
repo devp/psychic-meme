@@ -27,12 +27,12 @@ await page.goto(URL, { waitUntil: "networkidle" });
 // --- seeding -------------------------------------------------------------
 const items = await page.locator(".checklist li").count();
 ok("checklist seeds on first run", items === 6, `${items} items`);
-ok("count line renders", (await page.locator(".count").innerText()) === "0 of 6 done");
+ok("count line renders", (await page.locator("pizza-checklist .count").innerText()) === "0 of 6 done");
 
 // --- reactivity: no manual re-render call anywhere ------------------------
 await page.locator(".checklist input[type=checkbox]").first().check();
 await page.waitForTimeout(60);
-const afterToggle = await page.locator(".count").innerText();
+const afterToggle = await page.locator("pizza-checklist .count").innerText();
 ok("toggling re-renders via subscriber", afterToggle === "1 of 6 done", afterToggle);
 ok("done style applied", await page.locator(".checklist li").first().evaluate((el) => el.classList.contains("done")));
 
@@ -42,7 +42,7 @@ await page.click(".add-row button");
 await page.waitForTimeout(60);
 const afterAdd = await page.locator(".checklist li").count();
 ok("add item works after re-render", afterAdd === 7, `${afterAdd} items`);
-ok("count updates on add", (await page.locator(".count").innerText()) === "1 of 7 done");
+ok("count updates on add", (await page.locator("pizza-checklist .count").innerText()) === "1 of 7 done");
 
 // --- delete --------------------------------------------------------------
 await page.locator("button[data-remove]").last().click();
@@ -52,7 +52,7 @@ ok("delete works", (await page.locator(".checklist li").count()) === 6);
 // --- persistence ---------------------------------------------------------
 await page.reload({ waitUntil: "networkidle" });
 await page.waitForTimeout(120);
-ok("state persists across reload", (await page.locator(".count").innerText()) === "1 of 6 done");
+ok("state persists across reload", (await page.locator("pizza-checklist .count").innerText()) === "1 of 6 done");
 
 // --- tabs ----------------------------------------------------------------
 await page.click('[data-tab="about"]');
@@ -99,6 +99,75 @@ await page.goto(URL + "?utm_source=subway", { waitUntil: "domcontentloaded" });
 await page.waitForTimeout(400);
 ok("offline with query string (ignoreSearch)", (await page.locator(".checklist li").count()) === 6);
 await ctx.setOffline(false);
+
+
+// --- append-log: the travelling component ---------------------------------
+// Driven through its property interface, which is the whole point of it.
+await page.click('[data-tab="log"]');
+await page.waitForTimeout(60);
+
+/** @param {{id: string, text: string}[]} items */
+const setItems = (items) =>
+  page.evaluate((list) => {
+    const el = /** @type {any} */ (document.getElementById("activity-log"));
+    el.items = list.map((i) => ({ ...i, at: 1700000000000 }));
+  }, items);
+
+await setItems([{ id: "a", text: "alpha" }, { id: "b", text: "bravo" }]);
+await page.waitForTimeout(60);
+ok("log renders items", (await page.locator("#activity-log .log-entry").count()) === 2);
+
+// Mark the first node, then extend the array. If it's a real append, the
+// marked node survives untouched.
+await page.evaluate(() => {
+  const first = document.querySelector("#activity-log .log-entry");
+  /** @type {any} */ (first).__marker = "survivor";
+});
+await setItems([
+  { id: "a", text: "alpha" },
+  { id: "b", text: "bravo" },
+  { id: "c", text: "charlie" },
+]);
+await page.waitForTimeout(60);
+const survived = await page.evaluate(
+  () => /** @type {any} */ (document.querySelector("#activity-log .log-entry")).__marker
+);
+ok("append preserves existing nodes", survived === "survivor");
+ok("append adds only the tail", (await page.locator("#activity-log .log-entry").count()) === 3);
+
+// A non-prefix change must rebuild.
+await setItems([{ id: "z", text: "zulu" }]);
+await page.waitForTimeout(60);
+const afterReset = await page.evaluate(
+  () => /** @type {any} */ (document.querySelector("#activity-log .log-entry"))?.__marker
+);
+ok("non-prefix change rebuilds", afterReset === undefined);
+ok("rebuild renders the new list", (await page.locator("#activity-log .log-entry").count()) === 1);
+ok("aria-busy cleared after rebuild", (await page.getAttribute("#activity-log", "aria-busy")) === null);
+ok("log carries role and live region", (await page.getAttribute("#activity-log", "role")) === "log");
+
+// Scroll: follow when pinned to the bottom, stay put when reading back.
+const many = Array.from({ length: 60 }, (_, i) => ({ id: "n" + i, text: "line " + i }));
+await setItems(many);
+await page.waitForTimeout(80);
+const pinned = await page.evaluate(() => {
+  const el = /** @type {HTMLElement} */ (document.getElementById("activity-log"));
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 8;
+});
+ok("stays pinned to the bottom while following", pinned);
+
+await page.evaluate(() => {
+  /** @type {HTMLElement} */ (document.getElementById("activity-log")).scrollTop = 0;
+});
+await setItems([...many, { id: "extra", text: "arrived while reading" }]);
+await page.waitForTimeout(80);
+const stayedPut = await page.evaluate(
+  () => /** @type {HTMLElement} */ (document.getElementById("activity-log")).scrollTop
+);
+ok("does not yank you down when scrolled up", stayedPut < 8, `scrollTop=${stayedPut}`);
+
+await page.click('[data-tab="list"]');
+await page.waitForTimeout(60);
 
 // --- the comparison probe ------------------------------------------------
 await page.goto(URL, { waitUntil: "networkidle" });

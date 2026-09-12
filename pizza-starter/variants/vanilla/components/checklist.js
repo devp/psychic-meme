@@ -1,4 +1,5 @@
 import { ReactiveElement, esc } from "../reactive-element.js";
+import { lists, activity } from "../state.js";
 
 /**
  * The seed list. These items are the actual steps to turn this starter into
@@ -21,36 +22,36 @@ export class Checklist extends ReactiveElement {
 
   constructor() {
     super();
+    // Assigned through the accessor (define() installed it before upgrade), so
+    // this does NOT create an own property. Declaring `record = null` as a
+    // class field would -- see the warning in reactive-element.js.
     /** @type {import("../../../lib/store.js").StoredRecord|null} */
     this.record = null;
-    /** @type {any} */
-    this.store = null;
   }
 
   setup() {
     const refresh = () => {
-      if (!this.store) return;
-      const id = this.store.getActiveId();
-      // reassign to a fresh object so the reactive setter sees a new value --
-      // the store hands back live references, which compare equal to themselves
-      const rec = id ? this.store.get(id) : null;
-      this.record = rec ? { ...rec, items: rec.items.slice() } : null;
+      const id = lists.getActiveId();
+      this.record = id ? lists.get(id) : null;
     };
-    if (this.store) this.track(this.store.subscribe(refresh));
+    this.track(lists.subscribe(refresh));
     refresh();
 
     this.on("change", "input[type=checkbox]", (el) => {
       const id = el.getAttribute("data-id");
       if (id && this.record) {
-        this.store.updateItem(this.record.id, id, {
-          done: /** @type {HTMLInputElement} */ (el).checked,
-        });
+        const done = /** @type {HTMLInputElement} */ (el).checked;
+        lists.updateItem(this.record.id, id, { done });
+        note((done ? "done: " : "undone: ") + itemText(this.record, id));
       }
     });
 
     this.on("click", "button[data-remove]", (el) => {
       const id = el.getAttribute("data-remove");
-      if (id && this.record) this.store.removeItem(this.record.id, id);
+      if (id && this.record) {
+        note("deleted: " + itemText(this.record, id));
+        lists.removeItem(this.record.id, id);
+      }
     });
 
     this.on("submit", "form", (el, e) => {
@@ -60,7 +61,8 @@ export class Checklist extends ReactiveElement {
       );
       const text = input ? input.value.trim() : "";
       if (!text || !this.record) return;
-      this.store.append(this.record.id, { text, done: false });
+      lists.append(this.record.id, { text, done: false });
+      note("added: " + text);
     });
   }
 
@@ -94,4 +96,23 @@ export class Checklist extends ReactiveElement {
     // probe for comparing this variant against the lit one, which updates
     // only the changed nodes and leaves a focused input alone.
   }
+}
+
+/**
+ * Record an event for the log tab. Two app components talking through the
+ * store rather than through each other.
+ * @param {string} text
+ */
+function note(text) {
+  const rec = activity.ensureActive();
+  activity.append(rec.id, { text, at: Date.now() });
+}
+
+/**
+ * @param {import("../../../lib/store.js").StoredRecord} record
+ * @param {string} itemId
+ * @returns {string}
+ */
+function itemText(record, itemId) {
+  return record.items.find((i) => i.id === itemId)?.text ?? "an item";
 }

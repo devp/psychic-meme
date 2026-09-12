@@ -99,8 +99,11 @@ export function persistedValue(key, initial) {
  * Held in memory and written through on change, rather than re-parsing the
  * whole blob on every read the way a naive version does.
  *
- * Returned records are live references: treat them as read-only and mutate
- * through this API, or subscribers won't hear about it.
+ * Reads return copies. That costs an allocation, which at these sizes is
+ * nothing, and buys two things: you cannot accidentally mutate stored state
+ * without subscribers hearing about it, and a re-read is never `===` the value
+ * you already had -- which is exactly what a reactive property needs in order
+ * to notice that something changed.
  *
  * @param {string} key localStorage key prefix
  */
@@ -136,10 +139,22 @@ export function recordStore(key) {
     return records.find((r) => r.id === id);
   }
 
+  /**
+   * Detach a record from internal state before handing it out.
+   * @param {StoredRecord} r
+   * @returns {StoredRecord}
+   */
+  function detach(r) {
+    return { ...r, items: r.items.map((i) => ({ ...i })) };
+  }
+
   const api = {
-    /** @returns {StoredRecord[]} newest first */
+    /** @returns {StoredRecord[]} newest first; copies */
     getAll() {
-      return records.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+      return records
+        .slice()
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .map(detach);
     },
 
     /**
@@ -147,7 +162,8 @@ export function recordStore(key) {
      * @returns {StoredRecord|null}
      */
     get(id) {
-      return find(id) ?? null;
+      const rec = find(id);
+      return rec ? detach(rec) : null;
     },
 
     /** @returns {string|null} */
@@ -170,7 +186,7 @@ export function recordStore(key) {
       records.push(rec);
       activeId = rec.id;
       flush();
-      return rec;
+      return detach(rec);
     },
 
     /**
@@ -179,7 +195,7 @@ export function recordStore(key) {
      */
     ensureActive() {
       const rec = activeId ? find(activeId) : undefined;
-      return rec ?? api.create("");
+      return rec ? detach(rec) : api.create("");
     },
 
     /** @param {string} id */
@@ -227,7 +243,7 @@ export function recordStore(key) {
       rec.items.push(stored);
       rec.updatedAt = Date.now();
       flush();
-      return stored;
+      return { ...stored };
     },
 
     /**

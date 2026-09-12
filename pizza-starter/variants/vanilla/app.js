@@ -3,46 +3,48 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "../../lib/viewport.js";
-import { persistedValue, recordStore } from "../../lib/store.js";
+import { theme, font, tab, lists, activity } from "./state.js";
 import { Tabs } from "./components/tabs.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
+import { AppendLog } from "./components/append-log.js";
 
-const NS = "pizza-starter";
-
+// Components read their state from state.js, so defining them is the whole of
+// it -- nothing to inject, nothing to sequence.
 Tabs.define("pizza-tabs");
 Checklist.define("pizza-checklist");
-
-// ---- state ----------------------------------------------------------------
-
-const theme = persistedValue(NS + ":theme", "dusk");
-const font = persistedValue(NS + ":font", "mono");
-const tab = persistedValue(NS + ":tab", "list");
-const lists = recordStore(NS + ":lists");
+AppendLog.define("append-log");
 
 // First run: seed the checklist with its own setup instructions.
 // A plain worked example of create() + append() -- read it, then delete it.
-const firstRun = lists.getAll().length === 0;
-const active = lists.ensureActive();
-if (firstRun) {
-  lists.rename(active.id, "Make this yours");
-  SETUP_STEPS.forEach((step) => lists.append(active.id, step));
+if (lists.getAll().length === 0) {
+  const seeded = lists.ensureActive();
+  lists.rename(seeded.id, "Make this yours");
+  SETUP_STEPS.forEach((step) => lists.append(seeded.id, step));
+} else {
+  lists.ensureActive();
 }
 
-// ---- components -----------------------------------------------------------
+// ---- the travelling component ---------------------------------------------
+// append-log knows nothing about this app, so it's fed by property. Assigning
+// after definition is fine precisely because its setup() needs no state --
+// which is the whole reason travelling components take props.
 
-// Defining an element upgrades it immediately, so setup() runs before we could
-// assign anything. configure() injects the stores and re-runs setup.
-const tabsEl = /** @type {Tabs} */ (document.querySelector("pizza-tabs"));
-tabsEl.configure({
-  store: tab,
-  tabs: [
-    { id: "list", label: "list" },
-    { id: "about", label: "about" },
-  ],
+const logEl = /** @type {AppendLog} */ (document.getElementById("activity-log"));
+logEl.renderItem = (/** @type {any} */ item) =>
+  `<div class="log-entry"><time>${new Date(item.at).toLocaleTimeString()}</time> ${item.text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")}</div>`;
+
+const activityRecord = activity.ensureActive();
+const paintLog = () => {
+  logEl.items = activity.get(activityRecord.id)?.items ?? [];
+};
+activity.subscribe(paintLog);
+paintLog();
+
+document.getElementById("clear-log")?.addEventListener("click", () => {
+  activity.clearItems(activityRecord.id);
 });
-
-const checklistEl = /** @type {Checklist} */ (document.querySelector("pizza-checklist"));
-checklistEl.configure({ store: lists });
 
 // ---- shell glue -----------------------------------------------------------
 // Theme, font and tab are just persisted scalars with a subscriber each. No

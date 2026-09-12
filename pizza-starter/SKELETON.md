@@ -50,6 +50,24 @@ combinatorial number.
 If you later need a real editor, that's a different surface (and a good reason
 to reach for CodeMirror) — not an upgrade to this one.
 
+## 4. App state is imported; travelling components take props
+
+> **Components that belong to *this* app import app state directly.
+> Components meant to travel between apps take plain properties.**
+
+`components/checklist.js` imports `lists` from `state.js`. `components/append-log.js`
+imports nothing and is fed by property from `app.js`.
+
+This isn't a style preference, it removes a trap. Defining a custom element
+upgrades it instantly, so `connectedCallback` — and therefore `setup()` — runs
+*before* `app.js` could hand it a store. An earlier version of this starter
+carried a `configure()` method purely to re-run setup after injection. With
+nothing to inject, there's nothing to sequence, and the ceremony deletes
+itself.
+
+A travelling component can still take properties after definition, because its
+`setup()` doesn't need them — which is exactly what makes it portable.
+
 ## Layer map
 
 | layer | where | replaceable? |
@@ -58,6 +76,7 @@ to reach for CodeMirror) — not an upgrade to this one.
 | phone-first input | `lib/viewport.js` | no. Nothing else provides this. |
 | persistence | `lib/store.js` | yes, but the subscribers are the point |
 | component layer | `variants/*/` | **yes — that's why there are variants** |
+| append-only lists | `variants/*/components/append-log.js` | it's meant to be lifted |
 | app shell glue | each variant's `app.js` | it's yours, that's the point |
 
 The first three are framework-agnostic. Only the fourth changes between

@@ -20,6 +20,9 @@ The two things it gives you that nothing off the shelf does:
   column lets the keyboard cover your input. Most web apps get this wrong.
 - **State can't go stale.** `lib/store.js` has subscribers, so you never
   hand-call a re-render and never forget one.
+- **Growing lists are handled properly.** `<append-log>` appends instead of
+  rebuilding, so a screen reader isn't re-read the whole history on every new
+  line and your scroll position survives.
 
 ## Quick start
 
@@ -38,7 +41,11 @@ yours, and step six is deleting it.
 ```
 lib/viewport.js      keyboard/viewport handling, autoGrow, Enter-to-submit
 lib/store.js         localStorage with subscribers: scalars and record lists
-variants/vanilla/    custom elements + a ~40-line reactive base class
+variants/vanilla/    custom elements + a small reactive base class
+  state.js           this app's stores, imported by this app's components
+  components/append-log.js
+                     append-only log built to travel: correct for aria-live
+                     and scroll, takes props, imports no app state
 tools/               the precache verifier
 ```
 

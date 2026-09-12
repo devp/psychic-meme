@@ -41,6 +41,14 @@
     <pizza-checklist></pizza-checklist>
   </section>
 
+  <section class="panel" data-panel="log">
+    <p class="panel-note">What you've done in the list tab. Appended, never rebuilt.</p>
+    <append-log id="activity-log"></append-log>
+    <div class="add-row">
+      <button type="button" id="clear-log">Clear the log</button>
+    </div>
+  </section>
+
   <section class="panel" data-panel="about">
     <div class="prose">
       <h2>What this is</h2>
@@ -59,6 +67,9 @@
         <li><code>lib/store.js</code> — localStorage with subscribers, so nothing goes stale.</li>
         <li><code>reactive-element.js</code> — ~40 lines of re-render-on-assignment.</li>
         <li><code>app.js</code> — all the wiring, in the open.</li>
+        <li><code>components/append-log.js</code> — a component built to travel: it takes
+            properties, imports no app state, and appends rather than rebuilding so a
+            screen reader isn't re-read the whole log on every line.</li>
       </ul>
       <p>The list tab tells you what to change.</p>
     </div>

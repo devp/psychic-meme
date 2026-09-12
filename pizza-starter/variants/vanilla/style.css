@@ -127,7 +127,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .panel.active { display: block; }
 
 /* ---- checklist ---- */
-.count { margin: 0 0 12px; color: var(--fg-dim); font-size: 13px; }
+.count,
+.panel-note { margin: 0 0 12px; color: var(--fg-dim); font-size: 13px; }
 
 .checklist { list-style: none; margin: 0 0 16px; padding: 0; }
 
@@ -194,6 +195,32 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: 10px;
   font-weight: 600;
 }
+
+/* ---- append-log ---- */
+append-log {
+  display: block;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-alt);
+}
+append-log:empty::after {
+  content: "Nothing yet. Tick something in the list tab.";
+  display: block;
+  padding: 14px;
+  color: var(--fg-dim);
+  font-size: 13px;
+}
+.log-entry {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.log-entry:last-child { border-bottom: 0; }
+.log-entry time { color: var(--fg-dim); margin-right: 8px; }
 
 /* ---- prose ---- */
 .prose { max-width: 60ch; }
