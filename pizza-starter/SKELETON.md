@@ -82,6 +82,31 @@ A travelling component can still take properties after definition, because its
 The first three are framework-agnostic. Only the fourth changes between
 variants.
 
+## Known hazards
+
+Each of these is silent: no error, no failed check, often a green typecheck. They're listed
+here because a comment you can grep beats a bug you rediscover.
+
+| hazard | what actually happens | do this instead |
+|---|---|---|
+| A class field with the same name as a reactive property | `record = null` — or even a bare `record;` — creates an *own* property that shadows the accessor. Assignments stop re-rendering. Green typecheck, empty list, no error. **Cost two debugging sessions.** | Initialize in the constructor, where the accessor already exists |
+| `height: 100vh` / `100dvh` on the app shell | The layout viewport doesn't shrink when the mobile keyboard opens, so the keyboard covers your input | `height: var(--app-height, 100dvh)` plus `syncAppHeight()` |
+| Hand-rolling HTML escaping | Easy to write an incomplete one, and it drifts from the real thing | `esc()` from `reactive-element.js` |
+| `addEventListener` on a child, inside a component | The next render replaces that child and the handler silently stops firing | `this.on(type, selector, fn)` — delegated from the host |
+| `localStorage` outside `lib/store.js` | Throws in private mode and wherever site data is blocked | Go through the store; if you must, wrap in try/catch (as `index.html`'s pre-paint script does) |
+| `font-size` under 16px on an input | iOS zooms the whole page when the field is focused | 16px or larger on anything typeable |
+| Rebuilding an `aria-live` region | A screen reader re-announces the entire history every time one line arrives | `<append-log>`, which appends |
+
+Two of these are already automated rather than documented, which is the direction the rest
+should go: precache drift fails `just check`, and a bare `self` in a service worker fails the
+typecheck.
+
+**TODO: `just warn`.** A stdlib-only `tools/warn.mjs` encoding the rest of this table — separate
+from `just check` and advisory by default (prints, exits 0; `--strict` exits 1), with a
+`// warn-ok: <rule>` escape hatch so legitimate cases are silenced with a reason. Deliberately
+not built yet: it should be written after the Lit variant says which of these hazards are
+universal and which are artefacts of one component layer.
+
 ## Things deliberately not here
 
 - **A shared `lib/shell.js`.** Theme, font and active tab are each a

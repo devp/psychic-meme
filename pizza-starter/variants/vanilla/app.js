@@ -7,6 +7,7 @@ import { theme, font, tab, lists, activity } from "./state.js";
 import { Tabs } from "./components/tabs.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { AppendLog } from "./components/append-log.js";
+import { esc } from "./reactive-element.js";
 
 // Components read their state from state.js, so defining them is the whole of
 // it -- nothing to inject, nothing to sequence.
@@ -31,9 +32,9 @@ if (lists.getAll().length === 0) {
 
 const logEl = /** @type {AppendLog} */ (document.getElementById("activity-log"));
 logEl.renderItem = (/** @type {any} */ item) =>
-  `<div class="log-entry"><time>${new Date(item.at).toLocaleTimeString()}</time> ${item.text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")}</div>`;
+  `<div class="log-entry"><time>${new Date(item.at).toLocaleTimeString()}</time> ${esc(
+    item.text
+  )}</div>`;
 
 const activityRecord = activity.ensureActive();
 const paintLog = () => {
