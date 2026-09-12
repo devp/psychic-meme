@@ -1,0 +1,13 @@
+<!-- A slice. Hand-drawn in markup, like everything else here: no generator,
+     no build step, no binary. Edit the numbers or throw it away. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Pizza slice">
+  <rect width="512" height="512" fill="#1a1d26"/>
+  <!-- crust -->
+  <path d="M110 162 Q256 96 402 162 L392 200 Q256 142 120 200 Z" fill="#c77b3a"/>
+  <!-- cheese -->
+  <path d="M120 200 Q256 142 392 200 L256 438 Z" fill="#e8b84b"/>
+  <!-- pepperoni -->
+  <circle cx="212" cy="252" r="19" fill="#c8402f"/>
+  <circle cx="302" cy="262" r="17" fill="#c8402f"/>
+  <circle cx="256" cy="340" r="16" fill="#c8402f"/>
+</svg>

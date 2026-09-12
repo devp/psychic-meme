@@ -1,0 +1,15 @@
+{
+  "// ": "Service workers need lib webworker, which conflicts with DOM -- hence a second config.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "lib": ["ES2022", "WebWorker"]
+  },
+  "include": ["variants/**/sw.js"],
+  "exclude": ["node_modules"]
+}

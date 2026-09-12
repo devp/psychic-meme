@@ -1,0 +1,259 @@
+/* ---- theme tokens ----
+   Every colour lives here. Add a theme by copying a block and adding a swatch
+   button in index.html -- nothing else needs to know. */
+:root,
+:root[data-theme="dusk"] {
+  --bg: #12141a;
+  --bg-alt: #1a1d26;
+  --bg-raised: #20242f;
+  --fg: #e4e6ee;
+  --fg-dim: #8a8fa3;
+  --accent: #7dd3a8;
+  --accent-ink: #10241a;
+  --border: #2a2e3a;
+}
+
+:root[data-theme="paper"] {
+  --bg: #faf7f0;
+  --bg-alt: #f1ecdf;
+  --bg-raised: #ffffff;
+  --fg: #2b2620;
+  --fg-dim: #7a7263;
+  --accent: #b5562f;
+  --accent-ink: #fff6ef;
+  --border: #ded5bf;
+}
+
+:root[data-theme="phosphor"] {
+  --bg: #050805;
+  --bg-alt: #0a120a;
+  --bg-raised: #0f1c0f;
+  --fg: #8cffa0;
+  --fg-dim: #3f8a4d;
+  --accent: #39ff6a;
+  --accent-ink: #04160a;
+  --border: #163a1e;
+}
+
+:root {
+  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: var(--font-mono);
+}
+:root[data-font="sans"] { --font-body: var(--font-sans); }
+
+/* ---- base ---- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  /* --app-height is set by syncAppHeight(); the dvh is the pre-JS fallback. */
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* ---- header ---- */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.app-header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+
+.icon-btn {
+  background: none;
+  border: 0;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  color: var(--fg-dim);
+}
+.icon-btn:hover { color: var(--fg); background: var(--bg-raised); }
+
+/* ---- tabs ---- */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  background: none;
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 8px;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  font-size: 14px;
+}
+.tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+/* ---- panels ---- */
+.panels { flex: 1; min-height: 0; position: relative; }
+
+.panel {
+  display: none;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+.panel.active { display: block; }
+
+/* ---- checklist ---- */
+.count { margin: 0 0 12px; color: var(--fg-dim); font-size: 13px; }
+
+.checklist { list-style: none; margin: 0 0 16px; padding: 0; }
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.checklist li.done span { color: var(--fg-dim); text-decoration: line-through; }
+
+.checklist label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+.checklist input[type="checkbox"] {
+  margin: 3px 0 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.checklist span { overflow-wrap: anywhere; }
+
+.checklist button[data-remove] {
+  background: none;
+  border: 0;
+  color: var(--fg-dim);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.checklist button[data-remove]:hover { color: var(--accent); }
+
+.add-row { display: flex; gap: 8px; }
+
+.add-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.add-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.add-row button {
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* ---- prose ---- */
+.prose { max-width: 60ch; }
+.prose h2 { font-size: 15px; margin: 20px 0 8px; }
+.prose h2:first-child { margin-top: 0; }
+.prose p, .prose li { color: var(--fg-dim); }
+.prose code {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--fg);
+}
+.prose ul { padding-left: 20px; }
+.prose li { margin-bottom: 6px; }
+
+/* ---- settings dialog ---- */
+.settings {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-raised);
+  color: var(--fg);
+  padding: 20px;
+  width: min(92vw, 380px);
+  font-family: var(--font-body);
+}
+.settings::backdrop { background: rgb(0 0 0 / 0.5); }
+.settings h2 { margin: 0 0 16px; font-size: 16px; }
+.settings h3 { margin: 0 0 8px; font-size: 13px; color: var(--fg-dim); font-weight: 500; }
+.settings section { margin-bottom: 18px; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.swatch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+.swatch span {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.swatch[aria-checked="true"] { border-color: var(--accent); color: var(--fg); }
+
+.settings .primary {
+  width: 100%;
+  padding: 11px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 600;
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" data-theme="dusk" data-font="mono">
+<head>
+<meta charset="utf-8">
+<!-- interactive-widget=resizes-content is half of the keyboard fix; the other
+     half is syncAppHeight() in lib/viewport.js. Neither works alone. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#12141a">
+<title>pizza-starter</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/pizza.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script>
+// Runs before first paint so the chosen theme doesn't flash the default one.
+// Keep these keys in sync with NS in app.js.
+(function () {
+  try {
+    var t = localStorage.getItem("pizza-starter:theme");
+    var f = localStorage.getItem("pizza-starter:font");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+    if (f) document.documentElement.setAttribute("data-font", f);
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>pizza-starter</h1>
+  <button id="settings-btn" class="icon-btn" type="button" aria-label="Options" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9.4 4a7.5 7.5 0 0 0-.14-1.42l2.02-1.58a.75.75 0 0 0 .18-.96l-1.92-3.32a.75.75 0 0 0-.9-.33l-2.38.96a7.6 7.6 0 0 0-1.23-.72l-.36-2.53a.75.75 0 0 0-.74-.64h-3.86a.75.75 0 0 0-.74.64l-.36 2.53c-.44.18-.85.42-1.23.72l-2.38-.96a.75.75 0 0 0-.9.33L2.54 8.04a.75.75 0 0 0 .18.96l2.02 1.58a7.5 7.5 0 0 0 0 2.84L2.72 15a.75.75 0 0 0-.18.96l1.92 3.32c.19.32.58.45.9.33l2.38-.96c.38.3.79.54 1.23.72l.36 2.53c.06.37.38.64.74.64h3.86c.36 0 .68-.27.74-.64l.36-2.53c.44-.18.85-.42 1.23-.72l2.38.96c.32.12.71-.01.9-.33l1.92-3.32a.75.75 0 0 0-.18-.96l-2.02-1.58c.09-.46.14-.94.14-1.42Z"/>
+    </svg>
+  </button>
+</header>
+
+<pizza-tabs class="tabs"></pizza-tabs>
+
+<main class="panels">
+  <section class="panel active" data-panel="list">
+    <pizza-checklist></pizza-checklist>
+  </section>
+
+  <section class="panel" data-panel="about">
+    <div class="prose">
+      <h2>What this is</h2>
+      <p>
+        A no-build, offline-first, installable web app skeleton. Add it to your
+        home screen, turn on airplane mode, and it still works.
+      </p>
+      <p>
+        There is no build step. The files you edit are the files that ship. The
+        only thing derived from anything else is the precache list in
+        <code>sw.js</code>, and <code>just check</code> fails if it goes stale.
+      </p>
+      <h2>Where things are</h2>
+      <ul>
+        <li><code>lib/viewport.js</code> — the mobile keyboard fix. The reason this exists.</li>
+        <li><code>lib/store.js</code> — localStorage with subscribers, so nothing goes stale.</li>
+        <li><code>reactive-element.js</code> — ~40 lines of re-render-on-assignment.</li>
+        <li><code>app.js</code> — all the wiring, in the open.</li>
+      </ul>
+      <p>The list tab tells you what to change.</p>
+    </div>
+  </section>
+</main>
+
+<dialog id="settings-dialog" class="settings">
+  <h2>Options</h2>
+
+  <section>
+    <h3>Theme</h3>
+    <div class="swatches" role="radiogroup" aria-label="Theme">
+      <button type="button" class="swatch" role="radio" data-set-theme="dusk" aria-checked="true" aria-label="Dusk"><span style="background:#12141a"></span>dusk</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="paper" aria-checked="false" aria-label="Paper"><span style="background:#faf7f0"></span>paper</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="phosphor" aria-checked="false" aria-label="Phosphor"><span style="background:#050805"></span>phosphor</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Font</h3>
+    <div class="swatches" role="radiogroup" aria-label="Font">
+      <button type="button" class="swatch" role="radio" data-set-font="mono" aria-checked="true">mono</button>
+      <button type="button" class="swatch" role="radio" data-set-font="sans" aria-checked="false">sans</button>
+    </div>
+  </section>
+
+  <button type="button" id="settings-close" class="primary">Done</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

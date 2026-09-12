@@ -1,0 +1,16 @@
+{
+  "// ": "Typecheck only -- noEmit means the .js files ship byte-identical.",
+  "//exclude": "verify-browser.mjs imports playwright, which is an optional dev tool, not a dependency.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["lib/**/*.js", "variants/**/*.js", "tools/**/*.mjs"],
+  "exclude": ["**/vendor/**", "**/sw.js", "tools/verify-browser.mjs", "node_modules"]
+}

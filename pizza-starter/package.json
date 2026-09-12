@@ -1,0 +1,14 @@
+{
+  "name": "pizza-starter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "No-build offline-first PWA skeleton. devDependencies are dev-time only -- nothing here ships.",
+  "type": "module",
+  "scripts": {
+    "check": "tsc -p jsconfig.json && tsc -p jsconfig.sw.json && node tools/verify-precache.mjs variants/vanilla"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "typescript": "^5.6.0"
+  }
+}

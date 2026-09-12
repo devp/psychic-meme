@@ -1,0 +1,31 @@
+# pizza-starter
+
+variant := "variants/vanilla"
+
+# Everything that must pass before you commit. Checks only -- nothing is rewritten.
+check:
+    npx tsc -p jsconfig.json
+    npx tsc -p jsconfig.sw.json
+    node tools/verify-precache.mjs {{variant}}
+
+# Serve a variant. A service worker needs http://, not file://.
+serve dir=variant:
+    cd {{dir}} && python3 -m http.server 8000
+
+# Prove the precache tripwire actually works.
+check-tripwire:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    touch {{variant}}/__tripwire.js
+    if node tools/verify-precache.mjs {{variant}} >/dev/null 2>&1; then
+        rm -f {{variant}}/__tripwire.js
+        echo "FAIL: verifier passed with an unlisted file present"
+        exit 1
+    fi
+    rm -f {{variant}}/__tripwire.js
+    echo "ok: verifier catches unlisted files"
+
+# Full browser verification: offline, service worker, persistence, the focus probe.
+# Needs `npm i -D playwright` and `just serve` running in another shell.
+verify:
+    node tools/verify-browser.mjs
