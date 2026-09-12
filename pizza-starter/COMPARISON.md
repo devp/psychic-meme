@@ -94,25 +94,89 @@ Hence `tools/check-sw.mjs`, which typechecks each one in its own program.
 
 ## Axis 2 — offline layer
 
+Independent of the component layer: whichever wins applies to either variant.
+Spiked against `variants/_spike-workbox` (the vanilla component layer with a
+Workbox service worker), so the only variable is the offline strategy.
+
 | | hand-rolled | Workbox |
 |---|---|---|
-| status | **done** | not spiked |
-| authored lines | 85 (`sw.js`) + 69 (verifier) = **154** | — |
-| precached payload | 13 entries | — |
-| defects needing explicit code | 3 of 3 (see below) | — |
+| authored code lines | `sw.js` 60 + verifier 50 = **110** | `sw.js` 8 + generator 42 = **50** |
+| shipped runtime added | 0 | `vendor/workbox.js` — 17.1KB raw, **5.9KB gzipped** |
+| derived files | none (the list is authored, and checked) | `precache-manifest.js` (55 lines, generated) |
+| browser suite | 27/27 | 27/27 |
+| staleness tripwire | verifier compares list to disk | `--check` regenerates and diffs |
 
-The three the hand-rolled version has to handle by hand, all of which were
-live bugs in the project this was extracted from:
+**Criterion 1 — authored lines: Workbox wins decisively.** 110 → 50, a 55%
+reduction, with the service worker itself down to 8 lines of actual logic.
 
-1. `cache.addAll()` atomicity — fixed by adding assets individually
-2. `respondWith(undefined)` when nothing is cached *and* the network is gone —
-   fixed with a synthetic 504
-3. no `ignoreSearch`, no navigation fallback — a URL with `?utm_source=...`
-   missed the cache entirely
+**Criterion 2 — runtime: passes.** +5.9KB gzipped and behaviourally equivalent;
+both pass all 27 checks including offline reload and offline-with-query-string.
 
-Accept/reject criteria for the Workbox spike are in the plan. Verified working
-in the hand-rolled version: offline reload, and offline reload with a query
-string, both serve the app.
+**Criterion 4 — clone-and-go: passes as written, but the criterion missed
+something.** The manifest is committed, so a fresh clone runs before `npm i`,
+and `npm` was already needed for `just check`. What the criterion didn't capture
+is the weight: `workbox-build` is required for `just check`'s `--check` mode, and
+adding it takes `node_modules` from **34MB to 112MB** and the lockfile to **357
+packages**. For a skeleton whose entire premise is lowering activation energy,
+that is a real cost even though it doesn't block a clone.
+
+### Criterion 3 — and the result reverses my prior
+
+I expected Workbox to fix the `cache.addAll` atomicity defect by construction.
+**It has the defect.** Tested by putting one non-existent path in each precache
+list and loading the page:
+
+```
+hand-rolled   sw=active  cacheEntries=13  offlineItems=6   => DEGRADED, offline still works
+workbox       sw=none    cacheEntries=0   offlineItems=0   => DEAD, no offline at all
+```
+
+Workbox's `precacheAndRoute` rejects the install if any single entry fails, which
+is precisely the failure the hand-rolled worker was rewritten to avoid — silent,
+total, on a phone with no console.
+
+Scored honestly, Workbox gets **2 of 3 free** and regresses on the third:
+
+| defect | hand-rolled | Workbox |
+|---|---|---|
+| `addAll` atomicity | fixed by hand (adds individually) | **present** |
+| `respondWith(undefined)` on a cache miss with no network | fixed by hand (synthetic 504) | free |
+| no `ignoreSearch` / navigation fallback | fixed by hand | free (`NavigationRoute`) |
+
+The fair mitigation: Workbox generates the list from disk, so a path that
+doesn't exist can't normally get into it. The risk narrows to a file deleted
+after generation, or a partial deploy. But when it does happen the failure is
+total rather than partial, and nothing tells you.
+
+One cost that doesn't show in the line count: `importScripts()` globals aren't
+typed, so the spike needs a hand-written `sw-globals.d.ts` declaring `workbox`
+and `self.__PRECACHE`, plus `workbox-precaching`/`workbox-routing` as
+devDependencies purely for those types. The hand-rolled worker needs nothing.
+
+### Verdict: not a clean loss, so the spike is kept for you to choose
+
+It was to be deleted if it lost. It doesn't lose — it halves the authored code
+and passes everything — so `variants/_spike-workbox/` stays until you pick. The
+tradeoff is real in both directions:
+
+- **Workbox** if you value less code to own and correct-by-default routing:
+  55% fewer authored lines, and a service worker that is 8 lines of logic.
+- **Hand-rolled** if you value degrading rather than dying when the precache
+  list is wrong, shipping nothing you didn't write, and a 34MB `node_modules`
+  instead of 112MB.
+
+My read, for what it's worth: the line-count win is real and the routing is
+genuinely better, but two of the three costs — atomic-fail and 75MB of
+dev-dependency — cut against exactly what this skeleton is for. I'd keep the
+hand-rolled worker and steal Workbox's two good ideas, both of which are already
+in it (individual adds, navigation fallback). But it's close enough that it's
+your call, which is why the spike is still on disk.
+
+One thing the spike changed for the better regardless: generation alone would
+have *lost* the incumbent's tripwire, so `--check` regenerates and diffs. Any
+derived file needs that, which is the build-rarely/check-usually rule doing its
+job rather than being recited.
+
 
 ## Refinements applied before Phase B
 

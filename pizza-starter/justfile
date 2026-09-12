@@ -5,9 +5,10 @@ variant := "variants/vanilla"
 # Everything that must pass before you commit. Checks only -- nothing is rewritten.
 check:
     npx tsc -p jsconfig.json
-    node tools/check-sw.mjs variants/vanilla/sw.js variants/lit/sw.js
+    node tools/check-sw.mjs variants/vanilla/sw.js variants/lit/sw.js variants/_spike-workbox/sw.js
     node tools/verify-precache.mjs variants/vanilla
     node tools/verify-precache.mjs variants/lit
+    node tools/build-precache.mjs variants/_spike-workbox --check
 
 # Serve a variant. A service worker needs http://, not file://.
 serve dir=variant:
@@ -22,6 +23,16 @@ vendor-lit:
     npx esbuild .lit-entry.js --bundle --format=esm --minify --legal-comments=inline \
         --outfile=variants/lit/vendor/lit-core.min.js
     rm -f .lit-entry.js
+
+# Re-vendor the Workbox runtime for the offline-layer spike. Needs esbuild.
+vendor-workbox:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    printf 'export { precacheAndRoute, createHandlerBoundToURL } from "workbox-precaching";\nexport { registerRoute, NavigationRoute } from "workbox-routing";\nexport { StaleWhileRevalidate } from "workbox-strategies";\n' > .wb-entry.js
+    npx esbuild .wb-entry.js --bundle --format=iife --global-name=workbox --minify \
+        --define:process.env.NODE_ENV='"production"' \
+        --outfile=variants/_spike-workbox/vendor/workbox.js
+    rm -f .wb-entry.js
 
 # Prove the precache tripwire actually works.
 check-tripwire:

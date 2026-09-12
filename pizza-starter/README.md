@@ -44,6 +44,9 @@ lib/viewport.js      keyboard/viewport handling, autoGrow, Enter-to-submit
 lib/store.js         localStorage with subscribers: scalars and record lists
 variants/vanilla/    custom elements + a small reactive base class, zero deps
 variants/lit/        the same app on Lit (6.8KB gzipped, vendored)
+variants/_spike-workbox/
+                     vanilla's component layer with a Workbox service worker --
+                     an offline-layer spike, awaiting a verdict
   state.js           this app's stores, imported by this app's components
   components/append-log.js
                      append-only log built to travel: correct for aria-live

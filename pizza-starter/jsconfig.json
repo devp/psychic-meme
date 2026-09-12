@@ -1,6 +1,6 @@
 {
   "// ": "Typecheck only -- noEmit means the .js files ship byte-identical.",
-  "//exclude": "verify-browser.mjs imports playwright, which is an optional dev tool, not a dependency.",
+  "//exclude": "sw.js and precache-manifest.js are worker scope (see tools/check-sw.mjs); verify-browser.mjs imports playwright, an optional dev tool.",
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
@@ -12,5 +12,12 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": ["lib/**/*.js", "variants/**/*.js", "tools/**/*.mjs"],
-  "exclude": ["**/vendor/**", "**/sw.js", "tools/check-sw.mjs", "tools/verify-browser.mjs", "node_modules"]
+  "exclude": [
+    "**/vendor/**",
+    "**/sw.js",
+    "**/precache-manifest.js",
+    "tools/check-sw.mjs",
+    "tools/verify-browser.mjs",
+    "node_modules"
+  ]
 }
