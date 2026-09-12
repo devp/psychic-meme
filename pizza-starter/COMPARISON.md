@@ -49,9 +49,36 @@ Lit wins on total code, but **not** because its components are smaller. They're
   more verbose than three delegated handlers registered once.
 
 Lit wins *only* because the 62-line base class stops existing. Net −44 code
-lines for +6.8KB gzipped. If you were going to write more than a handful of
-components, the per-component tax would eventually overtake the one-time base
-class saving — worth knowing before treating "fewer lines" as settled.
+lines for +6.8KB gzipped.
+
+But "Lit's components are bigger" is too flat, and the direction depends on
+component *shape*:
+
+| | vanilla | lit | favours |
+|---|---|---|---|
+| `tabs.js` | 17 | 35 | vanilla by 18 |
+| `checklist.js` | 82 | 93 | vanilla by 11 |
+| `append-log.js` | 46 | **35** | **lit by 11** |
+| components only | **145** | **163** | vanilla by 18 |
+
+Subscription-heavy components favour vanilla, because `track()` collapses a
+constructor field plus a `connectedCallback`/`disconnectedCallback` pair into
+one line. List-rendering components favour Lit, because `repeat()` replaces
+hand-written identity bookkeeping. Net across these three is ~6 lines per
+component in vanilla's favour against a 62-line base class — so on the order of
+ten components before vanilla pulls ahead on raw lines, with high variance, and
+one of three already going the other way. Don't plan on that number; it depends
+entirely on what you build.
+
+The deeper point: the base class isn't overhead Lit avoids, it's *amortised
+boilerplate tuned to these exact components*. `track()` exists because
+subscription teardown was repeating. A general-purpose library can't know that
+every component here subscribes to one store and wants automatic cleanup.
+
+One more line of Lit's total is a parity choice rather than a cost: three lines
+per component of `createRenderRoot() { return this; }`, opting out of shadow DOM
+so the global stylesheet applies. Taking Lit's default would remove nine lines
+and change the comparison.
 
 ### `<append-log>`: 46 → 35, not "nearly free"
 
