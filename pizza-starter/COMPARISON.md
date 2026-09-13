@@ -222,3 +222,69 @@ So both variants are compared against the same libs:
 
 The precache tripwire also proved itself in real use rather than in a drill:
 adding `state.js` broke `just check` immediately with the exact missing path.
+
+## Axis 3 — how an item becomes DOM
+
+All three share one base class (41 code lines: prefix-append, scroll pinning,
+`role`/`aria-live`/`aria-busy`). They override exactly one method,
+`createItem(item)`, so the measurement isolates the only real variable.
+Selectable at runtime with `?log=string|template|fetch`.
+
+**All three pass 27/27, and all three escape correctly** — a
+`<img src=x onerror=alert(1)>` typed into the add field rendered as literal text
+with 0 injected nodes in every case.
+
+| | A: string in JS | B: `<template>` in index.html | C: own `.html`, fetched |
+|---|---|---|---|
+| subclass | 11 | 14 | 15 |
+| host helper | 5 (`renderItem`) | 6 (`fill`) | 6 (`fill`) |
+| markup | — | 6 lines HTML | 4 lines HTML |
+| **authored total** | **16** | **26** | **25** |
+| extra network request | none | none | **one, blocking** |
+| HTML written as HTML | no | **yes** | **yes** |
+| escaping | `esc()`, by discipline | `textContent`, structural | `textContent`, structural |
+| markup travels with component | yes | **no** — host supplies it | **yes** |
+
+### Reading the numbers
+
+A is smallest, and that is not the point. Its 16 lines include an `esc()` call
+you must remember every time, forever; B and C cannot forget, because
+`textContent` never parses markup. Ten lines is a cheap price for deleting a
+category of bug — the same trade Lit makes on axis 1.
+
+B and C are within a line of each other and differ only on *where the markup
+lives*:
+
+- **B** puts it in `index.html`. No extra request, real HTML, but the component
+  no longer carries its own markup — it "travels, if the host supplies a
+  matching template".
+- **C** puts it next to the component and fetches it via `import.meta.url`, so
+  `append-log-fetch.js` and `append-log-entry.html` move together. Genuine
+  isolation, at the cost of one request on the critical path.
+
+That request is worth being precise about. The fetch happens at **module load**
+under top-level await, not at render, so the module graph blocks until the
+template is parsed and every instance then renders synchronously — no loading
+state, no flash. After first install it comes from the precache in ~0ms. A cold
+first load pays one round trip before anything paints.
+
+### The hazard this turned up
+
+Top-level await in the entry module **defers the rest of that module past the
+`load` event**. The service worker registration sat in
+`window.addEventListener("load", ...)`, that listener was attached too late to
+ever fire, and offline silently stopped working — while the app rendered
+perfectly and threw no errors. Exactly the failure profile this project keeps
+running into: green everywhere, broken on the subway.
+
+Fixed by checking `document.readyState === "complete"` first, applied to all
+three variants since any of them is one `await` away from the same trap. Added
+to the known-hazards table.
+
+### If you want HTML-as-HTML without the request
+
+Worth knowing before choosing: VS Code with the lit-html extension, or a
+`/* html */` comment before the backtick, syntax-highlights HTML inside a
+template literal. That makes a fourth shape — markup as a tagged string in the
+component's own module — which travels, costs no request, and reads as HTML in
+the editor. It loses only the structural escaping, which is the expensive half.

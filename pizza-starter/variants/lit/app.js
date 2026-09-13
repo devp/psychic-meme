@@ -98,9 +98,15 @@ syncAppHeight();
 // ---- offline --------------------------------------------------------------
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
+  const register = () =>
     navigator.serviceWorker.register("sw.js").catch(() => {
       /* not fatal -- the app still works, it just won't survive the subway */
     });
-  });
+
+  // Not simply addEventListener("load", ...). Any top-level await in this
+  // module defers the rest of its body past the load event, so a load listener
+  // registered here would never fire and offline would silently never work.
+  // Check readyState first and this stays correct either way.
+  if (document.readyState === "complete") register();
+  else window.addEventListener("load", register, { once: true });
 }

@@ -95,6 +95,7 @@ here because a comment you can grep beats a bug you rediscover.
 | `addEventListener` on a child, inside a component | The next render replaces that child and the handler silently stops firing | `this.on(type, selector, fn)` — delegated from the host |
 | `localStorage` outside `lib/store.js` | Throws in private mode and wherever site data is blocked | Go through the store; if you must, wrap in try/catch (as `index.html`'s pre-paint script does) |
 | `font-size` under 16px on an input | iOS zooms the whole page when the field is focused | 16px or larger on anything typeable |
+| Top-level `await` in your entry module | The rest of the module body is deferred past the `load` event, so a `window.addEventListener("load", ...)` registered there never fires. The service worker silently never registers: app renders fine, no errors, no offline. | Check `document.readyState === "complete"` first, then fall back to the listener |
 | Rebuilding an `aria-live` region | A screen reader re-announces the entire history every time one line arrives | `<append-log>`, which appends |
 
 Two of these are already automated rather than documented, which is the direction the rest

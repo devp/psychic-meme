@@ -25,6 +25,15 @@
 </head>
 <body>
 
+<!-- Strategy B's markup: real HTML, in the HTML file. Inert until cloned --
+     no scripts run, no images load, it isn't in the document. -->
+<template id="log-entry-tpl">
+  <div class="log-entry">
+    <time></time>
+    <span class="text"></span>
+  </div>
+</template>
+
 <header class="app-header">
   <h1>pizza-starter</h1>
   <button id="settings-btn" class="icon-btn" type="button" aria-label="Options" aria-haspopup="dialog">
@@ -44,6 +53,11 @@
   <section class="panel" data-panel="log">
     <p class="panel-note">What you've done in the list tab. Appended, never rebuilt.</p>
     <append-log id="activity-log"></append-log>
+    <p class="panel-note">
+      Item rendering strategy: <code>?log=string</code> (default),
+      <code>?log=template</code>, or <code>?log=fetch</code>. Same component,
+      same behaviour — see COMPARISON.md axis 3.
+    </p>
     <div class="add-row">
       <button type="button" id="clear-log">Clear the log</button>
     </div>

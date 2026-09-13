@@ -3,8 +3,8 @@ import { ReactiveElement, esc } from "../reactive-element.js";
 /**
  * An append-only log: chat, REPL transcript, build output, event feed.
  *
- * This is a *travelling* component -- it takes plain properties and imports no
- * app state, so it can be lifted into another project unchanged.
+ * A *travelling* component -- plain properties, no app state imported, so it
+ * lifts into another project unchanged.
  *
  * It exists because a naive re-render is wrong for growing lists in two ways
  * that only show up once you've shipped:
@@ -13,13 +13,13 @@ import { ReactiveElement, esc } from "../reactive-element.js";
  *      replacing its innerHTML makes a screen reader re-announce the entire
  *      history every time one line arrives. Appending announces only what's
  *      new. This is the real reason the component exists.
- *   2. SCROLL. Rebuilding resets scroll position, yanking you to the top (or
- *      bottom) while you were reading back through it.
+ *   2. SCROLL. Rebuilding resets scroll position, yanking you away from what
+ *      you were reading.
  *
- * So: if the new array extends the old by a common prefix, only the tail is
- * appended and existing nodes are never touched. Anything else -- a reset, a
- * reorder, a load of a different session -- falls back to a full rebuild with
- * `aria-busy` set so it isn't announced as a flood of new messages.
+ * Everything below is shared by all three item-creation strategies. Subclasses
+ * override exactly one method -- createItem() -- which is the only thing that
+ * actually differs between them. See append-log-template.js and
+ * append-log-fetch.js, and COMPARISON.md axis 3.
  */
 export class AppendLog extends ReactiveElement {
   static reactive = ["items"];
@@ -38,23 +38,18 @@ export class AppendLog extends ReactiveElement {
   }
 
   /**
-   * Override in a subclass, or assign as a property -- an own property shadows
-   * this method, which is the intended way to use it without subclassing.
+   * Turn one item into DOM. The only thing the three strategies differ on.
    * @param {any} item
-   * @returns {string} HTML for one entry
+   * @returns {Node}
    */
-  renderItem(item) {
-    return `<div class="log-entry">${esc(item.text ?? "")}</div>`;
+  createItem(item) {
+    throw new Error("createItem must be implemented");
   }
 
   /** @param {{id: string}[]} items */
   _appendItems(items) {
     const frag = document.createDocumentFragment();
-    for (const item of items) {
-      const tpl = document.createElement("template");
-      tpl.innerHTML = this.renderItem(item).trim();
-      frag.append(...tpl.content.childNodes);
-    }
+    for (const item of items) frag.appendChild(this.createItem(item));
     this.appendChild(frag);
   }
 
@@ -64,8 +59,6 @@ export class AppendLog extends ReactiveElement {
   }
 
   render() {
-    // Explicit: the reactive accessor is installed with defineProperty, so TS
-    // can't infer the property's type from the constructor assignment.
     const items = /** @type {{id: string}[]} */ (this.items ?? []);
     const ids = items.map((i) => i.id);
 
@@ -73,8 +66,7 @@ export class AppendLog extends ReactiveElement {
     const wasAtBottom = this._isAtBottom();
 
     const isAppend =
-      this._painted.length <= ids.length &&
-      this._painted.every((id, i) => ids[i] === id);
+      this._painted.length <= ids.length && this._painted.every((id, i) => ids[i] === id);
 
     if (isAppend) {
       this._appendItems(items.slice(this._painted.length));
@@ -87,7 +79,28 @@ export class AppendLog extends ReactiveElement {
 
     this._painted = ids;
 
-    // Follow new entries only if they were already following.
     if (wasAtBottom) this.scrollTop = this.scrollHeight;
+  }
+}
+
+/**
+ * STRATEGY A -- markup as a string in JS.
+ *
+ * Host supplies `renderItem(item) -> HTML string`. Simple and self-contained;
+ * the cost is that every interpolation must be escaped by hand, forever, and
+ * the markup isn't HTML as far as your editor is concerned.
+ */
+export class AppendLogString extends AppendLog {
+  constructor() {
+    super();
+    /** @type {(item: any) => string} */
+    this.renderItem = (item) => `<div class="log-entry">${esc(item.text ?? "")}</div>`;
+  }
+
+  /** @param {any} item @returns {Node} */
+  createItem(item) {
+    const tpl = document.createElement("template");
+    tpl.innerHTML = this.renderItem(item).trim();
+    return tpl.content;
   }
 }
