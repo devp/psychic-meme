@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="A card being dealt over a plate">
+  <rect width="512" height="512" fill="#14161c"/>
+  <!-- the deck: two cards behind, one dealt forward -->
+  <rect x="150" y="132" width="180" height="248" rx="22" fill="#2c3140" transform="rotate(-14 240 256)"/>
+  <rect x="168" y="124" width="180" height="248" rx="22" fill="#40465a" transform="rotate(-6 258 248)"/>
+  <rect x="186" y="116" width="180" height="248" rx="22" fill="#f2efe6"/>
+  <!-- a bowl on the face card -->
+  <path d="M216 236 h120 a60 60 0 0 1 -120 0 z" fill="#e0703f"/>
+  <rect x="216" y="222" width="120" height="12" rx="6" fill="#c0563180"/>
+  <circle cx="276" cy="176" r="15" fill="#6fb98f"/>
+  <rect x="222" y="300" width="108" height="10" rx="5" fill="#c9c4b5"/>
+  <rect x="222" y="322" width="72" height="10" rx="5" fill="#d8d4c7"/>
+</svg>
