@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en" data-theme="dusk" data-font="sans">
+<head>
+<meta charset="utf-8">
+<!-- interactive-widget=resizes-content is half of the keyboard fix; the other
+     half is syncAppHeight() in lib/viewport.js. Neither works alone. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#14161c">
+<title>Supper Deck</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/supper.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{
+  "imports": {
+    "lit": "./vendor/lit.js",
+    "lit/directives/repeat.js": "./vendor/lit.js"
+  }
+}
+</script>
+<script>
+// Runs before first paint so the chosen theme doesn't flash the default one.
+// Keep these keys in sync with NS in state.js.
+(function () {
+  try {
+    var t = localStorage.getItem("supper-deck:theme");
+    var f = localStorage.getItem("supper-deck:font");
+    if (t) document.documentElement.setAttribute("data-theme", t);
+    if (f) document.documentElement.setAttribute("data-font", f);
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Supper Deck</h1>
+  <button id="settings-btn" class="icon-btn" type="button" aria-label="Options" aria-haspopup="dialog">∆</button>
+</header>
+
+<supper-tabs class="tabs"></supper-tabs>
+
+<main class="panels">
+  <section class="panel active" data-panel="pick">
+    <pick-deck></pick-deck>
+  </section>
+
+  <section class="panel" data-panel="week">
+    <week-plan></week-plan>
+
+    <h3 class="kind-head">Tonight's decisions</h3>
+    <p class="panel-note">Newest first. Appended, never rebuilt.</p>
+    <append-log id="decision-log"></append-log>
+    <div class="add-row">
+      <button type="button" id="clear-log">Clear the log</button>
+    </div>
+  </section>
+
+  <section class="panel" data-panel="pantry">
+    <pantry-grid></pantry-grid>
+  </section>
+
+  <section class="panel" data-panel="shop">
+    <shopping-list></shopping-list>
+  </section>
+
+  <section class="panel" data-panel="about">
+    <div class="prose">
+      <h2>What this is for</h2>
+      <p>
+        You already have the recipes. 115 of them, tagged by method, time and
+        lane. The library isn't the problem — standing in the kitchen at 5:40
+        reading the library is the problem.
+      </p>
+      <p>
+        So the <em>tonight</em> tab shows one dish at a time. Swipe right or
+        press <strong>Cook it</strong> and it lands on the first open night;
+        swipe left and you never see it again this week. Narrow the pool with
+        the chips <em>before</em> you start looking — that's the whole
+        interaction model.
+      </p>
+
+      <h2>Three deliberate omissions</h2>
+      <ul>
+        <li>
+          <strong>No recipe text.</strong> No steps, no quantities, no photos.
+          You know how to cook these; that's why they're in the library. A card
+          carries only what a decision needs.
+        </li>
+        <li>
+          <strong>No discovery.</strong> Nothing suggests new dishes, and
+          nothing is trending. The library is a closed set you curate
+          elsewhere.
+        </li>
+        <li>
+          <strong>No quantities on the list.</strong> Four dishes wanting
+          onions is one line. How many onions is a judgement you make at the
+          shelf; a number the app invented would be wrong with more confidence.
+        </li>
+      </ul>
+
+      <h2>How the pieces connect</h2>
+      <ul>
+        <li>
+          <code>pantry</code> holds every staple at <em>have</em>,
+          <em>low</em> or <em>out</em>. <em>low</em> exists because it's the
+          state a real kitchen is mostly in.
+        </li>
+        <li>
+          That feeds the deck: a card tells you what it needs that you haven't
+          got, and the <strong>nothing to buy</strong> chip hides everything
+          you can't cook tonight.
+        </li>
+        <li>
+          It also feeds <code>shop</code>, which is the union of what the
+          picked nights need and what you've flagged anyway — grouped by store,
+          because a flat list means re-sorting it in your head at every door.
+        </li>
+        <li>
+          <strong>Put away</strong> on the shop tab flips everything you ticked
+          back to <em>have</em>. That's the loop that keeps the pantry honest.
+        </li>
+      </ul>
+
+      <h2>Where things are</h2>
+      <ul>
+        <li><code>data/recipes.js</code>, <code>data/staples.js</code> — the library and the tracked staples. Edit these first.</li>
+        <li><code>lib/plan.js</code> — filtering, the deck shuffle, the shopping list. Pure functions; <code>tests/plan.test.mjs</code> covers them.</li>
+        <li><code>components/pick-deck.js</code> — the swipe, in pointer events.</li>
+        <li><code>lib/store.js</code> — localStorage with subscribers, so nothing goes stale.</li>
+        <li><code>lib/viewport.js</code> — the mobile keyboard fix.</li>
+        <li><code>app.js</code> — all the wiring, in the open.</li>
+      </ul>
+      <p>
+        No build step: the files you edit are the files that ship. Regenerate
+        <code>precache-manifest.js</code> with <code>just dev-rebuild</code> after
+        editing any of them.
+      </p>
+    </div>
+  </section>
+</main>
+
+<dialog id="settings-dialog" class="settings">
+  <h2>Options</h2>
+
+  <section>
+    <h3>Theme</h3>
+    <div class="swatches" role="radiogroup" aria-label="Theme">
+      <button type="button" class="swatch" role="radio" data-set-theme="dusk" aria-checked="true" aria-label="Dusk"><span style="background:#14161c"></span>dusk</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="paper" aria-checked="false" aria-label="Paper"><span style="background:#faf7f0"></span>paper</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="kitchen" aria-checked="false" aria-label="Kitchen"><span style="background:#241a12"></span>kitchen</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Font</h3>
+    <div class="swatches" role="radiogroup" aria-label="Font">
+      <button type="button" class="swatch" role="radio" data-set-font="sans" aria-checked="true">sans</button>
+      <button type="button" class="swatch" role="radio" data-set-font="mono" aria-checked="false">mono</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Demo data</h3>
+    <p class="settings-note">
+      First run seeds a plausible mid-week kitchen. Throw it away once you've
+      entered your own.
+    </p>
+    <button type="button" id="reset-all" class="danger">Reset everything</button>
+  </section>
+
+  <button type="button" id="settings-close" class="primary">Done</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

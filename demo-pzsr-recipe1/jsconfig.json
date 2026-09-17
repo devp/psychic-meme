@@ -1,0 +1,23 @@
+{
+  "// ": "Typecheck only -- noEmit means the .js files ship byte-identical.",
+  "//exclude": "sw.js and precache-manifest.js are worker scope (see scripts/check-sw.mjs); tests/browser imports playwright, which is opt-in.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["*.js", "lib/**/*.js", "data/**/*.js", "components/**/*.js", "scripts/**/*.mjs", "tests/*.mjs"],
+  "exclude": [
+    "**/vendor/**",
+    "**/sw.js",
+    "**/precache-manifest.js",
+    "scripts/check-sw.mjs",
+    "node_modules"
+  ]
+}
