@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Pizza slice">
+  <rect width="512" height="512" fill="black" fill-opacity="0.0"/>
+  <path d="M110 162 Q256 96 402 162 L392 200 Q256 142 120 200 Z" fill="#c77b3a"/>
+  <path d="M120 200 Q256 142 392 200 L256 438 Z" fill="#e8b84b"/>
+</svg>
