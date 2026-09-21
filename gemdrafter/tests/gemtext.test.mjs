@@ -6,8 +6,9 @@ import {
   stats,
   slugify,
   localDate,
-  fileName,
+  postSlug,
   fileNames,
+  smolPubFile,
   buildIndex,
 } from "../lib/gemtext.js";
 
@@ -111,19 +112,51 @@ test("slugify: filename-safe, and never empty", () => {
 test("localDate is local, not UTC", () => {
   const at = new Date(2026, 8, 21, 23, 30).getTime(); // 11:30pm on the 21st, locally
   assert.equal(localDate(at), "2026-09-21");
-  assert.equal(fileName({ title: "Hello Gemini", createdAt: at }), "2026-09-21-hello-gemini.gmi");
 });
 
-test("fileNames: same title, same day, different files", () => {
-  const at = new Date(2026, 8, 21, 9, 0).getTime();
+test("postSlug: derived from the title until you set one", () => {
+  assert.equal(postSlug({ title: "Hello Gemini" }), "hello-gemini");
+  assert.equal(postSlug({ title: "Hello Gemini", slug: "" }), "hello-gemini");
+  // A slug you set survives a rename -- the whole point of setting one.
+  assert.equal(postSlug({ title: "Retitled entirely", slug: "hello-gemini" }), "hello-gemini");
+  // And it's slugified too: the field is a URL, whatever you type in it.
+  assert.equal(postSlug({ title: "x", slug: "My Custom Slug!" }), "my-custom-slug");
+});
+
+test("fileNames: two posts can't claim the same URL", () => {
   const names = fileNames([
-    { id: "a", title: "notes", createdAt: at },
-    { id: "b", title: "notes", createdAt: at },
-    { id: "c", title: "notes", createdAt: at + 86_400_000 },
+    { id: "a", title: "notes" },
+    { id: "b", title: "notes" },
+    { id: "c", title: "notes", slug: "kitchen-notes" },
   ]);
-  assert.equal(names.get("a"), "2026-09-21-notes.gmi");
-  assert.equal(names.get("b"), "2026-09-21-notes-2.gmi");
-  assert.equal(names.get("c"), "2026-09-22-notes.gmi");
+  assert.equal(names.get("a"), "notes");
+  assert.equal(names.get("b"), "notes-2");
+  assert.equal(names.get("c"), "kitchen-notes");
+});
+
+test("smolPubFile: title on line one, blank line, body from line three", () => {
+  assert.equal(
+    smolPubFile({ title: "Hello Gemini", body: "the body\nsecond line" }),
+    "# Hello Gemini\n\nthe body\nsecond line\n"
+  );
+});
+
+test("smolPubFile: a title you already wrote as a heading isn't published twice", () => {
+  assert.equal(
+    smolPubFile({ title: "Hello Gemini", body: "# Hello Gemini\n\nthe body\n" }),
+    "# Hello Gemini\n\nthe body\n"
+  );
+  // A *different* heading is content, and stays.
+  assert.equal(
+    smolPubFile({ title: "Hello Gemini", body: "# Something else\n\nbody" }),
+    "# Hello Gemini\n\n# Something else\n\nbody\n"
+  );
+  // As does a subheading that happens to match.
+  assert.match(smolPubFile({ title: "Hi", body: "## Hi\n\nbody" }), /^# Hi\n\n## Hi\n/);
+});
+
+test("smolPubFile: an untitled post still has a first line", () => {
+  assert.equal(smolPubFile({ title: "", body: "body" }), "# Untitled\n\nbody\n");
 });
 
 test("buildIndex: newest written first, whatever order it's handed", () => {
@@ -139,9 +172,9 @@ test("buildIndex: newest written first, whatever order it's handed", () => {
   assert.deepEqual(index.split("\n"), [
     "# My Gemlog",
     "",
-    "=> 2026-09-09-third.gmi 2026-09-09 Third",
-    "=> 2026-09-05-second.gmi 2026-09-05 Second",
-    "=> 2026-09-01-first.gmi 2026-09-01 First",
+    "=> third 2026-09-09 Third",
+    "=> second 2026-09-05 Second",
+    "=> first 2026-09-01 First",
     "",
   ]);
 });
@@ -153,7 +186,7 @@ test("buildIndex: an edit does not reorder the index", () => {
     { id: "old", title: "Old", createdAt: day(1), updatedAt: day(30) },
     { id: "new", title: "New", createdAt: day(9), updatedAt: day(9) },
   ];
-  assert.match(buildIndex({ title: "t", posts }).split("\n")[2], /2026-09-09-new\.gmi/);
+  assert.match(buildIndex({ title: "t", posts }).split("\n")[2], /=> new 2026-09-09 New/);
 });
 
 test("buildIndex: an empty capsule says so, and an untitled post still links", () => {
@@ -161,7 +194,15 @@ test("buildIndex: an empty capsule says so, and an untitled post still links", (
   const at = new Date(2026, 8, 21, 12).getTime();
   assert.match(
     buildIndex({ title: "t", posts: [{ id: "a", title: "", createdAt: at }] }),
-    /=> 2026-09-21-untitled\.gmi 2026-09-21 Untitled/
+    /=> untitled 2026-09-21 Untitled/
+  );
+});
+
+test("buildIndex: a post's own slug is what it links to", () => {
+  const at = new Date(2026, 8, 21, 12).getTime();
+  assert.match(
+    buildIndex({ title: "t", posts: [{ id: "a", title: "Renamed", slug: "original-url", createdAt: at }] }),
+    /=> original-url 2026-09-21 Renamed/
   );
 });
 

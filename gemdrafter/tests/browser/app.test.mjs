@@ -64,8 +64,10 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   /** Writes are debounced 300ms in app.js; a tab switch flushes them. */
   const settleSave = () => page.waitForTimeout(420);
   const title = page.locator("#post-title");
+  const slug = page.locator("#post-slug");
   const body = page.locator("#post-body");
   const status = () => page.locator("#draft-status").innerText();
+  const saveState = () => page.locator("#save-state").innerText();
 
   await page.goto(URL, { waitUntil: "networkidle" });
   await settle();
@@ -73,7 +75,9 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   // --- first run opens a blank draft ---------------------------------------
   await ok("opens on the draft tab", await page.locator('.panel[data-panel="draft"]').isVisible());
   await ok("with an empty post", (await body.inputValue()) === "" && (await title.inputValue()) === "");
-  await ok("and a filename already decided", (await status()).includes("-untitled.gmi"), await status());
+  await ok("and a slug already decided", (await status()).includes("uploads as untitled"), await status());
+  await ok("the host is shown beside the slug",
+    (await page.locator("#slug-host").innerText()) === "devp.smol.pub/");
 
   // --- typing: status, lint and preview all follow the textarea ------------
   await title.fill("Hello Gemini");
@@ -94,8 +98,17 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await settle();
   const stat = await status();
   await ok("status counts lines, links and prose words", /10 lines · 1[0-9] words · 1 link/.test(stat), stat);
-  await ok("filename follows the title", stat.includes("-hello-gemini.gmi"), stat);
+  await ok("the slug follows the title", stat.includes("uploads as hello-gemini"), stat);
+  await ok("and shows in the slug field as a placeholder",
+    (await slug.getAttribute("placeholder")) === "hello-gemini");
   await ok("a clean draft lints clean", (await page.locator(".lint").count()) === 0);
+
+  // --- autosave says so ----------------------------------------------------
+  await ok("typing marks the draft dirty",
+    (await page.locator("#save-state").getAttribute("data-state")) === "dirty" ||
+      /saved/.test(await saveState()), await saveState());
+  await settleSave();
+  await ok("and the save is reported", /^saved /.test(await saveState()), await saveState());
 
   await clickTab("preview");
   await settle();
@@ -126,6 +139,21 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
     (await page.locator("#draft-preview .gem-text").innerText()) === "<script>alert(1)</script>");
   await ok("no injected element", (await page.locator("#draft-preview script").count()) === 0);
 
+  // --- a slug you set outlives the title ------------------------------------
+  await clickTab("draft");
+  await settle();
+  await slug.fill("hello-gemini-forever");
+  await title.fill("Hello Gemini, retitled");
+  await settle();
+  await ok("the set slug stays put", (await status()).includes("uploads as hello-gemini-forever"),
+    await status());
+  await slug.fill("");
+  await settle();
+  await ok("clearing it goes back to deriving",
+    (await status()).includes("uploads as hello-gemini-retitled"), await status());
+  await title.fill("Hello Gemini");
+  await settleSave();
+
   // --- the lint rules ------------------------------------------------------
   await clickTab("draft");
   await body.fill("=>\nsee https://example.com for more\n```\nstranded");
@@ -146,6 +174,34 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await page.getByRole("button", { name: "=>", exact: true }).click();
   await ok("and comes back off", (await body.inputValue()) === "a line");
 
+  // --- checkpoints and history ---------------------------------------------
+  await body.fill("the good version");
+  await settleSave();
+  await page.getByRole("button", { name: "Checkpoint", exact: true }).click();
+  await settle();
+  await ok("the history opens on its first checkpoint",
+    await page.locator("#history").evaluate((/** @type {any} */ el) => el.open));
+  await ok("and lists it", (await page.locator(".revision").count()) === 1);
+  await ok("the summary counts it",
+    (await page.locator("#history-summary").innerText()) === "History — 1 checkpoint",
+    await page.locator("#history-summary").innerText());
+  await page.getByRole("button", { name: "Checkpoint", exact: true }).click();
+  await settle();
+  await ok("pressing it again keeps one", (await page.locator(".revision").count()) === 1);
+  await ok("and says so", (await saveState()) === "nothing new to keep", await saveState());
+
+  await body.fill("ruined it");
+  await settleSave();
+  await page.getByRole("button", { name: "Restore", exact: true }).first().click();
+  await settle();
+  await ok("restore puts the old text back", (await body.inputValue()) === "the good version");
+  await ok("and the mistake is now in the history", (await page.locator(".revision").count()) === 2);
+  await page.getByRole("button", { name: "Restore", exact: true }).first().click();
+  await settle();
+  await ok("so the restore is itself undoable", (await body.inputValue()) === "ruined it");
+  await body.fill("a line");
+  await settleSave();
+
   // --- posts: newest written first ----------------------------------------
   await title.fill("Second post");
   await clickTab("posts");
@@ -157,11 +213,13 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await body.fill("more");
   await clickTab("posts");
   await settle();
-  const titles = () => page.locator(".post-title").allInnerTexts();
+  // Live rows only: the trash renders .post-title too.
+  const titles = () => page.locator(".post:not(.trashed) .post-title").allInnerTexts();
   await ok("both posts are there", (await titles()).length === 2);
   await ok("newest first", (await titles())[0] === "Third post", (await titles()).join(" | "));
-  await ok("each row shows the file it would become",
-    (await page.locator(".post-file").first().innerText()).endsWith("-third-post.gmi"));
+  await ok("each row shows the slug it would take",
+    (await page.locator(".post-file").first().innerText()) === "third-post",
+    await page.locator(".post-file").first().innerText());
 
   // Backdate one post and reload: creation order, not edit order, decides.
   await page.evaluate(() => {
@@ -189,8 +247,8 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("one link line per post", lines.length === 3, lines.join(" | "));
   await ok("newest first", lines[1].includes("Second post") && lines[2].includes("Third post"),
     lines.slice(1).join(" | "));
-  await ok("the backdated post keeps its own date", /=> 2020-01-0\d-third-post\.gmi 2020-01-0\d/.test(lines[2]),
-    lines[2]);
+  await ok("links are slugs, with the date in the label",
+    /^=> third-post 2020-01-0\d Third post$/.test(lines[2]), lines[2]);
 
   await page.locator("#capsule-title").fill("Jackson Heights Gemlog");
   await settle();
@@ -213,18 +271,54 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("the edit survived a reload", (await body.inputValue()) === "edited, then left alone");
   await ok("and it's still the same post", (await title.inputValue()) === "Second post");
 
-  // --- delete ---------------------------------------------------------------
+  // --- trash, then storage --------------------------------------------------
   await clickTab("posts");
   await settle();
-  page.once("dialog", (d) => d.accept());
-  await page.locator(".post-x").first().click();
+  const listed = await titles();
+  await page.locator(".post .post-x").first().click();
   await settle();
-  await ok("deleting removes the row", (await page.locator(".post").count()) === 1);
+  await ok("the × moves a post to the trash without asking",
+    (await page.locator(".post:not(.trashed)").count()) === 1);
   await ok("the index follows", (await indexText()).split("\n").filter(Boolean).length === 2);
+  await ok("the trash says what's in it",
+    (await page.locator(".trash summary").innerText()) === "Trash — 1",
+    await page.locator(".trash summary").innerText());
+
   await clickTab("draft");
   await settle();
   await ok("the editor opens the surviving post, not a blank",
-    (await title.inputValue()) === "Third post", await title.inputValue());
+    (await title.inputValue()) === listed[1], await title.inputValue());
+
+  await clickTab("posts");
+  await page.locator(".trash summary").click();
+  await settle();
+  await ok("a trashed post keeps its history",
+    (await page.locator(".post.trashed .post-meta").innerText()).includes("checkpoints kept"),
+    await page.locator(".post.trashed .post-meta").innerText());
+
+  await page.getByRole("button", { name: "Restore", exact: true }).first().click();
+  await settle();
+  await ok("restoring puts it back in the list", (await page.locator(".post:not(.trashed)").count()) === 2);
+  await ok("in its own place, not at the top", (await titles())[0] === listed[0], (await titles()).join(" | "));
+  await ok("and the trash is gone when it's empty", (await page.locator(".trash").count()) === 0);
+
+  // Only the trash can take something out of storage, and only after asking.
+  await page.locator(".post .post-x").first().click();
+  await settle();
+  await page.locator(".trash summary").click();
+  page.once("dialog", (d) => d.dismiss());
+  await page.locator(".post.trashed .post-x").click();
+  await settle();
+  await ok("a declined confirm keeps the post", (await page.locator(".post.trashed").count()) === 1);
+  const stored = () =>
+    page.evaluate(() => JSON.parse(localStorage.getItem("gemdrafter:posts:records") ?? "[]").length);
+  await ok("and it's still in storage", (await stored()) === 2, String(await stored()));
+
+  page.once("dialog", (d) => d.accept());
+  await page.locator(".post.trashed .post-x").click();
+  await settle();
+  await ok("accepting deletes it from storage", (await stored()) === 1, String(await stored()));
+  await ok("and the trash goes away", (await page.locator(".trash").count()) === 0);
 
   // --- theme ---------------------------------------------------------------
   await page.click("#settings-btn");
@@ -264,7 +358,8 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ctx.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(400);
-  await ok("works offline after reload", (await title.inputValue()) === "Third post");
+  await ok("works offline after reload", (await title.inputValue()) === "Third post",
+    await title.inputValue());
   // query string must not miss the cache
   await page.goto(URL + "?utm_source=subway", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(400);

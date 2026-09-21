@@ -2,11 +2,11 @@
 self.__PRECACHE = [
   {
     "url": "style.css",
-    "revision": "86569ea68d95cb6cf6c8e5fadf9fe577"
+    "revision": "c5e294de6b34bfa34657749253afbc16"
   },
   {
     "url": "state.js",
-    "revision": "2740f1b7f33db5164ec6c4d45bfc4ee7"
+    "revision": "75147656cd8f5807dc369ff49cb4c541"
   },
   {
     "url": "manifest.webmanifest",
@@ -14,11 +14,11 @@ self.__PRECACHE = [
   },
   {
     "url": "index.html",
-    "revision": "e45f705d87ed86f9a05545fc40d9b1b9"
+    "revision": "b1dfca1eae5639c7520da476c1ede210"
   },
   {
     "url": "app.js",
-    "revision": "69f3bd0eee1f50ce48c16d69475f1238"
+    "revision": "c0877971368a36af7c7cb32215068e12"
   },
   {
     "url": "vendor/workbox.js",
@@ -38,7 +38,7 @@ self.__PRECACHE = [
   },
   {
     "url": "lib/gemtext.js",
-    "revision": "8a6bd3b943bfd69c7a7a0514f4e74d3f"
+    "revision": "fe4f94930c0cdbeb5038398679c980b6"
   },
   {
     "url": "icons/gem.svg",
@@ -50,7 +50,11 @@ self.__PRECACHE = [
   },
   {
     "url": "components/post-list.js",
-    "revision": "2ae45c009e9b591e2c687dc320d49493"
+    "revision": "a1f3d7b395a6d4977010f5919eafe049"
+  },
+  {
+    "url": "components/post-history.js",
+    "revision": "cbfa5803f028096aaec328c60166e65d"
   },
   {
     "url": "components/gem-preview.js",

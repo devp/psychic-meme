@@ -48,6 +48,12 @@
       <input id="post-title" class="title-input" type="text" name="title"
              placeholder="Title" autocapitalize="sentences" aria-label="Post title">
 
+      <div class="slug-row">
+        <label for="post-slug" id="slug-host">devp.smol.pub/</label>
+        <input id="post-slug" type="text" name="slug" autocapitalize="none"
+               autocorrect="off" spellcheck="false" aria-label="Slug">
+      </div>
+
       <div class="ins-row" role="toolbar" aria-label="Insert a gemtext line">
         <button type="button" data-insert="=> " title="Link line">=&gt;</button>
         <button type="button" data-insert="# " title="Heading">#</button>
@@ -61,14 +67,23 @@
                 autocapitalize="sentences" aria-label="Post body"
                 placeholder="# A heading&#10;&#10;Text lines are whole paragraphs; the client wraps them.&#10;&#10;=> gemini://geminiprotocol.net/ The spec, which fits on one page"></textarea>
 
-      <p class="status" id="draft-status" aria-live="polite"></p>
+      <div class="status-row">
+        <p class="status" id="draft-status" aria-live="polite"></p>
+        <span class="save-state" id="save-state" aria-live="polite"></span>
+      </div>
       <ul class="lints" id="draft-lints"></ul>
 
       <div class="add-row">
         <button type="button" id="copy-post">Copy</button>
-        <button type="button" id="download-post">Download .gmi</button>
+        <button type="button" id="download-post">Download</button>
+        <button type="button" id="checkpoint-post">Checkpoint</button>
         <button type="button" id="new-post" class="primary">New post</button>
       </div>
+
+      <details class="history" id="history">
+        <summary id="history-summary">History</summary>
+        <post-history></post-history>
+      </details>
     </div>
   </section>
 
@@ -85,7 +100,9 @@
 
   <section class="panel" data-panel="index">
     <p class="panel-note">
-      Your capsule's <code>index.gmi</code>, newest post first by the day it was written.
+      Your capsule's <code>index.gmi</code>, newest post first by the day it was
+      written. smol.pub builds its own journal index, so this one is for a
+      capsule you serve yourself — or for a table of contents you link by hand.
     </p>
     <label class="field">
       <span>Capsule title</span>
@@ -122,9 +139,35 @@
         <li><code>```</code> — toggles preformatted; text on the toggle line is alt text.</li>
         <li>Anything else is a text line, and a text line is a whole paragraph.</li>
       </ul>
+      <h2>Writing for smol.pub</h2>
+      <ul>
+        <li>The <strong>slug</strong> is the post: <code>devp.smol.pub/&lt;slug&gt;</code>, and
+            the name of the file you upload. It follows the title until you set
+            it, and then it stays put — renaming a post shouldn't move its URL.</li>
+        <li><strong>Copy</strong> and <strong>Download</strong> give you the file
+            smol.pub's uploader wants: the title on line one, a blank line, then
+            the body. No extension, because the filename <em>is</em> the slug.</li>
+        <li>smol.pub renders gemtext to HTML and a gophermap for you, so what the
+            preview tab shows is the shape all three get.</li>
+      </ul>
+
+      <h2>Autosave, checkpoints, trash</h2>
+      <ul>
+        <li>Typing saves itself after a pause; the line under the slug says when.</li>
+        <li>Coming back to a post after five minutes away keeps a
+            <strong>checkpoint</strong> of what it was before you started. So does
+            the Checkpoint button. The last 20 are kept.</li>
+        <li><strong>Restore</strong> checkpoints the current text first, so it's
+            always undoable.</li>
+        <li>Deleting a post puts it in the <strong>trash</strong> with its history.
+            Nothing leaves storage until you delete it from there.</li>
+      </ul>
+
       <h2>What it won't do</h2>
       <ul>
-        <li><strong>Upload.</strong> It drafts; your capsule is served by something else.</li>
+        <li><strong>Upload.</strong> It drafts. smol.pub's own uploader takes the file
+            this gives you, and a browser can't post to smol.pub on your behalf
+            anyway — your session cookie belongs to their origin, not this one.</li>
         <li><strong>Draft-vs-published.</strong> Every post you've written a word in
             is in the index. A drafter that hides posts from its own index has
             become a CMS.</li>
@@ -155,6 +198,14 @@
       <button type="button" class="swatch" role="radio" data-set-theme="paper" aria-checked="false" aria-label="Paper"><span style="background:#faf7f0"></span>paper</button>
       <button type="button" class="swatch" role="radio" data-set-theme="phosphor" aria-checked="false" aria-label="Phosphor"><span style="background:#050805"></span>phosphor</button>
     </div>
+  </section>
+
+  <section>
+    <h3>Journal host</h3>
+    <!-- Only ever shown, never posted to: it's what your post's URL will read
+         once you've uploaded it, next to the slug you're choosing here. -->
+    <input id="journal-host" type="text" class="host-input" aria-label="Journal host"
+           autocapitalize="none" autocorrect="off" spellcheck="false">
   </section>
 
   <section>

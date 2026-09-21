@@ -228,20 +228,29 @@ export function localDate(ms) {
 }
 
 /**
- * @param {{ title: string, createdAt: number }} post
- * @returns {string} e.g. 2026-09-21-hello-gemini.gmi
+ * A post's slug: what it's called at the far end.
+ *
+ * On smol.pub the slug is the whole identity of a post -- it's the filename
+ * you upload, and it's the URL (devp.smol.pub/<slug>) -- so it's a field you
+ * can set, not a thing derived behind your back. An empty one falls back to
+ * the title, which is right up until you rename the post and don't want the
+ * link to move.
+ *
+ * @param {{ title: string, slug?: string }} post
+ * @returns {string}
  */
-export function fileName(post) {
-  return `${localDate(post.createdAt)}-${slugify(post.title)}.gmi`;
+export function postSlug(post) {
+  const explicit = String(post.slug ?? "").trim();
+  return explicit ? slugify(explicit) : slugify(post.title);
 }
 
 /**
- * Filenames for a whole capsule, deduplicated. Two posts titled "notes" on the
- * same day would otherwise overwrite each other on upload -- silently, after
- * you'd stopped paying attention.
+ * Slugs for a whole journal, deduplicated. Two posts called "notes" would
+ * otherwise overwrite each other on upload -- silently, after you'd stopped
+ * paying attention.
  *
- * @param {{ id: string, title: string, createdAt: number }[]} posts
- * @returns {Map<string, string>} post id -> filename
+ * @param {{ id: string, title: string, slug?: string }[]} posts
+ * @returns {Map<string, string>} post id -> slug
  */
 export function fileNames(posts) {
   /** @type {Map<string, string>} */
@@ -249,12 +258,37 @@ export function fileNames(posts) {
   /** @type {Map<string, number>} */
   const seen = new Map();
   for (const post of posts) {
-    const base = fileName(post);
+    const base = postSlug(post);
     const n = (seen.get(base) ?? 0) + 1;
     seen.set(base, n);
-    byId.set(post.id, n === 1 ? base : base.replace(/\.gmi$/, `-${n}.gmi`));
+    byId.set(post.id, n === 1 ? base : `${base}-${n}`);
   }
   return byId;
+}
+
+/**
+ * A post as smol.pub's CLI wants the file: the title on line 1 as a level-one
+ * heading, a blank line, then the body. Its uploader reads the title off the
+ * first line and the content from the third, and names the post after the
+ * file, so this plus the slug is the whole upload.
+ *
+ * Body text that already opens with the title as a heading gets it removed
+ * rather than doubled -- writing the heading yourself is the natural thing to
+ * do, and publishing it twice is a silent, ugly result.
+ *
+ * @param {{ title: string, body: string }} post
+ * @returns {string}
+ */
+export function smolPubFile(post) {
+  const title = String(post.title ?? "").trim();
+  const lines = String(post.body ?? "").split(LINES);
+  const heading = /^#(?!#)\s*(.*)$/.exec(lines[0] ?? "");
+  if (heading && title && heading[1].trim() === title) {
+    lines.shift();
+    if (lines[0] === "") lines.shift();
+  }
+  const body = lines.join("\n").replace(/\n+$/, "");
+  return `# ${title || "Untitled"}\n\n${body}\n`;
 }
 
 /**
@@ -264,7 +298,11 @@ export function fileNames(posts) {
  * and not the one a store sorted by last edit would give you. Fixing a typo
  * in a year-old post must not move it to the top of the page.
  *
- * @param {{ title: string, posts: { id: string, title: string, createdAt: number }[] }} capsule
+ * The links are relative slugs, which is what a post is called on smol.pub
+ * (devp.smol.pub/<slug>) and what a self-hosted capsule can name its files.
+ * The date rides in the label, where a reader can see it.
+ *
+ * @param {{ title: string, posts: { id: string, title: string, slug?: string, createdAt: number }[] }} capsule
  * @returns {string} the contents of index.gmi
  */
 export function buildIndex({ title, posts }) {

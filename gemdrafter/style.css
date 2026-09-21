@@ -149,6 +149,26 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .body-input:focus,
 .field input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
+/* ---- slug + save state ---- */
+.slug-row { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.slug-row label { font-size: 12px; color: var(--fg-dim); white-space: nowrap; }
+.slug-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--accent);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.slug-row input::placeholder { color: var(--fg-dim); opacity: 0.8; }
+
+.status-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.save-state { font-size: 11px; color: var(--fg-dim); white-space: nowrap; flex-shrink: 0; }
+.save-state[data-state="dirty"] { color: var(--warn); }
+
 .ins-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
 .ins-row::-webkit-scrollbar { display: none; }
 .ins-row button {
@@ -188,6 +208,36 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: var(--bg-alt);
   border-radius: 0 6px 6px 0;
   margin-bottom: 4px;
+}
+
+/* ---- history ---- */
+.history { flex-shrink: 0; }
+.history summary { font-size: 12px; color: var(--fg-dim); cursor: pointer; padding: 4px 0; }
+.history[open] { max-height: 40%; overflow-y: auto; }
+
+.revisions { list-style: none; margin: 6px 0 0; padding: 0; }
+.revision {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.rev-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rev-when { font-size: 12px; }
+.rev-size { font-size: 11px; color: var(--fg-dim); overflow-wrap: anywhere; }
+.rev-delta { color: var(--accent); }
+.revision button {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 /* ---- gemtext preview ---- */
@@ -295,6 +345,25 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .post-x:hover { color: var(--warn); }
 
+/* ---- trash ---- */
+/* Deliberately quiet and folded away: it's a safety net, not a place to work. */
+.trash { margin-top: 24px; }
+.trash summary { font-size: 12px; color: var(--fg-dim); cursor: pointer; padding: 6px 0; }
+.trash .posts { margin-top: 8px; }
+/* The buttons take their own row: the meta line is the long part, and text
+   wrapping around a button reads like a mistake. */
+.post.trashed { opacity: 0.8; flex-wrap: wrap; align-items: center; padding: 0 4px 8px 0; }
+.post.trashed .post-open { flex: 1 1 100%; cursor: default; }
+.post.trashed > button:not(.post-x) {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
 /* ---- index ---- */
 .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
 .field span { font-size: 12px; color: var(--fg-dim); }
@@ -387,6 +456,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1px solid var(--border);
 }
 .swatch[aria-checked="true"] { border-color: var(--accent); color: var(--fg); }
+
+.host-input {
+  width: 100%;
+  padding: 9px 11px;
+  font-family: var(--font-mono);
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
 
 .settings .primary {
   width: 100%;

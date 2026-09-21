@@ -3,31 +3,38 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { buildIndex, fileName, fileNames, lint, stats } from "./lib/gemtext.js";
+import { buildIndex, fileNames, lint, postSlug, smolPubFile, stats } from "./lib/gemtext.js";
 import {
   theme,
   font,
   tab,
   capsuleTitle,
+  journalHost,
   posts,
   allPosts,
   postsForIndex,
   ensurePost,
   activePost,
   createPost,
-  setBody,
-  setTitle,
+  saveDraft,
+  checkpoint,
 } from "./state.js";
 import { Tabs } from "./components/tabs.js";
 import { GemPreview } from "./components/gem-preview.js";
 import { PostList } from "./components/post-list.js";
+import { PostHistory } from "./components/post-history.js";
 
 customElements.define("gem-tabs", Tabs);
 customElements.define("gem-preview", GemPreview);
 customElements.define("post-list", PostList);
+customElements.define("post-history", PostHistory);
 
 const titleEl = /** @type {HTMLInputElement} */ (document.getElementById("post-title"));
+const slugEl = /** @type {HTMLInputElement} */ (document.getElementById("post-slug"));
 const bodyEl = /** @type {HTMLTextAreaElement} */ (document.getElementById("post-body"));
+const saveStateEl = /** @type {HTMLElement} */ (document.getElementById("save-state"));
+const historyEl = /** @type {HTMLDetailsElement} */ (document.getElementById("history"));
+const historySummary = /** @type {HTMLElement} */ (document.getElementById("history-summary"));
 const statusEl = /** @type {HTMLElement} */ (document.getElementById("draft-status"));
 const lintsEl = /** @type {HTMLElement} */ (document.getElementById("draft-lints"));
 const previewEl = /** @type {GemPreview} */ (document.getElementById("draft-preview"));
@@ -35,6 +42,8 @@ const previewNote = /** @type {HTMLElement} */ (document.getElementById("preview
 const indexOut = /** @type {HTMLElement} */ (document.getElementById("index-out"));
 const indexPreview = /** @type {GemPreview} */ (document.getElementById("index-preview"));
 const capsuleEl = /** @type {HTMLInputElement} */ (document.getElementById("capsule-title"));
+const hostEl = /** @type {HTMLInputElement} */ (document.getElementById("journal-host"));
+const slugHostEl = /** @type {HTMLElement} */ (document.getElementById("slug-host"));
 
 // ---- the editor -----------------------------------------------------------
 // The textarea is the source of truth while you're typing; the store is the
@@ -45,7 +54,7 @@ let editing = ensurePost().id;
 
 /**
  * Writes are debounced because a keystroke costs a full re-serialisation of
- * every post in localStorage, and a long capsule makes that a typing-speed
+ * every post in localStorage, and a long journal makes that a typing-speed
  * problem rather than a storage one. Everything that could end the session --
  * switching tabs, backgrounding the app, closing it -- flushes first, so the
  * debounce can never be the reason a sentence is missing.
@@ -59,8 +68,9 @@ function saveNow() {
   }
   const post = activePost();
   if (!post || post.id !== editing) return;
-  if (titleEl.value !== post.title) setTitle(editing, titleEl.value);
-  if (bodyEl.value !== post.body) setBody(editing, bodyEl.value);
+  if (saveDraft(editing, { title: titleEl.value, body: bodyEl.value, slug: slugEl.value })) {
+    saySaved();
+  }
 }
 
 function saveSoon() {
@@ -70,42 +80,72 @@ function saveSoon() {
   saveTimer = window.setTimeout(saveNow, 300);
 }
 
+/**
+ * Autosave that says so. An app that saves silently is indistinguishable from
+ * one that isn't saving, which is the whole reason people press Copy before
+ * closing a tab.
+ */
+function saySaved() {
+  saveStateEl.textContent = "saved " + new Date().toLocaleTimeString();
+  saveStateEl.dataset.state = "saved";
+}
+
 /** Fill the editor from the store. Only on a switch -- see paintIfSwitched. */
 function paintEditor() {
   const post = activePost();
   if (!post) return;
   editing = post.id;
   titleEl.value = post.title;
+  slugEl.value = post.slug;
   bodyEl.value = post.body;
+  saveStateEl.textContent = post.body || post.title ? "saved" : "";
+  saveStateEl.dataset.state = "saved";
   paintDraft();
 }
 
 /**
  * The store notifies on every write, including our own. Repainting the
  * textarea from the store on our own keystroke would fight the caret, so the
- * editor is only refilled when the post being edited actually changed.
+ * editor is refilled only when the store says something the editor doesn't.
+ *
+ * Two cases: a different post (you opened one from the list), or the same post
+ * with different text -- which is what restoring a checkpoint is. The pending
+ * guard is what keeps those apart from our own echo: while a save is queued,
+ * the editor is what's true and the store is behind, so leave it alone. A
+ * queued save is never lost to this, because clicking anything blurs the
+ * textarea and blur flushes.
  */
 function paintIfSwitched() {
   const post = activePost();
   if (!post) {
-    // The last post was deleted. ensurePost() opens a fresh blank one.
+    // The post being edited was trashed or purged from the posts tab.
     editing = ensurePost().id;
     paintEditor();
     return;
   }
-  if (post.id !== editing) paintEditor();
+  if (post.id !== editing) {
+    paintEditor();
+    return;
+  }
+  const changedElsewhere =
+    post.body !== bodyEl.value || post.title !== titleEl.value || post.slug !== slugEl.value;
+  if (saveTimer === 0 && changedElsewhere) paintEditor();
   else paintDraft();
 }
 
-/** Status line, lint list and preview -- all read the textarea, not the store. */
+/** Status line, lint list and preview -- all read the editor, not the store. */
 function paintDraft() {
   const text = bodyEl.value;
   const s = stats(text);
   const post = activePost();
-  const name = post ? fileName({ title: titleEl.value, createdAt: post.createdAt }) : "";
+  const slug = postSlug({ title: titleEl.value, slug: slugEl.value });
+  slugEl.placeholder = slug;
   statusEl.textContent =
     `${s.lines} ${s.lines === 1 ? "line" : "lines"} · ${s.words} ${s.words === 1 ? "word" : "words"} · ` +
-    `${s.links} ${s.links === 1 ? "link" : "links"} · ${s.chars} chars — ${name}`;
+    `${s.links} ${s.links === 1 ? "link" : "links"} · ${s.chars} chars — uploads as ${slug}`;
+
+  const kept = post ? post.revisions.length : 0;
+  historySummary.textContent = kept === 1 ? "History — 1 checkpoint" : `History — ${kept} checkpoints`;
 
   // textContent, never innerHTML: a draft is user text, and it renders as
   // text everywhere in this app or it isn't trustworthy anywhere.
@@ -124,14 +164,24 @@ function paintDraft() {
     : "As a client would render it";
 }
 
-titleEl.addEventListener("input", () => {
+/** @param {Event} _e */
+function onEdit(_e) {
+  saveStateEl.textContent = "editing…";
+  saveStateEl.dataset.state = "dirty";
   saveSoon();
   paintDraft();
-});
+}
 
-bodyEl.addEventListener("input", () => {
-  saveSoon();
-  paintDraft();
+titleEl.addEventListener("input", onEdit);
+slugEl.addEventListener("input", onEdit);
+bodyEl.addEventListener("input", onEdit);
+
+document.getElementById("checkpoint-post")?.addEventListener("click", () => {
+  saveNow();
+  const kept = checkpoint(editing);
+  saveStateEl.textContent = kept ? "checkpointed" : "nothing new to keep";
+  saveStateEl.dataset.state = "saved";
+  historyEl.open = true;
 });
 
 // ---- the insert row -------------------------------------------------------
@@ -182,18 +232,32 @@ document.getElementById("new-post")?.addEventListener("click", () => {
   titleEl.focus();
 });
 
-document.getElementById("copy-post")?.addEventListener("click", () => {
+/**
+ * The upload, as smol.pub's CLI wants it: title on the first line, blank
+ * second line, body from the third. The same bytes go to the clipboard and to
+ * the file, because a post that reads differently depending on how you moved
+ * it is a bug waiting for a bad week.
+ * @returns {{ name: string, text: string }|null}
+ */
+function upload() {
   saveNow();
-  copy(bodyEl.value, "Post copied.");
+  const post = activePost();
+  if (!post) return null;
+  // The name has to match the one the index links to, collisions and all.
+  const names = fileNames(allPosts());
+  return { name: names.get(post.id) ?? postSlug(post), text: smolPubFile(post) };
+}
+
+document.getElementById("copy-post")?.addEventListener("click", () => {
+  const out = upload();
+  if (out) copy(out.text, `Copied, ready to paste as ${out.name}.`);
 });
 
 document.getElementById("download-post")?.addEventListener("click", () => {
-  saveNow();
-  const post = activePost();
-  if (!post) return;
-  // The name has to match the one the index links to, collisions and all.
-  const names = fileNames(allPosts());
-  download(names.get(post.id) ?? fileName(post), post.body);
+  const out = upload();
+  // No extension: smol.pub names the post after the file, so the file is the
+  // slug. `smolpub <file>` uploads it as-is.
+  if (out) download(out.name, out.text);
 });
 
 // ---- the index ------------------------------------------------------------
@@ -212,6 +276,13 @@ capsuleTitle.subscribe((v) => {
 });
 
 capsuleEl.addEventListener("input", () => capsuleTitle.set(capsuleEl.value));
+
+journalHost.subscribe((v) => {
+  if (hostEl.value !== v) hostEl.value = v;
+  slugHostEl.textContent = (v ? v.replace(/\/+$/, "") : "") + "/";
+});
+
+hostEl.addEventListener("input", () => journalHost.set(hostEl.value));
 
 document.getElementById("copy-index")?.addEventListener("click", () => {
   copy(indexOut.textContent ?? "", "index.gmi copied.");

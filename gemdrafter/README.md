@@ -1,8 +1,9 @@
 # gemdrafter
 
-A drafting table for [gemtext](https://geminiprotocol.net/docs/gemtext.gmi):
-write a post, see it the way a Gemini client will, and get the `index.gmi` that
-links them all up — newest written first.
+A drafting table for [gemtext](https://geminiprotocol.net/docs/gemtext.gmi),
+pointed at [smol.pub](https://smol.pub): write a post, see it the way a Gemini
+client will, keep checkpoints as you go, and get the file smol.pub's uploader
+wants. Posts are listed newest written first.
 
 Built from [`pizza-starter`](../pizza-starter): no build step, offline-first,
 installable, phone-shaped.
@@ -27,14 +28,38 @@ So:
 3. **Order is creation order.** Newest first, and fixing a typo in a year-old
    post does not walk it back to the top. That distinction is the one design
    decision in this app that took real thought — see below.
+4. **Nothing you typed should be gone.** Autosave, a checkpoint per sitting,
+   and a trash that holds a deleted post and its whole history until you
+   explicitly delete it from storage.
+
+## Writing for smol.pub
+
+smol.pub identifies a post by its **slug**: `devp.smol.pub/<slug>`, and the
+name of the file its uploader sends. So the slug is a field here, not something
+derived behind your back — it follows the title until you set it, and then it
+stays put, because renaming a post shouldn't move its URL.
+
+**Copy** and **Download** produce the file
+[smol.pub's CLI](https://smol.pub/cli) reads: the title on line one as a
+level-one heading, a blank second line, the body from the third. The download
+has no extension, because the filename *is* the slug. A body that already opens
+with the title as a heading doesn't get it published twice.
+
+smol.pub builds your journal index itself, so the **index** tab is for a capsule
+you serve yourself, or a table of contents you link by hand. Its links are
+relative slugs, which work in both places.
+
+The app doesn't upload. smol.pub's uploader authenticates with a session cookie
+for *their* origin, which a page served from somewhere else cannot send — so an
+upload button here would be a lie. `smolpub <file>` is the last step.
 
 ## The five tabs
 
 | tab | what it's for |
 | --- | --- |
-| **draft** | title, the insert row, the textarea, a status line and the lint findings. |
+| **draft** | title, slug, the insert row, the textarea, the status line, lint findings and the post's history. |
 | **preview** | the current draft, rendered the way a client would. |
-| **posts** | every post, newest written first, grouped by month. |
+| **posts** | every post, newest written first, grouped by month, with the trash folded underneath. |
 | **index** | the generated `index.gmi`, ready to copy or download. |
 | **about** | the whole format, and what this app refuses to do. |
 
@@ -61,10 +86,13 @@ that's a typing-speed problem rather than a storage one. 300ms of idle, plus a
 flush on tab switch, blur, `visibilitychange` and `pagehide` — the last of
 which is what actually fires on iOS, where `beforeunload` usually doesn't.
 
-**The textarea owns the text while you're typing.** The store notifies on every
-write, including our own, so repainting the textarea from the store on our own
-keystroke would fight the caret. `paintIfSwitched()` refills it only when the
-post being edited actually changed.
+**The textarea owns the text while you're typing — and only then.** The store
+notifies on every write, including our own, so repainting from the store on
+your own keystroke would fight the caret. `paintIfSwitched()` refills when the
+store says something the editor doesn't *and* no save is pending: a different
+post, or the same post restored from a checkpoint. Getting that second case
+wrong is what made restore look like it did nothing, which the browser test
+caught.
 
 **The preview escapes by construction.** Every interpolation goes through a Lit
 template, so a draft containing `<script>` renders as those six characters.
@@ -91,19 +119,25 @@ the symbol layer, so it has to be the way to untype it too.
   one failure mode; the starter's `lib/viewport.js` carries the note about the
   project that died of the alternative.
 - **No export-everything zip.** That's a build step and a dependency, for
-  something `Download .gmi` does one file at a time.
+  something Download does one file at a time.
+- **No automatic emptying of the trash.** Nothing deletes itself on a timer.
+  The one irreversible button is one you press.
+- **No diff view.** The history says when, how long and what it was called;
+  seeing what changed is what Restore-and-look-at-it is for, and it's
+  undoable.
 - **No reordering.** See above; the order is when you wrote it.
 
 ## Where things are
 
 ```
-lib/gemtext.js       the format as data: parse, lint, stats, slug, index. Pure.
+lib/gemtext.js       the format as data: parse, lint, stats, slugs, the smol.pub file, index. Pure.
 lib/store.js         localStorage + subscribers (from pizza-starter, unchanged).
 lib/viewport.js      the mobile keyboard fix (from pizza-starter, unchanged).
-state.js             the posts store, the scalars, and the views over them.
+state.js             the posts store, checkpoints, trash, and the views over them.
 app.js               all the wiring, in the open.
 components/gem-preview.js  a travelling component: text in, gemtext rendered, no app imports.
-components/post-list.js    the posts tab.
+components/post-list.js    the posts tab, and the trash.
+components/post-history.js the checkpoints for the post you're editing.
 components/tabs.js         the tab strip (from pizza-starter).
 tests/gemtext.test.mjs     the format, at `node --test` speed.
 tests/state.test.mjs       ordering and the body encoding.
