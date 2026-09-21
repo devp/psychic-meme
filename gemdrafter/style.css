@@ -1,0 +1,479 @@
+/* ---- theme tokens ----
+   Every colour lives here. Add a theme by copying a block and adding a swatch
+   button in index.html -- nothing else needs to know. */
+:root,
+:root[data-theme="dusk"] {
+  --bg: #12141a;
+  --bg-alt: #1a1d26;
+  --bg-raised: #20242f;
+  --fg: #e4e6ee;
+  --fg-dim: #8a8fa3;
+  --accent: #8ab4ff;
+  --accent-ink: #0b1626;
+  --border: #2a2e3a;
+  --warn: #e0b060;
+}
+
+:root[data-theme="paper"] {
+  --bg: #faf7f0;
+  --bg-alt: #f1ecdf;
+  --bg-raised: #ffffff;
+  --fg: #2b2620;
+  --fg-dim: #7a7263;
+  --accent: #2f5eb5;
+  --accent-ink: #f2f6ff;
+  --border: #ded5bf;
+  --warn: #a4670c;
+}
+
+:root[data-theme="phosphor"] {
+  --bg: #050805;
+  --bg-alt: #0a120a;
+  --bg-raised: #0f1c0f;
+  --fg: #8cffa0;
+  --fg-dim: #3f8a4d;
+  --accent: #39ff6a;
+  --accent-ink: #04160a;
+  --border: #163a1e;
+  --warn: #d8ff5a;
+}
+
+:root {
+  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: var(--font-mono);
+}
+:root[data-font="sans"] { --font-body: var(--font-sans); }
+
+/* ---- base ---- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  /* --app-height is set by syncAppHeight(); the dvh is the pre-JS fallback. */
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* ---- header ---- */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.app-header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+
+.icon-btn {
+  background: none;
+  border: 0;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  color: var(--fg-dim);
+}
+.icon-btn:hover { color: var(--fg); background: var(--bg-raised); }
+
+/* ---- tabs ---- */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  background: none;
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 8px;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  font-size: 14px;
+}
+.tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+/* ---- panels ---- */
+.panels { flex: 1; min-height: 0; position: relative; }
+
+.panel {
+  display: none;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+.panel.active { display: block; }
+
+/* ---- the editor ---- */
+/* The draft panel is the one full-height column in the app: the textarea takes
+   whatever the header, the insert row and the status line leave behind. */
+.panel.active[data-panel="draft"] { display: flex; flex-direction: column; gap: 8px; }
+.editor { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; }
+
+.title-input {
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 17px; /* < 16px makes iOS zoom on focus */
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.title-input:focus,
+.body-input:focus,
+.field input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+/* ---- slug + save state ---- */
+.slug-row { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.slug-row label { font-size: 12px; color: var(--fg-dim); white-space: nowrap; }
+.slug-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--accent);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.slug-row input::placeholder { color: var(--fg-dim); opacity: 0.8; }
+
+.status-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.save-state { font-size: 11px; color: var(--fg-dim); white-space: nowrap; flex-shrink: 0; }
+.save-state[data-state="dirty"] { color: var(--warn); }
+
+.ins-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+.ins-row::-webkit-scrollbar { display: none; }
+.ins-row button {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--fg-dim);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ins-row button:hover { color: var(--fg); border-color: var(--accent); }
+
+.body-input {
+  flex: 1;
+  min-height: 140px;
+  resize: none;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.status { margin: 0; color: var(--fg-dim); font-size: 12px; overflow-wrap: anywhere; }
+
+.lints { list-style: none; margin: 0; padding: 0; max-height: 25%; overflow-y: auto; }
+.lint {
+  font-size: 12px;
+  color: var(--warn);
+  padding: 4px 8px;
+  border-left: 2px solid var(--warn);
+  background: var(--bg-alt);
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 4px;
+}
+
+/* ---- history ---- */
+.history { flex-shrink: 0; }
+.history summary { font-size: 12px; color: var(--fg-dim); cursor: pointer; padding: 4px 0; }
+.history[open] { max-height: 40%; overflow-y: auto; }
+
+.revisions { list-style: none; margin: 6px 0 0; padding: 0; }
+.revision {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.rev-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rev-when { font-size: 12px; }
+.rev-size { font-size: 11px; color: var(--fg-dim); overflow-wrap: anywhere; }
+.rev-delta { color: var(--accent); }
+.revision button {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ---- gemtext preview ---- */
+/* Deliberately not the app's own typography: this is meant to look like a
+   client, which is the only way the preview is worth having. */
+.gem-page { max-width: 64ch; }
+.gem-h1, .gem-h2, .gem-h3 { margin: 18px 0 8px; line-height: 1.25; }
+.gem-h1:first-child, .gem-h2:first-child, .gem-h3:first-child { margin-top: 0; }
+.gem-h1 { font-size: 21px; }
+.gem-h2 { font-size: 17px; color: var(--accent); }
+.gem-h3 { font-size: 15px; color: var(--fg-dim); }
+/* A text line is its own paragraph, and a blank line is a blank line. The gap
+   between two adjacent text lines has to be visibly smaller than the one an
+   empty line makes, or the preview can't answer the question you opened it
+   for: is that a paragraph break or a wrap? */
+.gem-text { margin: 0 0 4px; overflow-wrap: anywhere; }
+.gem-blank { height: 14px; }
+.gem-link { margin: 0 0 6px; display: flex; align-items: baseline; gap: 8px; }
+.gem-link a { color: var(--accent); overflow-wrap: anywhere; }
+.gem-scheme {
+  font-size: 11px;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
+.gem-list { margin: 0 0 10px; padding-left: 22px; }
+.gem-list li { margin-bottom: 4px; }
+.gem-quote {
+  margin: 0 0 10px;
+  padding: 6px 12px;
+  border-left: 3px solid var(--border);
+  color: var(--fg-dim);
+}
+.gem-quote p { margin: 0; }
+.gem-pre {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.gem-pre.unclosed { border-color: var(--warn); }
+.gem-empty { color: var(--fg-dim); font-size: 13px; }
+
+/* ---- posts ---- */
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.list-head .panel-note { margin: 0; }
+.list-head .primary {
+  padding: 9px 14px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.month-head {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-dim);
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  margin: 18px 0 8px;
+}
+
+.posts { list-style: none; margin: 0; padding: 0; }
+.post {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 6px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.post.active { border-color: var(--accent); }
+.post-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 10px 12px;
+}
+.post-title { font-weight: 600; overflow-wrap: anywhere; }
+.post-meta, .post-file { font-size: 12px; color: var(--fg-dim); overflow-wrap: anywhere; }
+.post-file { font-family: var(--font-mono); opacity: 0.75; }
+.post-x {
+  background: none;
+  border: 0;
+  color: var(--fg-dim);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+.post-x:hover { color: var(--warn); }
+
+/* ---- trash ---- */
+/* Deliberately quiet and folded away: it's a safety net, not a place to work. */
+.trash { margin-top: 24px; }
+.trash summary { font-size: 12px; color: var(--fg-dim); cursor: pointer; padding: 6px 0; }
+.trash .posts { margin-top: 8px; }
+/* The buttons take their own row: the meta line is the long part, and text
+   wrapping around a button reads like a mistake. */
+.post.trashed { opacity: 0.8; flex-wrap: wrap; align-items: center; padding: 0 4px 8px 0; }
+.post.trashed .post-open { flex: 1 1 100%; cursor: default; }
+.post.trashed > button:not(.post-x) {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ---- index ---- */
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field span { font-size: 12px; color: var(--fg-dim); }
+.field input {
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.index-out {
+  margin: 0 0 12px;
+  padding: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.index-preview { margin-top: 18px; }
+.index-preview summary { color: var(--fg-dim); font-size: 13px; cursor: pointer; }
+.index-preview .gem-page { margin-top: 12px; }
+
+.add-row { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+.add-row button {
+  padding: 10px 14px;
+  background: var(--bg-raised);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.add-row button.primary { background: var(--accent); color: var(--accent-ink); border: 0; font-weight: 600; }
+
+/* ---- prose ---- */
+.prose { max-width: 60ch; }
+.prose h2 { font-size: 15px; margin: 20px 0 8px; }
+.prose h2:first-child { margin-top: 0; }
+.prose p, .prose li { color: var(--fg-dim); }
+.prose code {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--fg);
+}
+.prose ul { padding-left: 20px; }
+.prose li { margin-bottom: 6px; }
+
+/* ---- settings dialog ---- */
+.settings {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-raised);
+  color: var(--fg);
+  padding: 20px;
+  width: min(92vw, 380px);
+  font-family: var(--font-body);
+}
+.settings::backdrop { background: rgb(0 0 0 / 0.5); }
+.settings h2 { margin: 0 0 16px; font-size: 16px; }
+.settings h3 { margin: 0 0 8px; font-size: 13px; color: var(--fg-dim); font-weight: 500; }
+.settings section { margin-bottom: 18px; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.swatch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+.swatch span {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.swatch[aria-checked="true"] { border-color: var(--accent); color: var(--fg); }
+
+.host-input {
+  width: 100%;
+  padding: 9px 11px;
+  font-family: var(--font-mono);
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.settings .primary {
+  width: 100%;
+  padding: 11px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 600;
+}
