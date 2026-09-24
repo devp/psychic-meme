@@ -80,6 +80,19 @@ anything. The body rides in `items[0]` and everything goes through
 which forks `lib/store.js` away from the starter for the sake of one string —
 and that fork is what would stop you taking the starter's next fix.
 
+**The chrome folds away for the keyboard.** With one up, this app's own
+furniture — header, title, slug, buttons, history — was about 230px against
+roughly 140px of textarea: five lines. While the body has focus in a short
+viewport, all of it folds and the textarea takes the space back (measured:
+140px to 274px, five lines to eleven). The tab strip stays, because
+draft → preview → draft is the loop the app is for. Dismiss the keyboard and
+everything is back; there's no mode to leave.
+
+**The insert row doesn't cost you the keyboard.** Its buttons cancel the
+default action on `pointerdown`, so the tap never moves focus — no keyboard
+dismissal, no unfold, no jump in the middle of a sentence. The click still
+fires; only the focus change is prevented.
+
 **Writes are debounced; everything that ends a session flushes.** A keystroke
 costs a full re-serialisation of every post in localStorage, so at capsule size
 that's a typing-speed problem rather than a storage one. 300ms of idle, plus a

@@ -174,6 +174,72 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await page.getByRole("button", { name: "=>", exact: true }).click();
   await ok("and comes back off", (await body.inputValue()) === "a line");
 
+  // --- writing mode: the chrome folds away for the keyboard -----------------
+  // The viewport is shrunk by hand, because a headless browser has no on-screen
+  // keyboard to shrink it for us. 420px is about what a phone has left with one
+  // up.
+  const chromeShown = async () => ({
+    header: await page.locator(".app-header").isVisible(),
+    tabs: await page.locator("gem-tabs").isVisible(),
+    title: await title.isVisible(),
+    slug: await slug.isVisible(),
+    buttons: await page.locator(".editor .add-row").isVisible(),
+    history: await page.locator("#history").isVisible(),
+  });
+  const bodyHeight = () =>
+    body.evaluate((/** @type {HTMLElement} */ el) => el.getBoundingClientRect().height);
+
+  await clickTab("draft");
+  await body.click();
+  await settle();
+  await ok("a tall viewport keeps its chrome even with the body focused",
+    (await chromeShown()).header === true);
+
+  const tallBody = await bodyHeight();
+  await page.setViewportSize({ width: 390, height: 420 });
+  await body.click();
+  await settle();
+  const folded = await chromeShown();
+  await ok("header, title, slug, buttons and history fold away",
+    !folded.header && !folded.title && !folded.slug && !folded.buttons && !folded.history,
+    JSON.stringify(folded));
+  await ok("the tab strip stays, because draft->preview->draft is the loop", folded.tabs);
+  await ok("the insert row stays", await page.locator(".ins-row").isVisible());
+  await ok("and the save state stays readable", await page.locator("#save-state").isVisible());
+
+  // The point of the exercise: more text on screen than the app would have had.
+  const shortBody = await bodyHeight();
+  const wouldHaveBeen = 420 - (844 - tallBody); // same chrome, shorter viewport
+  await ok("the textarea keeps most of what the viewport lost",
+    shortBody > wouldHaveBeen + 150,
+    `${Math.round(shortBody)}px vs ${Math.round(wouldHaveBeen)}px unfolded`);
+
+  await ok("and it's a real number of lines", shortBody > 200, `${Math.round(shortBody)}px`);
+
+  // Tapping the insert row must not cost the keyboard: no focus change, no
+  // unfold, no jump mid-sentence.
+  await body.fill("a line");
+  await page.getByRole("button", { name: "=>", exact: true }).click();
+  await settle();
+  await ok("the insert row keeps focus in the textarea",
+    await body.evaluate((/** @type {HTMLElement} */ el) => document.activeElement === el));
+  await ok("so the chrome stays folded", !(await chromeShown()).header);
+  await ok("and it still inserts", (await body.inputValue()) === "=> a line");
+  await page.getByRole("button", { name: "=>", exact: true }).click();
+
+  await page.locator("#post-title").evaluate((/** @type {HTMLElement} */ el) => el.blur());
+  await body.evaluate((/** @type {HTMLElement} */ el) => el.blur());
+  await settle();
+  await ok("dismissing the keyboard gives the chrome back", (await chromeShown()).header);
+
+  // Focus in the title is not writing mode: you need to see the field above it.
+  await title.click();
+  await settle();
+  await ok("the title field doesn't fold anything", (await chromeShown()).slug);
+  await title.evaluate((/** @type {HTMLElement} */ el) => el.blur());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await settle();
+
   // --- checkpoints and history ---------------------------------------------
   await body.fill("the good version");
   await settleSave();

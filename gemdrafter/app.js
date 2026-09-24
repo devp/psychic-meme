@@ -2,7 +2,7 @@
 // lib -- this is the file you edit first, so it should be readable top to
 // bottom with no indirection.
 
-import { syncAppHeight } from "./lib/viewport.js";
+import { syncAppHeight, visibleHeight } from "./lib/viewport.js";
 import { buildIndex, fileNames, lint, postSlug, smolPubFile, stats } from "./lib/gemtext.js";
 import {
   theme,
@@ -189,6 +189,11 @@ document.getElementById("checkpoint-post")?.addEventListener("click", () => {
 // "=> " on a phone keyboard means three trips to the symbol layer.
 
 document.querySelectorAll("[data-insert]").forEach((btn) => {
+  // Keeping the default action off pointerdown is what stops the tap from
+  // moving focus, which on a phone is what stops the keyboard from closing
+  // and the whole layout from jumping between every inserted "=> ". The
+  // click still fires; only the focus change is prevented.
+  btn.addEventListener("pointerdown", (e) => e.preventDefault());
   btn.addEventListener("click", () => {
     togglePrefix(bodyEl, btn.getAttribute("data-insert") ?? "");
     saveSoon();
@@ -407,8 +412,47 @@ bodyEl.addEventListener("blur", saveNow);
 titleEl.addEventListener("blur", saveNow);
 
 // ---- phone ----------------------------------------------------------------
+// Writing mode: with the keyboard up, this app's own chrome is the thing
+// standing between you and the page.
+//
+// Measured on the phone this was built for: header 42, title 40, slug row 34,
+// button row 88 (it wraps), history summary 24 -- about 230px of app, against
+// roughly 120px of textarea once the keyboard has taken its half. Five lines.
+// Folding that chrome away while you type roughly triples the visible text,
+// and costs nothing: dismiss the keyboard and it's all back.
+//
+// The tab strip stays. Draft -> preview -> draft is the loop this app is for,
+// and hiding it would put a keyboard dismissal in the middle of it.
 
-syncAppHeight();
+/**
+ * Short enough that the app's chrome is competing with the text -- which on a
+ * phone means the keyboard is up.
+ *
+ * An absolute height rather than a fraction of the window: the viewport meta
+ * carries `interactive-widget=resizes-content`, so on Android the layout
+ * viewport shrinks along with the visual one and the ratio between them barely
+ * moves. 560 clears every phone's keyboard-up height and no phone's
+ * keyboard-down one.
+ */
+const WRITING_HEIGHT = 560;
+
+/**
+ * Fold the chrome away only while the body has focus in a short viewport.
+ * Title and slug focus don't count: those are one line each, and hiding the
+ * field above the one you're typing in is its own kind of rude.
+ */
+function syncWritingMode() {
+  const writing = document.activeElement === bodyEl && visibleHeight() < WRITING_HEIGHT;
+  if (writing) document.documentElement.dataset.writing = "1";
+  else delete document.documentElement.dataset.writing;
+}
+
+bodyEl.addEventListener("focus", syncWritingMode);
+bodyEl.addEventListener("blur", syncWritingMode);
+
+// The keyboard opening is a visualViewport resize, which is the callback this
+// takes -- so the fold happens with the keyboard rather than after it.
+syncAppHeight(syncWritingMode);
 
 // ---- offline --------------------------------------------------------------
 
