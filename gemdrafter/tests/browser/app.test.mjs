@@ -405,6 +405,43 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("a preview renders text it was handed",
     (await page.locator("#index-preview .gem-h1").innerText()) === "From a property");
 
+  // --- knowing which build you're on ---------------------------------------
+  await ok("the registration revalidates its imports",
+    (await page.evaluate(async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return reg?.updateViaCache;
+    })) === "none",
+    "updateViaCache");
+
+  await page.click("#settings-btn");
+  await page.waitForFunction(() => !/checking/.test(document.getElementById("build-state")?.textContent ?? ""));
+  const build = await page.locator("#build-state").innerText();
+  await ok("Options names the build the worker is serving",
+    /^build [0-9a-f]{8} · \d+ files cached$/.test(build), build);
+  await page.click("#settings-close");
+
+  // The same manifest has to give the same id twice, or it isn't a version.
+  const twice = await page.evaluate(async () => {
+    const ask = () =>
+      new Promise((resolve) => {
+        const ch = new MessageChannel();
+        ch.port1.onmessage = (e) => resolve(e.data.build);
+        navigator.serviceWorker.controller?.postMessage({ type: "build" }, [ch.port2]);
+      });
+    return [await ask(), await ask()];
+  });
+  await ok("the build id is stable", twice[0] === twice[1], twice.join(" vs "));
+
+  await ok("no update bar on a page that didn't update",
+    await page.locator("#update-bar").isHidden());
+  // A worker taking over a page that already had one is the update case. The
+  // event is dispatched by hand because a real one needs a second deploy.
+  await page.evaluate(() => navigator.serviceWorker.dispatchEvent(new Event("controllerchange")));
+  await settle();
+  await ok("a worker handover offers a reload", await page.locator("#update-bar").isVisible());
+  await ok("and says why",
+    (await page.locator("#update-bar span").innerText()) === "A new version is installed.");
+
   // --- offline (the whole point of the skeleton) ---------------------------
   const swState = await page.evaluate(async () => {
     const reg = await navigator.serviceWorker.getRegistration();

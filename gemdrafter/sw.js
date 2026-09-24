@@ -25,3 +25,34 @@ workbox.registerRoute(
 
 sw.addEventListener("install", () => sw.skipWaiting());
 sw.addEventListener("activate", () => sw.clients.claim());
+
+// Which build is actually serving you.
+//
+// sw.js never changes; precache-manifest.js changes on every deploy. So the
+// manifest's contents are the only honest version number this app has, and
+// the worker is the only scope that can see them. The Options panel asks for
+// this over a MessagePort and shows the answer -- which turns "did my change
+// ship?" from a conversation into a glance.
+sw.addEventListener("message", (event) => {
+  if (event.data?.type !== "build") return;
+  const port = event.ports[0];
+  if (port) port.postMessage(buildId());
+});
+
+/**
+ * FNV-1a over every url:revision pair. Not a cryptographic hash and doesn't
+ * need to be: it only has to change when the deploy does, and be the same
+ * eight characters on every device serving that deploy.
+ * @returns {{ build: string, files: number }}
+ */
+function buildId() {
+  let h = 0x811c9dc5;
+  for (const entry of self.__PRECACHE) {
+    const line = entry.url + ":" + entry.revision;
+    for (let i = 0; i < line.length; i++) {
+      h ^= line.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+  }
+  return { build: h.toString(16).padStart(8, "0"), files: self.__PRECACHE.length };
+}
