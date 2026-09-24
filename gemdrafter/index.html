@@ -163,8 +163,10 @@
         <li>While you're typing on a phone, the header, title, slug and buttons
             fold away so the text gets the room. Dismiss the keyboard to get
             them back.</li>
-        <li>Options shows which build is cached. When a new one installs, a bar
-            offers a reload — the page you're looking at came from the old one.</li>
+        <li>Options shows which build is cached, and <em>Check for updates</em>
+            makes the app go and look. It also looks whenever you come back to
+            it. When a new one installs, a bar offers a reload — the page you're
+            looking at came from the old one.</li>
         <li>Coming back to a post after five minutes away keeps a
             <strong>checkpoint</strong> of what it was before you started. So does
             the Checkpoint button. The last 20 are kept.</li>
@@ -214,6 +216,10 @@
   <section>
     <h3>Build</h3>
     <p class="build-state" id="build-state">checking…</p>
+    <div class="build-actions">
+      <button type="button" id="check-update">Check for updates</button>
+      <button type="button" id="update-reload-now" class="primary" hidden>Reload now</button>
+    </div>
   </section>
 
   <section>

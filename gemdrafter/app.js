@@ -461,6 +461,8 @@ syncAppHeight(syncWritingMode);
 
 const buildStateEl = /** @type {HTMLElement} */ (document.getElementById("build-state"));
 const updateBar = /** @type {HTMLElement} */ (document.getElementById("update-bar"));
+const checkBtn = /** @type {HTMLButtonElement} */ (document.getElementById("check-update"));
+const reloadNowBtn = /** @type {HTMLButtonElement} */ (document.getElementById("update-reload-now"));
 
 if ("serviceWorker" in navigator) {
   const register = () =>
@@ -491,13 +493,108 @@ if ("serviceWorker" in navigator) {
   // just opened the app for the first time is a lie.
   const hadWorker = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (hadWorker) updateBar.hidden = false;
+    if (hadWorker) updateReady();
   });
 }
 
-document.getElementById("update-reload")?.addEventListener("click", () => {
+/** Show both ways out: the bar behind the dialog, and a button inside it. */
+function updateReady() {
+  updateBar.hidden = false;
+  reloadNowBtn.hidden = false;
+}
+
+function reloadForUpdate() {
   saveNow();
   location.reload();
+}
+
+document.getElementById("update-reload")?.addEventListener("click", reloadForUpdate);
+reloadNowBtn?.addEventListener("click", reloadForUpdate);
+
+// ---- checking for a new build ---------------------------------------------
+// The browser checks on its own, on navigation. That is not much use to an
+// app you keep on a home screen and resume for weeks without ever navigating,
+// which is how this one is meant to be used. So: a button, and a look whenever
+// the app comes back to the foreground.
+
+let lastCheck = 0;
+/** Often enough to catch a deploy, rarely enough not to be a background job. */
+const CHECK_EVERY = 5 * 60_000;
+
+/**
+ * Set from `updatefound`, because the update() promise can't answer this on
+ * its own: sw.js calls skipWaiting(), so by the time update() resolves a new
+ * worker may already have installed, activated and left `installing` and
+ * `waiting` both null -- indistinguishable from nothing having happened.
+ */
+let sawUpdate = false;
+let watchingRegistration = false;
+
+/** @param {ServiceWorkerRegistration} reg */
+function watchRegistration(reg) {
+  if (watchingRegistration) return;
+  watchingRegistration = true;
+  reg.addEventListener("updatefound", () => {
+    sawUpdate = true;
+  });
+}
+
+/**
+ * Re-fetch the worker script now.
+ *
+ * update() honours the registration's updateViaCache, which this app sets to
+ * "none" -- so the imported precache-manifest.js is revalidated too, and a
+ * deploy can't hide behind the host's max-age. Everything after that is the
+ * browser's: install, skipWaiting, claim, and controllerchange raises the bar.
+ *
+ * @returns {Promise<"updating"|"current"|"unavailable"|"failed">}
+ */
+async function checkForUpdate() {
+  const container = navigator.serviceWorker;
+  if (!container) return "unavailable";
+  lastCheck = Date.now();
+  const reg = await container.getRegistration();
+  if (!reg) return "unavailable";
+  watchRegistration(reg);
+  sawUpdate = false;
+  try {
+    await reg.update();
+  } catch {
+    // Offline, or the script itself failed to fetch. Not fatal: the cached
+    // app is still the app.
+    return "failed";
+  }
+  return sawUpdate || reg.installing || reg.waiting ? "updating" : "current";
+}
+
+checkBtn?.addEventListener("click", async () => {
+  checkBtn.disabled = true;
+  buildStateEl.textContent = "checking…";
+  const result = await checkForUpdate();
+  checkBtn.disabled = false;
+
+  if (result === "updating") {
+    buildStateEl.textContent = "A new version is installing — reload to use it.";
+    updateReady();
+    return;
+  }
+  if (result === "failed") {
+    buildStateEl.textContent = "Couldn't reach the network to check.";
+    return;
+  }
+  // "current" and "unavailable" both just want the build line back, which
+  // says which of the two it was.
+  paintBuild();
+});
+
+// Resuming the app is the moment a home-screen PWA gets to notice a deploy,
+// since it may go weeks without a navigation. Rate-limited so that flipping
+// between apps isn't a request per flip.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  if (Date.now() - lastCheck < CHECK_EVERY) return;
+  // Fire and forget: anything found raises the bar through controllerchange.
+  checkForUpdate();
 });
 
 /**

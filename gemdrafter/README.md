@@ -103,6 +103,16 @@ The registration passes `updateViaCache: "none"`: the default lets the HTTP
 cache answer for imported scripts, which on GitHub Pages can hide a deploy for
 the length of its `max-age`.
 
+**And you can make it look.** The browser checks for a new worker on
+navigation, which is little use to an app that lives on a home screen and gets
+resumed for weeks without one. Options has a *Check for updates* button, and
+the app looks again whenever it comes back to the foreground (at most every
+five minutes). Whether an update was found can't be read off `update()`'s
+promise — `sw.js` calls `skipWaiting()`, so a new worker may have installed,
+activated and left both `installing` and `waiting` null by the time it
+resolves, which is indistinguishable from nothing happening. An `updatefound`
+listener is what actually answers it.
+
 **Writes are debounced; everything that ends a session flushes.** A keystroke
 costs a full re-serialisation of every post in localStorage, so at capsule size
 that's a typing-speed problem rather than a storage one. 300ms of idle, plus a
