@@ -507,6 +507,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
   overflow-wrap: anywhere;
 }
 
+.build-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.build-actions button {
+  padding: 8px 12px;
+  font-size: 13px;
+  background: var(--bg-alt);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.build-actions button.primary { background: var(--accent); color: var(--accent-ink); border: 0; font-weight: 600; }
+.build-actions button[hidden] { display: none; }
+.build-actions button:disabled { opacity: 0.6; }
+
 .host-input {
   width: 100%;
   padding: 9px 11px;

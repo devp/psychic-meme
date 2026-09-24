@@ -19,13 +19,24 @@ const TYPES = {
   ".webmanifest": "application/manifest+json",
 };
 
+/**
+ * Set to pretend a deploy happened: the bytes are appended to
+ * precache-manifest.js, which is the only file a real deploy changes. The
+ * comment doesn't alter what gets precached -- just the script's bytes, which
+ * is exactly what the worker's update check compares.
+ */
+const deploy = { bump: "" };
+
 function serve() {
   const server = createServer(async (req, res) => {
     const path = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname));
     const file = join(root, path === "/" ? "index.html" : path);
     try {
       if (!file.startsWith(root)) throw new Error("outside root");
-      const body = await readFile(file);
+      const body =
+        path === "/precache-manifest.js" && deploy.bump
+          ? Buffer.concat([await readFile(file), Buffer.from(deploy.bump)])
+          : await readFile(file);
       res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" });
       res.end(body);
     } catch {
@@ -441,6 +452,47 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("a worker handover offers a reload", await page.locator("#update-bar").isVisible());
   await ok("and says why",
     (await page.locator("#update-bar span").innerText()) === "A new version is installed.");
+
+  // --- checking for a new build ---------------------------------------------
+  // From a clean page: the synthetic controllerchange above left the bar and
+  // the dialog's reload button showing, which is the state this section is
+  // about arriving at honestly.
+  await page.reload({ waitUntil: "networkidle" });
+  await settle();
+  await ok("a fresh load offers no reload", await page.locator("#update-bar").isHidden());
+  await page.click("#settings-btn");
+  await page.waitForFunction(() => !/checking/.test(document.getElementById("build-state")?.textContent ?? ""));
+  const beforeCheck = await page.locator("#build-state").innerText();
+
+  await page.getByRole("button", { name: "Check for updates" }).click();
+  await page.waitForFunction(() => !/checking/.test(document.getElementById("build-state")?.textContent ?? ""));
+  await ok("checking with nothing deployed says you're current",
+    (await page.locator("#build-state").innerText()) === beforeCheck,
+    await page.locator("#build-state").innerText());
+  await ok("and offers no reload", await page.locator("#update-reload-now").isHidden());
+
+  // Now pretend a deploy happened. This is the case the button exists for: the
+  // browser would otherwise only look on a navigation, which a home-screen app
+  // may go weeks without.
+  deploy.bump = "\n// redeployed\n";
+  await page.getByRole("button", { name: "Check for updates" }).click();
+  await page.waitForSelector("#update-bar:not([hidden])", { timeout: 10000 });
+  await page.waitForFunction(() => !/checking/.test(document.getElementById("build-state")?.textContent ?? ""));
+  await ok("a check finds a deploy and raises the bar", true);
+  await ok("the dialog offers the reload too", await page.locator("#update-reload-now").isVisible());
+  await ok("and says what happened",
+    /new version/i.test(await page.locator("#build-state").innerText()),
+    await page.locator("#build-state").innerText());
+
+  // The reload is the thing that actually puts you on it.
+  await page.click("#update-reload-now");
+  await page.waitForLoadState("networkidle");
+  await settle();
+  await ok("reloading clears the bar", await page.locator("#update-bar").isHidden());
+  await ok("and the draft survived the reload", (await title.inputValue()) === "Third post",
+    await title.inputValue());
+  // Left deployed on purpose: reverting it would be another byte change, and
+  // another update, in the middle of the offline tests below.
 
   // --- offline (the whole point of the skeleton) ---------------------------
   const swState = await page.evaluate(async () => {
