@@ -1,0 +1,53 @@
+# pizza-starter tasks. Every recipe is a one-liner or calls scripts/, so this
+# file also works as a reference without `just` installed.
+
+default:
+    @just --list
+
+# Serve the app. A service worker needs http://, not file://.
+serve:
+    python3 -m http.server 8000
+
+# Grep-level footgun checks; needs no node_modules. `just warnings --strict` exits 1 on findings.
+warnings *args:
+    scripts/warnings.sh {{args}}
+
+# Install dev tooling. Nothing in node_modules ships.
+dev-init:
+    npm install
+
+# Re-bundle lit and workbox into vendor/ after a version bump.
+dev-vendor:
+    scripts/dev-vendor.sh
+
+# Regenerate precache-manifest.js. Needed after editing any app file.
+dev-rebuild:
+    node scripts/build-precache.mjs
+
+# All checks.
+dev-check: dev-check-types dev-check-precache dev-check-tests dev-check-packages
+
+# Typecheck JSDoc-annotated JS; sw.js separately (worker scope).
+dev-check-types:
+    npx tsc -p jsconfig.json
+    node scripts/check-sw.mjs sw.js
+
+# Fail if precache-manifest.js is stale.
+dev-check-precache:
+    node scripts/build-precache.mjs --check
+
+# List outdated devDependencies. Informational; never fails.
+dev-check-packages:
+    -npm outdated
+
+# Unit tests, plus browser tests once playwright is installed.
+dev-check-tests:
+    node --test 'tests/**/*.test.mjs'
+
+# Install a pre-push hook running `warnings --strict` (repo-wide).
+dev-init-hooks:
+    scripts/install-hooks.sh
+
+# Opt in to browser tests. Uses installed Chrome, else `npx playwright install chromium`.
+dev-init-browser:
+    npm install --save-dev --save-exact playwright
