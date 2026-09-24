@@ -2,7 +2,7 @@
 self.__PRECACHE = [
   {
     "url": "style.css",
-    "revision": "a9d6e24f682905c78b678d28db8f73c4"
+    "revision": "d36cee8193569a4e6104c7256cff1a2e"
   },
   {
     "url": "state.js",
@@ -14,11 +14,11 @@ self.__PRECACHE = [
   },
   {
     "url": "index.html",
-    "revision": "1b27ca8b9b39bc7dc135e20969488c3b"
+    "revision": "511a000a54e2cf9a0b8acb0f09551088"
   },
   {
     "url": "app.js",
-    "revision": "ef505d58ae757a93f7242d76f2e9b40a"
+    "revision": "c91cc040b13c3129880d9de373409a58"
   },
   {
     "url": "vendor/workbox.js",

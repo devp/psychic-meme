@@ -93,6 +93,16 @@ default action on `pointerdown`, so the tap never moves focus — no keyboard
 dismissal, no unfold, no jump in the middle of a sentence. The click still
 fires; only the focus change is prevented.
 
+**You can tell which build you're on.** `sw.js` never changes; only
+`precache-manifest.js` does, so the manifest's contents are this app's only
+honest version number — and the worker is the only scope that can see them.
+Options asks it over a MessagePort and shows `build <8 hex> · N files cached`.
+When a new worker takes over a page that already had one, a bar offers a
+reload, because the page in front of you was assembled from the old build.
+The registration passes `updateViaCache: "none"`: the default lets the HTTP
+cache answer for imported scripts, which on GitHub Pages can hide a deploy for
+the length of its `max-age`.
+
 **Writes are debounced; everything that ends a session flushes.** A keystroke
 costs a full re-serialisation of every post in localStorage, so at capsule size
 that's a typing-speed problem rather than a storage one. 300ms of idle, plus a

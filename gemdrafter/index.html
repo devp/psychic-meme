@@ -40,6 +40,12 @@
 
 <gem-tabs class="tabs"></gem-tabs>
 
+<!-- Shown only when a new worker takes over a page that already had one. -->
+<div class="update-bar" id="update-bar" hidden>
+  <span>A new version is installed.</span>
+  <button type="button" id="update-reload">Reload</button>
+</div>
+
 <main class="panels">
   <section class="panel active" data-panel="draft">
     <!-- A div, not a form: with one text input and no submit button, Enter
@@ -157,6 +163,8 @@
         <li>While you're typing on a phone, the header, title, slug and buttons
             fold away so the text gets the room. Dismiss the keyboard to get
             them back.</li>
+        <li>Options shows which build is cached. When a new one installs, a bar
+            offers a reload — the page you're looking at came from the old one.</li>
         <li>Coming back to a post after five minutes away keeps a
             <strong>checkpoint</strong> of what it was before you started. So does
             the Checkpoint button. The last 20 are kept.</li>
@@ -201,6 +209,11 @@
       <button type="button" class="swatch" role="radio" data-set-theme="paper" aria-checked="false" aria-label="Paper"><span style="background:#faf7f0"></span>paper</button>
       <button type="button" class="swatch" role="radio" data-set-theme="phosphor" aria-checked="false" aria-label="Phosphor"><span style="background:#050805"></span>phosphor</button>
     </div>
+  </section>
+
+  <section>
+    <h3>Build</h3>
+    <p class="build-state" id="build-state">checking…</p>
   </section>
 
   <section>
