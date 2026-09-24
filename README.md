@@ -12,6 +12,7 @@ It does not yet exist.
 
 Currently, miscellaneous side-projects and utilities -- some hand-coded, some LLM-assisted -- that I'd like visible and useful for others.
 
+- [detype](detype) -- freewriting, morning-pages style: type a line, press Enter, let it fade. One page per day to look back on
 - [lightsabers](lightsabers)
 - [pizza-repl](pizza-repl) -- a repl for pizza rats: try out some languages in your phone browser/PWA, offline. Runs decker-lil today
 - [mermaid-utils](mermaid-utils)

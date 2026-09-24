@@ -1,0 +1,321 @@
+/* ---- theme tokens ----
+   Every colour lives here. Add a theme by copying a block and adding a swatch
+   button in index.html -- nothing else needs to know. Low contrast on
+   purpose everywhere except the line you're typing. */
+:root,
+:root[data-theme="dusk"] {
+  --bg: #16181d;
+  --bg-alt: #1b1e24;
+  --bg-raised: #22262e;
+  --fg: #d9dbe0;
+  --fg-dim: #7f8592;
+  --accent: #9bb8a5;
+  --accent-ink: #14201a;
+  --border: #2a2e37;
+}
+
+:root[data-theme="linen"] {
+  --bg: #f5f1e8;
+  --bg-alt: #eee8da;
+  --bg-raised: #fbf8f2;
+  --fg: #3a352d;
+  --fg-dim: #8b8272;
+  --accent: #6f8a78;
+  --accent-ink: #fbf8f2;
+  --border: #ddd4c2;
+}
+
+:root {
+  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-body: var(--font-serif);
+}
+:root[data-font="sans"] { --font-body: var(--font-sans); }
+:root[data-font="mono"] { --font-body: var(--font-mono); }
+
+/* ---- base ---- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  /* --app-height is set by syncAppHeight(); the dvh is the pre-JS fallback. */
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* ---- header ---- */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.app-header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+
+.icon-btn {
+  background: none;
+  border: 0;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  color: var(--fg-dim);
+}
+.icon-btn:hover { color: var(--fg); background: var(--bg-raised); }
+
+/* ---- tabs ---- */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  background: none;
+  border: 0;
+  padding: 7px 14px;
+  border-radius: 8px;
+  color: var(--fg-dim);
+  white-space: nowrap;
+  font-size: 14px;
+}
+.tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+/* ---- panels ---- */
+.panels { flex: 1; min-height: 0; position: relative; }
+
+.panel {
+  display: none;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+.panel.active { display: block; }
+
+/* ---- shared bits ---- */
+.quiet { color: var(--fg-dim); }
+.small { font-size: 13px; }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.field {
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.field:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+button.soft {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--fg-dim);
+  font-size: 14px;
+}
+button.soft:hover,
+button.soft:focus-visible { color: var(--fg); border-color: var(--fg-dim); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- write ---- */
+.panel.write.active { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+
+.write-space {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* The line sits a little below centre, with the fading ones above it. */
+  padding: 16px 20px calc(var(--app-height, 100dvh) * 0.28);
+  max-width: 42rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+ghost-lines { display: block; overflow: hidden; }
+
+.ghost {
+  margin: 0 0 0.35em;
+  font-size: 20px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  transition: opacity 3s ease, filter 3s ease;
+  animation: let-go 2.4s ease-out backwards;
+}
+.ghost[data-age="0"] { opacity: 0.22; }
+.ghost[data-age="1"] { opacity: 0.09; filter: blur(0.6px); }
+.ghost[data-age="2"] { opacity: 0.03; filter: blur(1.5px); }
+
+/* A new line starts where you typed it, fully there, and drifts up and away.
+   No fill-mode forwards: it ends exactly at its age's resting style, which
+   the transition then takes over from. */
+@keyframes let-go {
+  from { opacity: 0.9; transform: translateY(1.5em); filter: none; }
+}
+
+#line {
+  display: block;
+  width: 100%;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+  caret-color: var(--accent);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1.5;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: var(--fg-dim);
+  font-size: 13px;
+  opacity: 0.7;
+  transition: opacity 2s ease;
+}
+.hint.gone { opacity: 0; }
+
+.save-warning { margin: 12px 0 0; font-size: 13px; color: var(--accent); }
+
+.goal { height: 2px; background: var(--border); flex-shrink: 0; }
+.goal-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  opacity: 0.7;
+  transition: width 1.5s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost { animation: none; transition: none; }
+  .goal-fill, .hint { transition: none; }
+}
+
+/* ---- pages ---- */
+.pages-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.pages-tools .field { flex: 1; min-width: 0; }
+
+.page {
+  max-width: 42rem;
+  margin: 0 auto 32px;
+}
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  position: sticky;
+  top: -16px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.page-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.page-head .quiet { font-size: 13px; flex-shrink: 0; }
+
+.page-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.page-actions { display: flex; gap: 8px; }
+
+/* ---- settings dialog ---- */
+.settings {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-raised);
+  color: var(--fg);
+  padding: 20px;
+  width: min(92vw, 380px);
+  font-family: var(--font-body);
+}
+.settings::backdrop { background: rgb(0 0 0 / 0.5); }
+.settings h2 { margin: 0 0 16px; font-size: 16px; }
+.settings h3 { margin: 0 0 8px; font-size: 13px; color: var(--fg-dim); font-weight: 500; }
+.settings h3 .quiet { font-weight: 400; }
+
+.goal-target { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.goal-target .field { width: 7em; }
+.goal-target .field:disabled { opacity: 0.4; }
+.settings section { margin-bottom: 18px; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.swatch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+.swatch span {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.swatch[aria-checked="true"] { border-color: var(--accent); color: var(--fg); }
+
+.settings .primary {
+  width: 100%;
+  padding: 11px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 600;
+}
