@@ -1,0 +1,12 @@
+# Tasks about the starter. The app's own tasks are in app/justfile.
+
+default:
+    @just --list
+
+# Copy app/ (as committed) to <dest>, relative to the repo root, stamped with STARTER.
+new-app dest:
+    scripts/new-app.sh {{dest}}
+
+# Diff <app> against its STARTER stamp: what the starter and the app each changed since. Default --stat.
+drift app *args:
+    scripts/drift.sh {{app}} {{args}}

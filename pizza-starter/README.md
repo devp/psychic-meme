@@ -11,9 +11,10 @@ Includes a vendored copy of [Lit](https://lit.dev/), and a hand-written service 
 
 ## Quick start
 
-- Copy `app/` to start a new app. Everything outside `app/` is about the starter, not part of it.
-- `just serve`.
+- `just new-app <name>` copies `app/` to `<name>` at the repo root and stamps it with a `STARTER` file (commit, tree hash, date). Everything outside `app/` is about the starter, not part of it.
+- `cd <name> && just serve`.
 - Edit files. Work through app's default checklist to customize. Run `just warnings` sometimes.
+- Later, from `pizza-starter/`: `just drift <name>` shows what the starter and the app each changed since the copy. Pass `-p` for the full diff.
 
 ## Usage
 
