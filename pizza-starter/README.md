@@ -67,6 +67,7 @@ rebuild everything.
 
 ## TODO
 
+- [ ] consider porting gemdrafter feature: Hide the app's chrome while the keyboard is up
 - [ ] doc: explain usage
 - [ ] doc: explain the "why" behind my design choices (yagni, opt-in to complexity, anti-NIH/dont-reinvent, no-build-step, avoid-npm-when-you-can, make the best tools easily at hand without being cumbersome)
 - [ ] doc: explain "pizza rat" user persona
