@@ -10,17 +10,11 @@
 
 import { persistedValue, recordStore } from "./lib/store.js";
 
-const NS = "pizza-starter";
+// localStorage key prefix, from <meta name="app-ns"> in index.html.
+const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
 
 export const theme = persistedValue(NS + ":theme", "dusk");
 export const font = persistedValue(NS + ":font", "mono");
 export const tab = persistedValue(NS + ":tab", "list");
 export const lists = recordStore(NS + ":lists");
 export const activity = recordStore(NS + ":activity");
-
-/** The tabs this app has. Add a panel in index.html, add a line here. */
-export const TABS = [
-  { id: "list", label: "list" },
-  { id: "log", label: "log" },
-  { id: "about", label: "about" },
-];

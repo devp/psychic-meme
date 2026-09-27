@@ -1,0 +1,43 @@
+/* ---- theme tokens ----
+   Every colour lives here. Add a theme by copying a block and adding a swatch
+   button in index.html -- nothing else needs to know. */
+:root,
+:root[data-theme="dusk"] {
+  --bg: #12141a;
+  --bg-alt: #1a1d26;
+  --bg-raised: #20242f;
+  --fg: #e4e6ee;
+  --fg-dim: #8a8fa3;
+  --accent: #7dd3a8;
+  --accent-ink: #10241a;
+  --border: #2a2e3a;
+}
+
+:root[data-theme="paper"] {
+  --bg: #faf7f0;
+  --bg-alt: #f1ecdf;
+  --bg-raised: #ffffff;
+  --fg: #2b2620;
+  --fg-dim: #7a7263;
+  --accent: #b5562f;
+  --accent-ink: #fff6ef;
+  --border: #ded5bf;
+}
+
+:root[data-theme="phosphor"] {
+  --bg: #050805;
+  --bg-alt: #0a120a;
+  --bg-raised: #0f1c0f;
+  --fg: #8cffa0;
+  --fg-dim: #3f8a4d;
+  --accent: #39ff6a;
+  --accent-ink: #04160a;
+  --border: #163a1e;
+}
+
+:root {
+  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: var(--font-mono);
+}
+:root[data-font="sans"] { --font-body: var(--font-sans); }

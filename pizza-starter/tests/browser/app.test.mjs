@@ -90,6 +90,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("state persists across reload", (await page.locator("pizza-checklist .count").innerText()) === "1 of 6 done");
 
   // --- tabs ----------------------------------------------------------------
+  const tabCount = await page.getByRole("tab").count();
+  await ok("one tab per panel", tabCount === (await page.locator(".panel[data-panel]").count()), `${tabCount} tabs`);
   await clickTab("about");
   await page.waitForTimeout(60);
   await ok("tab switches panel", await page.locator('.panel[data-panel="about"]').isVisible());
@@ -97,6 +99,19 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.waitForTimeout(120);
   await ok("active tab persists", await page.locator('.panel[data-panel="about"]').isVisible());
   await clickTab("list");
+
+  // --- list-summary: the same store, without Lit -----------------------------
+  await clickTab("summary");
+  await page.waitForTimeout(60);
+  const summaryText = () => page.locator("pizza-list-summary .count").innerText();
+  await ok("summary renders from the store", (await summaryText()) === "Setup: 1 of 6 done", await summaryText());
+  await ok("summary shows `limit` items", (await page.locator(".summary li").count()) === 3);
+  await page.locator(".summary li").last().click();
+  await page.waitForTimeout(60);
+  await ok("tapping an item ticks it", (await summaryText()) === "Setup: 2 of 6 done", await summaryText());
+  await clickTab("list");
+  await page.waitForTimeout(60);
+  await ok("checklist sees the same change", (await page.locator("pizza-checklist .count").innerText()) === "2 of 6 done");
 
   // --- theme ---------------------------------------------------------------
   await page.click("#settings-btn");
@@ -106,6 +121,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="phosphor"]', "aria-checked")) === "true");
   await ok("other swatch unchecked", (await page.getAttribute('[data-set-theme="dusk"]', "aria-checked")) === "false");
   await page.click("#settings-close");
+  await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("pizza-starter:theme"))) === "phosphor");
 
   // --- service worker ------------------------------------------------------
   const swState = await page.evaluate(async () => {
@@ -216,6 +232,69 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   const valueAfter = await page.inputValue(".add-row input");
   await ok("typing survives a re-render elsewhere", focusBefore === "text" && focusAfter === "INPUT" && valueAfter === "half-typed",
     `focus ${focusBefore} -> ${focusAfter}, value "${valueAfter}"`);
+
+  // --- lib/reactive-element.js ---------------------------------------------
+  const re = await page.evaluate(async () => {
+    const { ReactiveElement } = await import("./lib/reactive-element.js");
+    const tick = () => Promise.resolve();
+    let updates = 0;
+    class Probe extends ReactiveElement {
+      static properties = ["count", "label"];
+      constructor() {
+        super();
+        this.count = 0;
+      }
+      update() {
+        updates++;
+        this.textContent = `${this.label}:${this.count}`;
+      }
+    }
+    class SubProbe extends Probe {
+      static properties = ["extra"];
+      update() {
+        super.update();
+        this.textContent += `:${this.extra}`;
+      }
+    }
+    const early = /** @type {any} */ (document.createElement("re-probe"));
+    early.label = "early"; // assigned before the class exists
+    customElements.define("re-probe", Probe);
+    customElements.define("re-sub-probe", SubProbe);
+    const el = /** @type {any} */ (document.createElement("re-probe"));
+    el.label = "off-page";
+    await tick();
+    const r = { offPage: updates };
+    document.body.append(early, el);
+    await tick();
+    early.label = "later"; // would be ignored if the early value still hid the setter
+    await tick();
+    Object.assign(r, { early: early.textContent });
+    updates = 0;
+    el.count = 1;
+    el.count = 2;
+    el.label = "x";
+    await tick();
+    Object.assign(r, { batch: updates, text: el.textContent });
+    updates = 0;
+    el.count = 2; // unchanged
+    await tick();
+    Object.assign(r, { noop: updates });
+    const sub = /** @type {any} */ (document.createElement("re-sub-probe"));
+    document.body.append(sub);
+    sub.label = "s";
+    sub.extra = "e";
+    await tick();
+    Object.assign(r, { sub: sub.textContent });
+    early.remove();
+    el.remove();
+    sub.remove();
+    return r;
+  });
+  await ok("re: no render while off-page", re.offPage === 0);
+  await ok("re: property set before define keeps its setter", re.early === "later:0", re.early);
+  await ok("re: assignments batch into one update", re.batch === 1 && re.text === "x:2", `${re.batch} ${re.text}`);
+  await ok("re: unchanged value skips the update", re.noop === 0);
+  await ok("re: subclass adds to parent's properties", re.sub === "s:0:e", re.sub);
 
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });

@@ -7,9 +7,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#12141a">
 <title>pizza-starter</title>
+<!-- localStorage key prefix; state.js and the theme script below read it. -->
+<meta name="app-ns" content="pizza-starter">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/pizza.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="app.css">
 <script type="importmap">
 {
   "imports": {
@@ -20,11 +24,11 @@
 </script>
 <script>
 // Runs before first paint so the chosen theme doesn't flash the default one.
-// Keep these keys in sync with NS in app.js.
 (function () {
   try {
-    var t = localStorage.getItem("pizza-starter:theme");
-    var f = localStorage.getItem("pizza-starter:font");
+    var ns = document.querySelector('meta[name="app-ns"]').getAttribute("content");
+    var t = localStorage.getItem(ns + ":theme");
+    var f = localStorage.getItem(ns + ":font");
     if (t) document.documentElement.setAttribute("data-theme", t);
     if (f) document.documentElement.setAttribute("data-font", f);
   } catch (e) {}
@@ -45,6 +49,11 @@
     <pizza-checklist></pizza-checklist>
   </section>
 
+  <section class="panel" data-panel="summary">
+    <p class="panel-note">The list again, built on lib/reactive-element.js instead of Lit. Tap an item to tick it off.</p>
+    <pizza-list-summary title-text="Setup"></pizza-list-summary>
+  </section>
+
   <section class="panel" data-panel="log">
     <p class="panel-note">What you've done in the list tab. Appended, never rebuilt.</p>
     <append-log id="activity-log"></append-log>
@@ -61,9 +70,9 @@
         home screen, turn on airplane mode, and it still works.
       </p>
       <p>
-        There is no build step. The files you edit are the files that ship. The
-        one generated file is <code>precache-manifest.js</code>: regenerate it
-        with <code>just dev-rebuild</code>; <code>just warnings</code> flags it when stale.
+        There is no build step. The files you edit are the files that ship.
+        <code>sw.js</code> lists them for offline; <code>just warnings</code>
+        flags that list when a file is added or removed.
       </p>
       <h2>Where things are</h2>
       <ul>
@@ -74,6 +83,9 @@
             properties, imports no app state, and leans on Lit's keyed <code>repeat()</code>
             so existing entries keep their DOM nodes and a screen reader only hears
             what's new.</li>
+        <li><code>components/list-summary.js</code> — the same list without Lit, on
+            <code>lib/reactive-element.js</code>: a small base class whose header lists
+            what it leaves out.</li>
         <li><code>vendor/lit.js</code> — Lit, vendored. 17.4KB raw, 6.8KB gzipped.</li>
       </ul>
       <p>The list tab tells you what to change.</p>

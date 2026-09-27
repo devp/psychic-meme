@@ -8,12 +8,14 @@ import { theme, font, tab, lists, activity } from "./state.js";
 import { Tabs } from "./components/tabs.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { AppendLog } from "./components/append-log.js";
+import { ListSummary } from "./components/list-summary.js";
 
 // Components read their state from state.js, so defining them is the whole of
 // it -- nothing to inject, nothing to sequence.
 customElements.define("pizza-tabs", Tabs);
 customElements.define("pizza-checklist", Checklist);
 customElements.define("append-log", AppendLog);
+customElements.define("pizza-list-summary", ListSummary);
 
 // First run: seed the checklist with its own setup instructions.
 // A plain worked example of create() + append() -- read it, then delete it.

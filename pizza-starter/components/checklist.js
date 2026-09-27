@@ -8,9 +8,9 @@ import { lists, activity } from "../state.js";
  */
 export const SETUP_STEPS = [
   { text: "Rename the app: manifest.webmanifest and <title> in index.html", done: false },
-  { text: "Pick your palette: the :root and [data-theme] blocks in style.css", done: false },
+  { text: "Pick your palette: the :root and [data-theme] blocks in theme.css", done: false },
   { text: "Replace icons/pizza.svg (or keep the pizza, it's not hurting anyone)", done: false },
-  { text: "Run `just dev-check` - types, precache manifest and tests should pass", done: false },
+  { text: "Run `just dev-check` - types and tests should pass", done: false },
   { text: "Add a second panel, to prove you understand the tab wiring", done: false },
   { text: "Delete components/checklist.js and build your thing", done: false },
 ];

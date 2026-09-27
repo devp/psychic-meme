@@ -16,25 +16,17 @@ warnings *args:
 dev-init:
     npm install
 
-# Re-bundle lit and workbox into vendor/ after a version bump.
+# Re-bundle lit into vendor/ after a version bump.
 dev-vendor:
     scripts/dev-vendor.sh
 
-# Regenerate precache-manifest.js. Needed after editing any app file.
-dev-rebuild:
-    node scripts/build-precache.mjs
-
 # All checks.
-dev-check: dev-check-types dev-check-precache dev-check-tests dev-check-packages
+dev-check: dev-check-types dev-check-tests dev-check-packages
 
 # Typecheck JSDoc-annotated JS; sw.js separately (worker scope).
 dev-check-types:
     npx tsc -p jsconfig.json
     node scripts/check-sw.mjs sw.js
-
-# Fail if precache-manifest.js is stale.
-dev-check-precache:
-    node scripts/build-precache.mjs --check
 
 # List outdated devDependencies. Informational; never fails.
 dev-check-packages:
