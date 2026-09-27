@@ -11,11 +11,13 @@ Includes a vendored copy of [Lit](https://lit.dev/), and a hand-written service 
 
 ## Quick start
 
-- Copy folder to start a new app.
+- Copy `app/` to start a new app. Everything outside `app/` is about the starter, not part of it.
 - `just serve`.
 - Edit files. Work through app's default checklist to customize. Run `just warnings` sometimes.
 
 ## Usage
+
+Paths from here on are relative to `app/`.
 
 Workflow tasks: see `justfile` (install [just](https://just.systems/), or read the file as documentation).
 
