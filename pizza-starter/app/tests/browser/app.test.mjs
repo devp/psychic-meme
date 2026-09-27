@@ -77,6 +77,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   const afterAdd = await page.locator(".checklist li").count();
   await ok("add item works after re-render", afterAdd === 7, `${afterAdd} items`);
   await ok("input clears after add", (await page.inputValue(".add-row input")) === "");
+  await ok("tapping Add keeps focus in the input, so the keyboard stays up",
+    await page.locator(".add-row input").evaluate((el) => document.activeElement === el));
   await ok("count updates on add", (await page.locator("pizza-checklist .count").innerText()) === "1 of 7 done");
 
   // --- delete --------------------------------------------------------------

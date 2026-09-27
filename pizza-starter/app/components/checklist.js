@@ -95,7 +95,7 @@ export class Checklist extends LitElement {
       <form class="add-row" @submit=${(/** @type {SubmitEvent} */ e) => this._add(e)}>
         <input name="text" type="text" placeholder="Add an item"
                autocomplete="off" autocapitalize="sentences" />
-        <button type="submit">Add</button>
+        <button type="submit" @pointerdown=${(/** @type {PointerEvent} */ e) => e.preventDefault()}>Add</button>
       </form>
     `;
   }
