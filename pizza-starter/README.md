@@ -75,34 +75,38 @@ rebuild everything.
 
 This repo is currenty bot-generated & *mostly* author-understood. Goal is to more substantively revise the code for comprehension. (In terms of [AI Usage Levels](https://raw.githubusercontent.com/devp/git-llm-annotate/refs/heads/main/ai-usage-levels-by-visidata.txt), this code is at Level 6, and my goal is Level 5 or 4.)
 
+Paths in this table are relative to `pizza-starter/`.
 
 | File | AI Usage Level |
 |---|---|
 | README.md | 2 |
-| icons/pizza.svg | 5 |
-| app.css | 6 |
-| app.js | 6 |
-| base.css | 6 |
-| components/append-log.js | 6 |
-| components/checklist.js | 6 |
-| components/list-summary.js | 6 |
-| components/tabs.js | 6 |
-| index.html | 6 |
-| jsconfig.json | 6 |
 | justfile | 6 |
-| lib/reactive-element.js | 6 |
-| lib/store.js | 6 |
-| lib/viewport.js | 6 |
-| manifest.webmanifest | 6 |
-| scripts/check-sw.mjs | 6 |
-| scripts/dev-vendor.sh | 6 |
-| scripts/install-hooks.sh | 6 |
-| scripts/warnings.sh | 6 |
-| state.js | 6 |
-| sw.js | 6 |
-| tests/browser/app.test.mjs | 6 |
-| tests/store.test.mjs | 6 |
-| tests/warnings.test.mjs | 6 |
-| theme.css | 6 |
+| scripts/drift.sh | 6 |
+| scripts/new-app.sh | 6 |
+| app/icons/pizza.svg | 5 |
+| app/app.css | 6 |
+| app/app.js | 6 |
+| app/base.css | 6 |
+| app/components/append-log.js | 6 |
+| app/components/checklist.js | 6 |
+| app/components/list-summary.js | 6 |
+| app/components/tabs.js | 6 |
+| app/index.html | 6 |
+| app/jsconfig.json | 6 |
+| app/justfile | 6 |
+| app/lib/reactive-element.js | 6 |
+| app/lib/store.js | 6 |
+| app/lib/viewport.js | 6 |
+| app/manifest.webmanifest | 6 |
+| app/scripts/check-sw.mjs | 6 |
+| app/scripts/dev-vendor.sh | 6 |
+| app/scripts/install-hooks.sh | 6 |
+| app/scripts/warnings.sh | 6 |
+| app/state.js | 6 |
+| app/sw.js | 6 |
+| app/tests/browser/app.test.mjs | 6 |
+| app/tests/store.test.mjs | 6 |
+| app/tests/warnings.test.mjs | 6 |
+| app/theme.css | 6 |
 
 
