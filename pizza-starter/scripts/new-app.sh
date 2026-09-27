@@ -20,9 +20,12 @@ tree=$(git rev-parse "$commit:$prefix")
 
 mkdir -p "$top/$dest"
 git -C "$top" archive "$tree" | tar -x -C "$top/$dest"
+slug=$(basename "$dest")
 # warnings.sh treats package.json named pizza-starter as the starter itself and skips starter-leftover.
-sed -i.bak "s/\"name\": \"pizza-starter\"/\"name\": \"$(basename "$dest")\"/" "$top/$dest/package.json"
-rm "$top/$dest/package.json.bak"
+sed -i.bak "s/\"name\": \"pizza-starter\"/\"name\": \"$slug\"/" "$top/$dest/package.json"
+# app-ns prefixes localStorage keys, which every app on the origin shares.
+sed -i.bak "s/<meta name=\"app-ns\" content=\"pizza-starter\">/<meta name=\"app-ns\" content=\"$slug\">/" "$top/$dest/index.html"
+rm "$top/$dest/package.json.bak" "$top/$dest/index.html.bak"
 cat >"$top/$dest/STARTER" <<STAMP
 from: $prefix
 commit: $commit
