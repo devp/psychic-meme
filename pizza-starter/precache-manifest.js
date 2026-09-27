@@ -14,7 +14,7 @@ self.__PRECACHE = [
   },
   {
     "url": "index.html",
-    "revision": "7012e3d00a049a2a3ae401720aa49716"
+    "revision": "5217fa227b99bf7974252ccdc395154d"
   },
   {
     "url": "app.js",
@@ -38,7 +38,7 @@ self.__PRECACHE = [
   },
   {
     "url": "icons/pizza.svg",
-    "revision": "f67763fa46578789f3f54af144e2faeb"
+    "revision": "b99f43c0ab1647245f96c06607516b30"
   },
   {
     "url": "components/tabs.js",
@@ -46,7 +46,7 @@ self.__PRECACHE = [
   },
   {
     "url": "components/checklist.js",
-    "revision": "73e79049b52d07330404d9e6d651585b"
+    "revision": "d6872a0f30ba4ef6ed863a6fd23a3714"
   },
   {
     "url": "components/append-log.js",

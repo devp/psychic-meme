@@ -62,6 +62,7 @@ export class Checklist extends LitElement {
     const text = input.value.trim();
     if (!text || !this.record) return;
     lists.append(this.record.id, { text, done: false });
+    form.reset();
     note("added: " + text);
   }
 
