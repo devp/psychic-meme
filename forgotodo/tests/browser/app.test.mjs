@@ -78,7 +78,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("count updates on add", (await page.locator("forgo-checklist .count").innerText()) === "1 of 7 done");
 
   // --- delete --------------------------------------------------------------
-  await page.locator('.checklist button[aria-label="Delete"]').last().click();
+  const delRow = (text) => page.locator(".checklist li", { hasText: text }).locator('button[aria-label="Delete"]').click();
+  await delRow("buy more batteries");
   await page.waitForTimeout(60);
   await ok("delete works", (await page.locator(".checklist li").count()) === 6);
 
@@ -92,8 +93,6 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("title tab opens the menu bar", await page.locator("#menubar").isVisible());
   const clock = await page.locator("#title-btn").innerText();
   await ok("title tab shows the time while open", /\d:\d\d/.test(clock), clock);
-  await page.click('[data-menu="options"]');
-  await ok("menu titles switch menus", await page.locator('[data-cmd="prefs"]').isVisible());
   await page.keyboard.press("Escape");
   await ok("escape closes the menu", await page.locator("#menubar").isHidden());
   await ok("title comes back", (await page.locator("#title-btn").innerText()) === "To Do List");
@@ -108,7 +107,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="beam"]');
   await page.waitForTimeout(60);
   const beamed = await page.evaluate(() => /** @type {any} */ (window).__beamed);
-  await ok("beam shares the list as plain text", /^- \[x\] HotSync before the trip$/m.test(beamed ?? "") && /^- \[ \] Buy AAA batteries$/m.test(beamed ?? ""), beamed);
+  await ok("beam shares the list as plain text", /^- \[x\] HotSync before the trip!!$/m.test(beamed ?? "") && /^- \[ \] Buy AAA batteries!$/m.test(beamed ?? ""), beamed);
   await ok("beam dialog closes after sharing", !(await page.locator("#beam-dialog").isVisible()));
 
   await page.evaluate(() => {
@@ -131,13 +130,15 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.waitForTimeout(60);
   await ok("receive appends items", (await page.locator("forgo-checklist .count").innerText()) === "2 of 8 done");
   await ok("receive dialog closes", !(await page.locator("#receive-dialog").isVisible()));
-  for (let i = 0; i < 2; i++) await page.locator('.checklist button[aria-label="Delete"]').last().click();
+  await delRow("charge the cradle");
+  await delRow("find the cable");
   await page.waitForTimeout(60);
 
   // --- theme ---------------------------------------------------------------
   await page.click("#title-btn");
-  await page.click('[data-menu="options"]');
   await page.click('[data-cmd="prefs"]');
+  await ok("Options… opens preferences and closes the menu",
+    (await page.locator("#settings-dialog").isVisible()) && (await page.locator("#menubar").isHidden()));
   await page.click('[data-set-theme="backlight"]');
   await page.waitForTimeout(60);
   await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "backlight");
@@ -189,4 +190,54 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
     `focus ${focusBefore} -> ${focusAfter}, value "${valueAfter}"`);
 
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+});
+
+test("forgetting, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const server = await serve();
+  const URL = `http://127.0.0.1:${server.address().port}/index.html`;
+  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
+  t.after(async () => {
+    await browser.close();
+    server.closeAllConnections();
+    server.close();
+  });
+  const ok = (name, cond, extra = "") => t.test(name, () => assert.ok(cond, extra || name));
+
+  const page = await (await browser.newContext({ serviceWorkers: "block" })).newPage();
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    const key = (/** @type {number} */ daysAgo) => {
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+      const pad = (/** @type {number} */ n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+    const items = [
+      { id: "a", text: "plain", done: false, seenDay: key(1) },
+      { id: "b", text: "urgent!!!", done: false, seenDay: key(1) },
+      { id: "c", text: "old news", done: true, doneDay: key(1) },
+      { id: "d", text: "fresh done", done: true, doneDay: key(0) },
+      { id: "e", text: "long gone!", done: false, seenDay: key(9) },
+    ];
+    localStorage.setItem("forgotodo:lists:records", JSON.stringify([
+      { id: "L", name: "Unfiled", createdAt: 0, updatedAt: 0, items },
+    ]));
+    localStorage.setItem("forgotodo:lists:activeId", "L");
+  });
+  await page.goto(URL, { waitUntil: "networkidle" });
+  await page.waitForTimeout(100);
+
+  const rows = await page.locator(".checklist li span").allInnerTexts();
+  await ok("decays, purges, and sorts most to least urgent",
+    JSON.stringify(rows) === JSON.stringify(["urgent!!", "fresh done", "plain?", "long gone?"]), JSON.stringify(rows));
+  await ok("items with ! are marked urgent",
+    (await page.locator(".checklist li.urgent span").allInnerTexts()).join() === "urgent!!");
+  await ok("forgotten items are faded, not deleted",
+    (await page.locator(".checklist li.forgotten").count()) === 2);
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(100);
+  const again = await page.locator(".checklist li span").allInnerTexts();
+  await ok("same day, no further decay", JSON.stringify(again) === JSON.stringify(rows), JSON.stringify(again));
 });

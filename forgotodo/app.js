@@ -6,6 +6,7 @@ import { syncAppHeight } from "./lib/viewport.js";
 import { theme, font, lists } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toBeamText, fromBeamText } from "./lib/beam.js";
+import { dayKey, forgetChanges } from "./lib/forget.js";
 
 // Components read their state from state.js, so defining them is the whole of
 // it -- nothing to inject, nothing to sequence.
@@ -20,6 +21,22 @@ if (lists.getAll().length === 0) {
 } else {
   lists.ensureActive();
 }
+
+// ---- forgetting -----------------------------------------------------------
+// Lazy: catch up on however many days have passed whenever the app is opened
+// or comes back to the foreground. See lib/forget.js for the rules.
+
+function forget() {
+  const rec = lists.ensureActive();
+  for (const c of forgetChanges(/** @type {any} */ (rec.items), dayKey())) {
+    if ("remove" in c) lists.removeItem(rec.id, c.id);
+    else lists.updateItem(rec.id, c.id, c.patch);
+  }
+}
+forget();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") forget();
+});
 
 // ---- shell glue -----------------------------------------------------------
 // Theme and font are just persisted scalars with a subscriber each. No
@@ -172,7 +189,8 @@ receiveForm.addEventListener("submit", (e) => {
     return;
   }
   const rec = lists.ensureActive();
-  items.forEach((item) => lists.append(rec.id, item));
+  const seenDay = dayKey();
+  items.forEach((item) => lists.append(rec.id, { ...item, seenDay }));
   receiveDialog.close();
 });
 

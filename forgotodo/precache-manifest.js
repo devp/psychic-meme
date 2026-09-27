@@ -2,7 +2,7 @@
 self.__PRECACHE = [
   {
     "url": "style.css",
-    "revision": "554932cd5ef8e4e6656c26014c6f3b16"
+    "revision": "d85798a24d894b2a0cf6a8c7832759e7"
   },
   {
     "url": "state.js",
@@ -14,11 +14,11 @@ self.__PRECACHE = [
   },
   {
     "url": "index.html",
-    "revision": "b3cd6699dca27531c29598246e55a798"
+    "revision": "9e7562a2e12118f0b938246bbe4d466a"
   },
   {
     "url": "app.js",
-    "revision": "eecac4f55e7a2e5b71f4df4920a46c8d"
+    "revision": "0d33c80046f8f93f0e3b23486e1f2adb"
   },
   {
     "url": "vendor/workbox.js",
@@ -37,6 +37,10 @@ self.__PRECACHE = [
     "revision": "263b6904e27b0f3e2435428d322e75a0"
   },
   {
+    "url": "lib/forget.js",
+    "revision": "9a3645c1a92f9e491532697d49f6f722"
+  },
+  {
     "url": "lib/beam.js",
     "revision": "6ed0043130022553087a2bc679bc70aa"
   },
@@ -50,6 +54,6 @@ self.__PRECACHE = [
   },
   {
     "url": "components/checklist.js",
-    "revision": "19c731d544a2a3e3cc140cf52731c238"
+    "revision": "c8055d7ea767b709d1fca9c202bb61fd"
   }
 ];

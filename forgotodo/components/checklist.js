@@ -1,15 +1,16 @@
 import { LitElement, html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
 import { lists } from "../state.js";
+import { dayKey, priorityOf, isForgotten } from "../lib/forget.js";
 
 /** Sample to-dos for a first run. */
 export const SETUP_STEPS = [
-  { text: "HotSync before the trip", done: false },
-  { text: "Buy AAA batteries", done: false },
+  { text: "HotSync before the trip!!", done: false },
+  { text: "Buy AAA batteries!", done: false },
   { text: "Find the stylus (check the couch)", done: false },
   { text: "Beam contact card to Sam", done: false },
   { text: "Recalibrate the digitizer", done: false },
-  { text: "Graffiti practice: 10 minutes", done: false },
+  { text: "Learn Graffiti?", done: false },
 ];
 
 export class Checklist extends LitElement {
@@ -40,7 +41,7 @@ export class Checklist extends LitElement {
   /** @param {string} itemId @param {boolean} done */
   _toggle(itemId, done) {
     if (!this.record) return;
-    lists.updateItem(this.record.id, itemId, { done });
+    lists.updateItem(this.record.id, itemId, { done, doneDay: done ? dayKey() : null });
   }
 
   /** @param {string} itemId */
@@ -56,12 +57,15 @@ export class Checklist extends LitElement {
     const input = /** @type {HTMLInputElement} */ (form.elements.namedItem("text"));
     const text = input.value.trim();
     if (!text || !this.record) return;
-    lists.append(this.record.id, { text, done: false });
+    lists.append(this.record.id, { text, done: false, seenDay: dayKey() });
     form.reset();
   }
 
   render() {
-    const items = this.record ? this.record.items : [];
+    // Most to least urgent; ties keep their order (sort is stable).
+    const items = (this.record ? this.record.items : [])
+      .slice()
+      .sort((a, b) => priorityOf(b.text) - priorityOf(a.text));
     const done = items.filter((i) => i.done).length;
 
     return html`
@@ -70,7 +74,7 @@ export class Checklist extends LitElement {
         ${repeat(
           items,
           (i) => i.id,
-          (i) => html`<li class=${i.done ? "done" : ""}>
+          (i) => html`<li class=${[i.done ? "done" : "", priorityOf(i.text) > 0 ? "urgent" : "", isForgotten(i.text) ? "forgotten" : ""].join(" ").trim()}>
             <label>
               <input
                 type="checkbox"

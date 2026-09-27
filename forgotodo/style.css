@@ -198,6 +198,12 @@ html { font-synthesis-weight: none; }
   border-bottom: 1px dotted var(--ink-dim);
 }
 .checklist li.done span { color: var(--ink-dim); text-decoration: line-through; }
+/* Any `!`: bold. The pixel font has no bold weight, so overstrike 1px to the
+   right, the way bitmap fonts were emboldened. */
+.checklist li.urgent span { text-shadow: 1px 0 currentColor; }
+:root[data-font="sans"] .checklist li.urgent span { text-shadow: none; font-weight: 700; }
+/* Decayed to `?`: kept, but fading out of mind. */
+.checklist li.forgotten { opacity: 0.45; }
 
 .checklist label {
   display: flex;
