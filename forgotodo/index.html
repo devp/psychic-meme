@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="palm" data-font="pixel">
+<html lang="en" data-theme="palm" data-scheme="light" data-font="pixel" data-icons="on" data-fit="off">
 <head>
 <meta charset="utf-8">
 <!-- interactive-widget=resizes-content is half of the keyboard fix; the other
@@ -20,13 +20,21 @@
 </script>
 <script>
 // Runs before first paint so the chosen theme doesn't flash the default one.
-// Keep these keys in sync with NS in app.js.
+// Keep these keys in sync with NS in state.js, and the scheme logic with app.js.
 (function () {
   try {
-    var t = localStorage.getItem("forgotodo:theme");
-    var f = localStorage.getItem("forgotodo:font");
-    if (t) document.documentElement.setAttribute("data-theme", t);
-    if (f) document.documentElement.setAttribute("data-font", f);
+    var root = document.documentElement;
+    var get = function (k) { return localStorage.getItem("forgotodo:" + k); };
+    var t = get("theme");
+    var m = get("mode");
+    if (t === "backlight") { t = "palm"; m = m || "dark"; } // backlight is palm's dark mode now
+    if (t) root.setAttribute("data-theme", t);
+    var dark = m === "dark" || (m === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+    root.setAttribute("data-scheme", dark ? "dark" : "light");
+    ["font", "icons", "fit"].forEach(function (k) {
+      var v = get(k);
+      if (v) root.setAttribute("data-" + k, v);
+    });
   } catch (e) {}
 })();
 </script>
@@ -40,11 +48,18 @@
   <nav id="menubar" class="menubar" aria-label="Menu" hidden>
     <div class="menu-titles">
       <button type="button" class="menu-title" data-menu="record" aria-expanded="true">Record</button>
+      <button type="button" class="menu-title" data-menu="organize" aria-expanded="false">Organize</button>
       <button type="button" class="menu-title" data-cmd="prefs" aria-haspopup="dialog">Options…</button>
     </div>
     <div class="menu-items" role="menu" data-menu-items="record">
-      <button type="button" role="menuitem" data-cmd="beam">Beam List</button>
-      <button type="button" role="menuitem" data-cmd="receive">Receive Beam…</button>
+      <button type="button" role="menuitem" data-cmd="beam" data-icon="beam">Beam List</button>
+      <button type="button" role="menuitem" data-cmd="receive" data-icon="receive">Receive Beam…</button>
+    </div>
+    <div class="menu-items" role="menu" data-menu-items="organize" hidden>
+      <button type="button" role="menuitem" data-cmd="sweep" data-icon="sweep">Sweep…<small>least urgent</small></button>
+      <button type="button" role="menuitem" data-cmd="recycle" data-icon="recycle">Recycle…<small>done</small></button>
+      <button type="button" role="menuitem" data-cmd="forget" data-icon="forget">Forget<small>one, less</small></button>
+      <button type="button" role="menuitem" data-cmd="remember" data-icon="remember">Remember<small>one, more</small></button>
     </div>
   </nav>
 </header>
@@ -62,10 +77,19 @@
   <section>
     <h3>Theme</h3>
     <div class="swatches" role="radiogroup" aria-label="Theme">
-      <button type="button" class="swatch" role="radio" data-set-theme="palm" aria-checked="true" aria-label="Palm"><span style="background:#b4bf98"></span>palm</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="backlight" aria-checked="false" aria-label="Backlight"><span style="background:#123524"></span>backlight</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="newton" aria-checked="false" aria-label="Newton"><span style="background:#dcdcd2"></span>newton</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="gameboy" aria-checked="false" aria-label="Game Boy"><span style="background:#9bbc0f"></span>game boy</button>
+      <!-- Each swatch is half light, half dark: the theme in both modes. -->
+      <button type="button" class="swatch" role="radio" data-set-theme="palm" aria-checked="true" aria-label="Palm"><span style="background:linear-gradient(135deg,#b4bf98 50%,#123524 50%)"></span>palm</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="newton" aria-checked="false" aria-label="Newton"><span style="background:linear-gradient(135deg,#dcdcd2 50%,#1f1f1c 50%)"></span>newton</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="gameboy" aria-checked="false" aria-label="Game Boy"><span style="background:linear-gradient(135deg,#9bbc0f 50%,#0f380f 50%)"></span>game boy</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Backlight</h3>
+    <div class="swatches" role="radiogroup" aria-label="Backlight">
+      <button type="button" class="swatch" role="radio" data-set-mode="light" aria-checked="true" aria-label="Light">off</button>
+      <button type="button" class="swatch" role="radio" data-set-mode="dark" aria-checked="false" aria-label="Dark">on</button>
+      <button type="button" class="swatch" role="radio" data-set-mode="system" aria-checked="false" aria-label="System">auto</button>
     </div>
   </section>
 
@@ -73,13 +97,19 @@
     <h3>Font</h3>
     <div class="swatches" role="radiogroup" aria-label="Font">
       <button type="button" class="swatch" role="radio" data-set-font="pixel" aria-checked="true">pixel</button>
+      <button type="button" class="swatch" role="radio" data-set-font="casual" aria-checked="false">casual</button>
       <button type="button" class="swatch" role="radio" data-set-font="sans" aria-checked="false">plain</button>
     </div>
   </section>
 
+  <section class="toggles">
+    <label><input type="checkbox" data-toggle="icons"> Menu icons</label>
+    <label><input type="checkbox" data-toggle="fit"> Shrink to fit</label>
+  </section>
+
   <section class="about">
     <h3>About</h3>
-    <p>forgotodo v0.1. A to-do list with a pocket organizer's manners. Works offline; add it to your home screen.</p>
+    <p>forgotodo v0.2. A to-do list with a pocket organizer's manners. Works offline; add it to your home screen.</p>
     <p>Everything lives in this browser's localStorage. Nothing is sent anywhere.</p>
   </section>
 
@@ -102,6 +132,23 @@
     <div class="dialog-buttons">
       <button type="submit" class="primary">Receive</button>
       <button type="button" id="receive-cancel" class="primary">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="alert-dialog" class="dialog alert">
+  <h2 id="alert-title"></h2>
+  <form method="dialog">
+    <div class="alert-body">
+      <span id="alert-icon" class="alert-icon"></span>
+      <div>
+        <p id="alert-msg" class="dialog-msg"></p>
+        <ul id="alert-list" class="alert-list"></ul>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button type="submit" value="ok" class="primary">OK</button>
+      <button type="submit" value="cancel" id="alert-cancel" class="primary">Cancel</button>
     </div>
   </form>
 </dialog>

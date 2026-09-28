@@ -74,7 +74,7 @@ export class Checklist extends LitElement {
         ${repeat(
           items,
           (i) => i.id,
-          (i) => html`<li class=${[i.done ? "done" : "", priorityOf(i.text) > 0 ? "urgent" : "", isForgotten(i.text) ? "forgotten" : ""].join(" ").trim()}>
+          (i) => html`<li data-id=${i.id} class=${[i.done ? "done" : "", priorityOf(i.text) > 0 ? "urgent" : "", isForgotten(i.text) ? "forgotten" : ""].join(" ").trim()}>
             <label>
               <input
                 type="checkbox"

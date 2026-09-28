@@ -139,13 +139,35 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="prefs"]');
   await ok("Options… opens preferences and closes the menu",
     (await page.locator("#settings-dialog").isVisible()) && (await page.locator("#menubar").isHidden()));
-  await page.click('[data-set-theme="backlight"]');
+  await page.click('[data-set-theme="gameboy"]');
   await page.waitForTimeout(60);
-  await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "backlight");
-  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="backlight"]', "aria-checked")) === "true");
+  await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "gameboy");
+  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="gameboy"]', "aria-checked")) === "true");
   await ok("other swatch unchecked", (await page.getAttribute('[data-set-theme="palm"]', "aria-checked")) === "false");
+  await page.click('[data-set-mode="dark"]');
+  await page.waitForTimeout(60);
+  await ok("backlight on means the dark scheme", (await page.getAttribute("html", "data-scheme")) === "dark");
+  await ok("browser chrome follows the theme",
+    (await page.getAttribute('meta[name="theme-color"]', "content")) === "#0f380f");
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.click('[data-set-mode="system"]');
+  await page.waitForTimeout(60);
+  await ok("auto follows the system (light)", (await page.getAttribute("html", "data-scheme")) === "light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.waitForTimeout(60);
+  await ok("auto follows the system (dark)", (await page.getAttribute("html", "data-scheme")) === "dark");
+  await page.click('[data-set-font="casual"]');
+  await page.waitForTimeout(60);
+  await ok("casual font applies", (await page.getAttribute("html", "data-font")) === "casual");
+  await page.click('[data-toggle="icons"]');
+  await page.waitForTimeout(60);
+  await ok("icons toggle off", (await page.getAttribute("html", "data-icons")) === "off");
   await ok("about lives in options", await page.locator("#settings-dialog .about").isVisible());
   await page.click("#settings-close");
+  await page.reload({ waitUntil: "networkidle" });
+  await ok("options persist across reload",
+    (await page.evaluate(() => [...document.documentElement.attributes].map((a) => a.name + "=" + a.value).join(" ")))
+      .includes('data-theme=gameboy data-scheme=dark data-font=casual data-icons=off'));
 
   // --- service worker ------------------------------------------------------
   const swState = await page.evaluate(async () => {
@@ -240,4 +262,106 @@ test("forgetting, in a real browser", { skip: !chromium && "playwright not insta
   await page.waitForTimeout(100);
   const again = await page.locator(".checklist li span").allInnerTexts();
   await ok("same day, no further decay", JSON.stringify(again) === JSON.stringify(rows), JSON.stringify(again));
+});
+
+test("organize and shrink to fit, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const server = await serve();
+  const URL = `http://127.0.0.1:${server.address().port}/index.html`;
+  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
+  t.after(async () => {
+    await browser.close();
+    server.closeAllConnections();
+    server.close();
+  });
+  const ok = (name, cond, extra = "") => t.test(name, () => assert.ok(cond, extra || name));
+
+  const page = await (await browser.newContext({ serviceWorkers: "block", viewport: { width: 390, height: 844 } })).newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    const d = new Date();
+    const pad = (/** @type {number} */ n) => String(n).padStart(2, "0");
+    const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const items = [
+      { id: "a", text: "keep!", done: false, seenDay: today },
+      { id: "b", text: "meh?", done: false, seenDay: today },
+      { id: "c", text: "whatever?", done: false, seenDay: today },
+      { id: "d", text: "did it", done: true, doneDay: today },
+    ];
+    localStorage.setItem("forgotodo:lists:records", JSON.stringify([
+      { id: "L", name: "Unfiled", createdAt: 0, updatedAt: 0, items },
+    ]));
+    localStorage.setItem("forgotodo:lists:activeId", "L");
+  });
+  await page.goto(URL, { waitUntil: "networkidle" });
+  const texts = () => page.locator(".checklist li span").allInnerTexts();
+  const run = async (/** @type {string} */ cmd) => {
+    await page.click("#title-btn");
+    await page.click('[data-menu="organize"]');
+    await page.click(`[data-cmd="${cmd}"]`);
+    await page.waitForTimeout(60);
+  };
+
+  await page.click("#title-btn");
+  await page.click('[data-menu="organize"]');
+  await ok("organize menu shows its items", await page.locator('[data-cmd="sweep"]').isVisible());
+  await ok("menu items carry pixel icons", (await page.locator('[data-menu-items="organize"] svg.icon').count()) === 4);
+  await page.keyboard.press("Escape");
+
+  await run("sweep");
+  await ok("sweep asks first, listing what goes",
+    (await page.locator("#alert-list li").allInnerTexts()).join() === "meh?,whatever?");
+  await page.click('#alert-dialog button[value="cancel"]');
+  await page.waitForTimeout(60);
+  await ok("cancel keeps everything", (await texts()).length === 4);
+  await run("sweep");
+  await page.click('#alert-dialog button[value="ok"]');
+  await page.waitForTimeout(60);
+  await ok("sweep deletes the lowest tier only", JSON.stringify(await texts()) === JSON.stringify(["keep!", "did it"]));
+
+  await run("recycle");
+  await page.click('#alert-dialog button[value="ok"]');
+  await page.waitForTimeout(60);
+  await ok("recycle deletes done items", JSON.stringify(await texts()) === JSON.stringify(["keep!"]));
+
+  await run("remember");
+  await ok("remember raises one", JSON.stringify(await texts()) === JSON.stringify(["keep!!"]));
+  await ok("the touched row blinks", (await page.locator("li[data-flash]").count()) === 1);
+  await run("forget");
+  await run("forget");
+  await run("forget");
+  await ok("forget lowers one, to a ?", JSON.stringify(await texts()) === JSON.stringify(["keep?"]));
+  await run("forget");
+  await ok("nothing left to forget says so", (await page.locator("#alert-msg").innerText()).includes("already forgotten"));
+  await page.click('#alert-dialog button[value="ok"]');
+
+  // --- shrink to fit -----------------------------------------------------
+  const size = () => page.locator(".checklist").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  await ok("normal size with fit off", (await size()) === 15);
+  await page.evaluate(() => localStorage.setItem("forgotodo:fit", "on"));
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(100);
+  const one = await size();
+  await ok("big with a short list", one === 28, String(one));
+  for (let i = 0; i < 8; i++) {
+    await page.fill(".add-row input", "task number " + i);
+    await page.press(".add-row input", "Enter");
+  }
+  await page.locator(".add-row input").blur();
+  await page.waitForTimeout(100);
+  const nine = await size();
+  await ok("smaller as it grows", nine < one && nine >= 15, String(nine));
+  for (let i = 8; i < 40; i++) {
+    await page.fill(".add-row input", "task number " + i);
+    await page.press(".add-row input", "Enter");
+  }
+  await page.locator(".add-row input").blur();
+  await page.waitForTimeout(100);
+  const many = await size();
+  const fits = await page.locator('[data-panel="list"]').evaluate((el) => el.scrollHeight <= el.clientHeight);
+  await ok("shrinks further to fit", many < 15 && (fits || many === 10), `${many}px, fits: ${fits}`);
+
+  await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });

@@ -2,11 +2,11 @@
 self.__PRECACHE = [
   {
     "url": "style.css",
-    "revision": "d85798a24d894b2a0cf6a8c7832759e7"
+    "revision": "088ad0d79f66b9ce38a1fb30e68c8783"
   },
   {
     "url": "state.js",
-    "revision": "5f9d77d371ff1144493f3ecd48891293"
+    "revision": "bd49cfc25e16b3d46c8efe72e49e076a"
   },
   {
     "url": "manifest.webmanifest",
@@ -14,11 +14,11 @@ self.__PRECACHE = [
   },
   {
     "url": "index.html",
-    "revision": "9e7562a2e12118f0b938246bbe4d466a"
+    "revision": "70293092c6241f7274f6d459fdadb021"
   },
   {
     "url": "app.js",
-    "revision": "0d33c80046f8f93f0e3b23486e1f2adb"
+    "revision": "3622d0b999fbadd74f25fa2fa763c437"
   },
   {
     "url": "vendor/workbox.js",
@@ -37,8 +37,20 @@ self.__PRECACHE = [
     "revision": "263b6904e27b0f3e2435428d322e75a0"
   },
   {
+    "url": "lib/organize.js",
+    "revision": "c8d812d52b24aa82f1ab94c54b854cda"
+  },
+  {
+    "url": "lib/icons.js",
+    "revision": "0b52b67032aaf1bdb11244c410db770c"
+  },
+  {
     "url": "lib/forget.js",
     "revision": "9a3645c1a92f9e491532697d49f6f722"
+  },
+  {
+    "url": "lib/fit.js",
+    "revision": "41bbab89f45a1a6c1b5d85ce63de4234"
   },
   {
     "url": "lib/beam.js",
@@ -53,7 +65,15 @@ self.__PRECACHE = [
     "revision": "26f15bf263599d05a557257aeb83ab4b"
   },
   {
+    "url": "fonts/ComicNeue-Regular.woff2",
+    "revision": "d0346bbf7ae077cf903158b13c216b01"
+  },
+  {
+    "url": "fonts/ComicNeue-Bold.woff2",
+    "revision": "16951fb1680d3f156db16041da646ca5"
+  },
+  {
     "url": "components/checklist.js",
-    "revision": "c8055d7ea767b709d1fca9c202bb61fd"
+    "revision": "17f0875aefb68ae80c7001e6ac27bbcc"
   }
 ];

@@ -3,10 +3,13 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, font, lists } from "./state.js";
+import { theme, mode, font, icons, fit, lists } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toBeamText, fromBeamText } from "./lib/beam.js";
 import { dayKey, forgetChanges } from "./lib/forget.js";
+import { sweepable, recyclable, forgetOne, rememberOne } from "./lib/organize.js";
+import { ICONS, bitmapSvg } from "./lib/icons.js";
+import { preferredSize, largestFitting } from "./lib/fit.js";
 
 // Components read their state from state.js, so defining them is the whole of
 // it -- nothing to inject, nothing to sequence.
@@ -39,17 +42,63 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ---- shell glue -----------------------------------------------------------
-// Theme and font are just persisted scalars with a subscriber each. No
-// lib needed; this is the whole of it.
+// Options are just persisted scalars with a subscriber each. No lib needed;
+// this is the whole of it.
+
+const root = document.documentElement;
+
+// "backlight" used to be its own theme; it's palm in dark mode now.
+if (theme.get() === "backlight") {
+  theme.set("palm");
+  mode.set("dark");
+}
 
 theme.subscribe((v) => {
-  document.documentElement.setAttribute("data-theme", v);
+  root.setAttribute("data-theme", v);
   syncChecked("[data-set-theme]", "data-set-theme", v);
+  syncThemeColor();
 });
 
+// Every theme has a light and a dark scheme; mode picks one, or follows the
+// system. Keep in step with the pre-paint script in index.html.
+const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+function applyScheme() {
+  const m = mode.get();
+  const dark = m === "dark" || (m === "system" && darkQuery.matches);
+  root.setAttribute("data-scheme", dark ? "dark" : "light");
+  syncThemeColor();
+}
+mode.subscribe((v) => {
+  syncChecked("[data-set-mode]", "data-set-mode", v);
+  applyScheme();
+});
+darkQuery.addEventListener("change", applyScheme);
+
+/** The browser chrome matches the screen. */
+function syncThemeColor() {
+  const bg = getComputedStyle(root).getPropertyValue("--bg").trim();
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg);
+}
+
 font.subscribe((v) => {
-  document.documentElement.setAttribute("data-font", v);
+  root.setAttribute("data-font", v);
   syncChecked("[data-set-font]", "data-set-font", v);
+});
+
+// On/off options: a checkbox each in Options, a data- attribute on <html>.
+for (const [name, value] of Object.entries({ icons, fit })) {
+  const box = /** @type {HTMLInputElement|null} */ (document.querySelector(`[data-toggle="${name}"]`));
+  box?.addEventListener("change", () => value.set(box.checked ? "on" : "off"));
+  value.subscribe((v) => {
+    root.setAttribute("data-" + name, v);
+    if (box) box.checked = v === "on";
+  });
+}
+
+// Pixel icons go in once; the icons option only shows or hides them.
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  const rows = ICONS[el.getAttribute("data-icon") ?? ""];
+  if (rows) el.insertAdjacentHTML("afterbegin", bitmapSvg(rows));
 });
 
 /**
@@ -68,6 +117,8 @@ document.addEventListener("click", (e) => {
   if (!el) return;
   const t = el.closest("[data-set-theme]");
   if (t) theme.set(t.getAttribute("data-set-theme") ?? "palm");
+  const m = el.closest("[data-set-mode]");
+  if (m) mode.set(m.getAttribute("data-set-mode") ?? "light");
   const f = el.closest("[data-set-font]");
   if (f) font.set(f.getAttribute("data-set-font") ?? "pixel");
 });
@@ -119,6 +170,10 @@ const COMMANDS = {
   beam,
   receive: () => receiveDialog.showModal(),
   prefs: () => settings.showModal(),
+  sweep,
+  recycle,
+  forget: () => nudge("forget"),
+  remember: () => nudge("remember"),
 };
 
 menubar.addEventListener("click", (e) => {
@@ -193,6 +248,127 @@ receiveForm.addEventListener("submit", (e) => {
   items.forEach((item) => lists.append(rec.id, { ...item, seenDay }));
   receiveDialog.close();
 });
+
+// ---- organize -------------------------------------------------------------
+// Sweep and Recycle delete, so they ask first, Palm-alert style. Forget and
+// Remember are one random step each way, and blink the row they touched.
+
+const alertDialog = /** @type {HTMLDialogElement} */ (document.getElementById("alert-dialog"));
+const alertTitle = /** @type {HTMLElement} */ (document.getElementById("alert-title"));
+const alertIcon = /** @type {HTMLElement} */ (document.getElementById("alert-icon"));
+const alertMsg = /** @type {HTMLElement} */ (document.getElementById("alert-msg"));
+const alertList = /** @type {HTMLElement} */ (document.getElementById("alert-list"));
+const alertCancel = /** @type {HTMLElement} */ (document.getElementById("alert-cancel"));
+
+/**
+ * Show the alert; resolves true on OK. With `cancel` false it's just a notice.
+ * @param {{ title: string, icon: string, message: string, items?: string[], cancel?: boolean }} opts
+ * @returns {Promise<boolean>}
+ */
+function ask({ title, icon, message, items = [], cancel = true }) {
+  alertTitle.textContent = title;
+  // warn-ok: innerhtml-assign -- our own static bitmaps, no user text
+  alertIcon.innerHTML = bitmapSvg(ICONS[icon]);
+  alertMsg.textContent = message;
+  alertList.replaceChildren(...items.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
+  alertCancel.hidden = !cancel;
+  alertDialog.returnValue = "";
+  alertDialog.showModal();
+  return new Promise((resolve) => {
+    alertDialog.addEventListener("close", () => resolve(alertDialog.returnValue === "ok"), { once: true });
+  });
+}
+
+/** @param {number} n */
+const todos = (n) => (n === 1 ? "1 to-do" : `${n} to-dos`);
+
+async function sweep() {
+  const rec = lists.ensureActive();
+  const doomed = sweepable(/** @type {any} */ (rec.items));
+  if (doomed.length === 0) {
+    await ask({ title: "Sweep", icon: "sweep", message: "Nothing to sweep.", cancel: false });
+    return;
+  }
+  const all = doomed.length === rec.items.filter((i) => !i.done).length;
+  const ok = await ask({
+    title: "Sweep",
+    icon: "sweep",
+    message: all
+      ? `They're all equally urgent. Delete all ${todos(doomed.length)}?`
+      : `Delete the ${todos(doomed.length)} at the lowest priority?`,
+    items: doomed.map((i) => i.text),
+  });
+  if (ok) doomed.forEach((i) => lists.removeItem(rec.id, i.id));
+}
+
+async function recycle() {
+  const rec = lists.ensureActive();
+  const done = recyclable(/** @type {any} */ (rec.items));
+  if (done.length === 0) {
+    await ask({ title: "Recycle", icon: "recycle", message: "Nothing's done yet.", cancel: false });
+    return;
+  }
+  const ok = await ask({
+    title: "Recycle",
+    icon: "recycle",
+    message: `Delete ${todos(done.length)} you've finished? (They'd go tomorrow anyway.)`,
+    items: done.map((i) => i.text),
+  });
+  if (ok) done.forEach((i) => lists.removeItem(rec.id, i.id));
+}
+
+/** @param {"forget"|"remember"} which */
+async function nudge(which) {
+  const rec = lists.ensureActive();
+  const change = (which === "forget" ? forgetOne : rememberOne)(/** @type {any} */ (rec.items));
+  if (!change) {
+    await ask({
+      title: which === "forget" ? "Forget" : "Remember",
+      icon: which,
+      message: which === "forget" ? "Everything open is already forgotten." : "Nothing open to remember.",
+      cancel: false,
+    });
+    return;
+  }
+  lists.updateItem(rec.id, change.id, { text: change.text });
+  await checklist.updateComplete;
+  const row = /** @type {HTMLElement|null} */ (checklist.querySelector(`li[data-id="${CSS.escape(change.id)}"]`));
+  if (!row) return;
+  row.scrollIntoView({ block: "nearest" });
+  row.dataset.flash = which;
+  row.addEventListener("animationend", () => delete row.dataset.flash, { once: true });
+}
+
+// ---- shrink to fit --------------------------------------------------------
+// Sets --list-size on the checklist: big for a short list, smaller per to-do,
+// then as small as it takes (to a floor) for the whole panel to fit unscrolled.
+
+const checklist = /** @type {Checklist} */ (document.querySelector("forgo-checklist"));
+const panel = /** @type {HTMLElement} */ (document.querySelector('[data-panel="list"]'));
+// The panel's height with the keyboard down. Fitting to the keyboard-up height
+// would shrink everything each time you start typing.
+let roomy = 0;
+
+async function refit() {
+  if (fit.get() !== "on") {
+    checklist.style.removeProperty("--list-size");
+    return;
+  }
+  await checklist.updateComplete;
+  const typing = document.activeElement?.closest(".add-row");
+  if (!typing || !roomy) roomy = panel.clientHeight;
+  const n = checklist.querySelectorAll(".checklist li").length;
+  largestFitting(preferredSize(n), (px) => {
+    checklist.style.setProperty("--list-size", px + "px");
+    return panel.scrollHeight <= roomy;
+  });
+}
+
+lists.subscribe(refit);
+fit.subscribe(refit);
+font.subscribe(refit);
+document.fonts.ready.then(refit);
+new ResizeObserver(refit).observe(panel);
 
 // ---- phone ----------------------------------------------------------------
 
