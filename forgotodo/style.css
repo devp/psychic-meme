@@ -1,6 +1,7 @@
 /* ---- theme tokens ----
-   Every colour lives here. Add a theme by copying a block and adding a swatch
-   button in index.html -- nothing else needs to know.
+   Every colour lives here. Add a theme by copying a block (and its dark twin)
+   and adding a swatch button in index.html -- nothing else needs to know.
+   data-scheme is light or dark, resolved from the Backlight option in app.js.
    --ink is the one "pixel" colour; inverted UI (title tab, selected buttons)
    swaps --ink and --bg. */
 :root,
@@ -14,7 +15,7 @@
   --dialog-radius: 5px;
 }
 
-:root[data-theme="backlight"] {
+:root[data-theme="palm"][data-scheme="dark"] {
   --bg: #123524;
   --ink: #b8f5a6;
   --ink-dim: #6aa876;
@@ -32,6 +33,11 @@
   --btn-radius: 5px;
   --btn-shadow: 1px 1px 0 var(--ink);
   --dialog-radius: 12px;
+}
+:root[data-theme="newton"][data-scheme="dark"] {
+  --bg: #1f1f1c;
+  --ink: #e2e2d8;
+  --ink-dim: #9a9a90;
 }
 
 /* Vendored OFL font; see fonts/DepartureMono.LICENSE.txt. No bold weight. */
@@ -51,13 +57,39 @@
   --btn-shadow: none;
   --dialog-radius: 0;
 }
+/* The same four DMG shades, turned over. */
+:root[data-theme="gameboy"][data-scheme="dark"] {
+  --bg: #0f380f;
+  --ink: #9bbc0f;
+  --ink-dim: #8bac0f;
+  --grid: rgb(0 0 0 / 0.14);
+}
+
+:root[data-scheme="dark"] { color-scheme: dark; }
+
+/* Vendored OFL font; see fonts/ComicNeue.LICENSE.txt. Comic Sans, redrawn to
+   be legible -- and Newton's own handwriting-ish face was called Casual. */
+@font-face {
+  font-family: "Comic Neue";
+  src: url("fonts/ComicNeue-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Comic Neue";
+  src: url("fonts/ComicNeue-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
 
 :root {
   --font-mono: "Departure Mono", Monaco, Menlo, Consolas, monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-casual: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive;
   --font-body: var(--font-mono);
 }
 :root[data-font="sans"] { --font-body: var(--font-sans); }
+:root[data-font="casual"] { --font-body: var(--font-casual); }
 
 /* ---- base ---- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -168,9 +200,16 @@ html { font-synthesis-weight: none; }
   background: var(--bg);
 }
 .menu-items[hidden] { display: none; }
-.menu-items button { padding: 7px 12px; }
+.menu-items button { display: flex; align-items: center; gap: 10px; padding: 7px 12px; }
+.menu-items small { margin-left: auto; padding-left: 18px; font-size: 12px; color: var(--ink-dim); }
 .menu-items button:active,
 .menu-items button:focus-visible { background: var(--ink); color: var(--bg); outline: 0; }
+.menu-items button:active small,
+.menu-items button:focus-visible small { color: inherit; }
+
+/* Pixel icons: 10x10 bitmaps at 2x, so each pixel is a chunky 2px square. */
+.icon { display: block; width: 20px; height: 20px; flex-shrink: 0; }
+:root[data-icons="off"] .menu-items .icon { display: none; }
 
 /* ---- panels ---- */
 .panels { flex: 1; min-height: 0; position: relative; }
@@ -188,55 +227,69 @@ html { font-synthesis-weight: none; }
 /* ---- checklist ---- */
 .count { text-align: right; margin: 0 0 6px; color: var(--ink-dim); font-size: 13px; }
 
-.checklist { list-style: none; margin: 0 0 14px; padding: 0; }
+/* Sized in em off --list-size, which Shrink to Fit sets (app.js). */
+.checklist { list-style: none; margin: 0 0 14px; padding: 0; font-size: var(--list-size, 15px); }
 
 .checklist li {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 7px 2px;
+  gap: 0.53em;
+  padding: 0.47em 2px;
   border-bottom: 1px dotted var(--ink-dim);
 }
 .checklist li.done span { color: var(--ink-dim); text-decoration: line-through; }
 /* Any `!`: bold. The pixel font has no bold weight, so overstrike 1px to the
    right, the way bitmap fonts were emboldened. */
 .checklist li.urgent span { text-shadow: 1px 0 currentColor; }
-:root[data-font="sans"] .checklist li.urgent span { text-shadow: none; font-weight: 700; }
+:root:not([data-font="pixel"]) .checklist li.urgent span { text-shadow: none; font-weight: 700; }
 /* Decayed to `?`: kept, but fading out of mind. */
 .checklist li.forgotten { opacity: 0.45; }
+
+/* Forget / Remember: the row they touched blinks twice, inverted. */
+@keyframes blink {
+  0%, 50% { background: var(--ink); color: var(--bg); }
+  25%, 75%, 100% { background: transparent; }
+}
+.checklist li[data-flash] { animation: blink 0.8s steps(1, end); }
+.checklist li[data-flash] span { color: inherit; }
+.checklist li[data-flash] input { color: inherit; border-color: currentColor; }
 
 .checklist label {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 0.67em;
   flex: 1;
   cursor: pointer;
   min-width: 0;
 }
 
-/* Square box; the tick overshoots the top-right corner, Palm-style. */
-.checklist input[type="checkbox"] {
+/* Square box; the tick overshoots the top-right corner, Palm-style.
+   In em, so it grows with Shrink to Fit (1em = 15px normally). */
+.checklist input[type="checkbox"],
+.toggles input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   position: relative;
-  margin: 3px 0 0;
-  width: 15px;
-  height: 15px;
+  margin: 0.2em 0 0;
+  width: 1em;
+  height: 1em;
+  font-size: inherit;
   border: 1px solid var(--ink);
   border-radius: 0;
   background: transparent;
   flex-shrink: 0;
   cursor: pointer;
 }
-.checklist input[type="checkbox"]:checked::after {
+.checklist input[type="checkbox"]:checked::after,
+.toggles input[type="checkbox"]:checked::after {
   content: "";
   position: absolute;
-  left: 4px;
-  top: -5px;
-  width: 6px;
-  height: 13px;
+  left: 0.27em;
+  top: -0.33em;
+  width: 0.4em;
+  height: 0.87em;
   border: solid var(--ink);
-  border-width: 0 3px 3px 0;
+  border-width: 0 0.2em 0.2em 0;
   transform: rotate(40deg);
 }
 
@@ -247,7 +300,7 @@ html { font-synthesis-weight: none; }
   background: none;
   border: 0;
   color: var(--ink-dim);
-  font-size: 18px;
+  font-size: 1.2em;
   line-height: 1;
   padding: 0 4px;
   flex-shrink: 0;
@@ -310,6 +363,23 @@ html { font-synthesis-weight: none; }
 }
 
 .about p { margin: 0 0 6px; font-size: 13px; }
+
+.toggles label { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; cursor: pointer; }
+/* warn-ok: input-font-size -- a checkbox; iOS only zooms text fields */
+.toggles input[type="checkbox"] { margin: 0; font-size: 15px; }
+
+/* ---- alert: Palm's confirm box, a big pixel icon beside the question ---- */
+.alert-body { display: flex; gap: 12px; align-items: flex-start; }
+.alert-icon .icon { width: 40px; height: 40px; }
+.alert-list {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+  font-size: 13px;
+  max-height: 30vh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.alert-list:empty { display: none; }
 
 .dialog-msg { margin: 0 0 10px; font-size: 13px; overflow-wrap: anywhere; }
 .dialog-msg:empty { display: none; }
