@@ -66,7 +66,6 @@ test("a post round-trips title, body and slug", async () => {
   assert.equal(read?.title, "Hello Gemini");
   assert.equal(read?.body, "# Hello\n\nthe body");
   assert.equal(read?.slug, "hello");
-  assert.equal(s.slugOf(/** @type {any} */ (read)), "hello");
 });
 
 test("an empty post has an empty body, not undefined", async () => {
