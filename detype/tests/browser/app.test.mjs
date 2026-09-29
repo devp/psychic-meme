@@ -19,10 +19,20 @@ const TYPES = {
   ".webmanifest": "application/manifest+json",
 };
 
+// Path (as requested, e.g. "/app.css") -> body to serve instead of the file,
+// or a number to answer with that status. Stands in for a deploy.
+const overrides = new Map();
+
 function serve() {
   const server = createServer(async (req, res) => {
     const path = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname));
     const file = join(root, path === "/" ? "index.html" : path);
+    const override = overrides.get(path);
+    if (typeof override === "number") return void res.writeHead(override).end();
+    if (override !== undefined) {
+      res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" });
+      return void res.end(override);
+    }
     try {
       if (!file.startsWith(root)) throw new Error("outside root");
       const body = await readFile(file);
@@ -240,6 +250,57 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
     return reg.active ? "active" : "registered";
   });
   await ok("service worker activates", swState === "active", swState);
+
+  // --- updates -------------------------------------------------------------
+  // Headless pages never change visibility on their own; fake a trip to the
+  // background and back, which is what app.js listens for.
+  const resume = () =>
+    page.evaluate(() => {
+      for (const state of ["hidden", "visible"]) {
+        Object.defineProperty(document, "visibilityState", { value: state, configurable: true });
+        document.dispatchEvent(new Event("visibilitychange"));
+      }
+    });
+  // Resolves with the page's next message from sw.js, or "none" after ms.
+  const nextUpdate = (ms) =>
+    page.evaluate(
+      (ms) =>
+        new Promise((resolve) => {
+          navigator.serviceWorker.addEventListener("message", (e) => resolve(e.data), { once: true });
+          setTimeout(() => resolve("none"), ms);
+        }),
+      ms
+    );
+  const cachedCss = () =>
+    page.evaluate(async () => (await (await caches.match("app.css"))?.text()) ?? "");
+  const MARK = "\n/* deployed */\n";
+  const appCss = await readFile(join(root, "app.css"), "utf8");
+  await page.evaluate(() => (/** @type {any} */ (window).__sameDocument = true));
+  const sameDocument = () => page.evaluate(() => /** @type {any} */ (window).__sameDocument === true);
+
+  let heard = nextUpdate(1500);
+  await resume();
+  await ok("update: nothing deployed, no update", (await heard) === "none");
+  await ok("update: nothing deployed, no reload", await sameDocument());
+
+  overrides.set("/app.css", appCss + MARK);
+  overrides.set("/state.js", 500);
+  heard = nextUpdate(1500);
+  await resume();
+  await ok("update: one failed fetch stores nothing", (await heard) === "none" && !(await cachedCss()).includes(MARK));
+  overrides.delete("/state.js");
+
+  heard = nextUpdate(5000);
+  await resume();
+  await ok("update: a changed file is announced", (await heard) === "updated");
+  await ok("update: the new bytes are cached", (await cachedCss()).includes(MARK));
+  await ok("update: no reload while in use", await sameDocument());
+
+  await Promise.all([page.waitForEvent("load"), resume()]);
+  await ok("update: reloads on the next resume", !(await sameDocument()));
+  const served = await page.evaluate(async () => (await fetch("app.css")).text());
+  await ok("update: the reloaded page gets the new file", served.includes(MARK));
+  overrides.clear();
 
   await ctx.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
