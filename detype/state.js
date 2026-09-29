@@ -7,7 +7,8 @@
 import { persistedValue, recordStore } from "./lib/store.js";
 import { dayKey } from "./lib/pages.js";
 
-const NS = "detype";
+// localStorage key prefix, from <meta name="app-ns"> in index.html.
+const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
 
 export const theme = persistedValue(NS + ":theme", "dusk");
 export const font = persistedValue(NS + ":font", "serif");
@@ -30,9 +31,3 @@ export const pages = recordStore(NS + ":pages");
 export function pageFor(key = dayKey()) {
   return pages.getAll().find((p) => p.name === key) ?? pages.create(key);
 }
-
-/** The tabs this app has. Add a panel in index.html, add a line here. */
-export const TABS = [
-  { id: "write", label: "write" },
-  { id: "pages", label: "pages" },
-];
