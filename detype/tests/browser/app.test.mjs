@@ -67,6 +67,9 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
 
   await page.goto(URL, { waitUntil: "networkidle" });
 
+  const tabs = await page.getByRole("tab").allInnerTexts();
+  await ok("tabs are write and pages", tabs.join(",") === "write,pages", tabs.join(","));
+
   // --- writing -------------------------------------------------------------
   await ok("line box is focused on load", (await page.evaluate(() => document.activeElement?.id)) === "line");
 
@@ -106,6 +109,9 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.fill("#line", "pasted one\npasted two\nstill typing");
   await page.waitForTimeout(60);
   await ok("newline in value lets go, keeps the tail", (await page.inputValue("#line")) === "still typing");
+  const afterPaste = JSON.parse((await ls("detype:pages:records")) ?? "[]")[0].items.map((i) => i.text);
+  await ok("pasted lines are saved, the tail isn't", afterPaste.slice(-2).join("|") === "pasted one|pasted two" && afterPaste.length === 7,
+    afterPaste.join("|"));
   await page.fill("#line", "");
 
   // --- reload: saved, but the screen starts fresh ---------------------------
@@ -120,8 +126,12 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-set-goal="lines"]');
   await page.waitForTimeout(60);
   await ok("unit switch sets that unit's default", (await page.inputValue("#goal-target")) === "50");
+  await ok("goal unit is labelled", (await page.innerText("#goal-target-unit")) === "lines");
   await page.fill("#goal-target", "14");
   await page.locator("#goal-target").dispatchEvent("change");
+  await page.fill("#goal-target", "0");
+  await page.locator("#goal-target").dispatchEvent("change");
+  await ok("a non-positive goal reverts", (await page.inputValue("#goal-target")) === "14");
   await page.click("#settings-close");
   await page.waitForTimeout(60);
   await ok("goal bar shows when on", await page.locator("#goal").isVisible());
@@ -146,8 +156,13 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
 
   const [dl] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "download", exact: true }).click()]);
   await ok("download one day as .txt", dl.suggestedFilename() === `detype-${today}.txt`, dl.suggestedFilename());
+  const dlText = await readFile(await dl.path(), "utf8");
+  await ok("day download is the blob plus a newline", dlText.startsWith("the kettle is on\ni should call the dentist\n") && dlText.endsWith("pasted two\n"),
+    JSON.stringify(dlText));
   const [dlAll] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "download all" }).click()]);
   await ok("download all", dlAll.suggestedFilename() === `detype-all-${today}.txt`, dlAll.suggestedFilename());
+  const allText = await readFile(await dlAll.path(), "utf8");
+  await ok("download all heads each day with its date", allText.startsWith(`# ${today}\n\nthe kettle is on\n`), JSON.stringify(allText.slice(0, 80)));
 
   page.once("dialog", (d) => d.dismiss());
   await page.getByRole("button", { name: "delete" }).click();
@@ -157,6 +172,41 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.getByRole("button", { name: "delete" }).click();
   await page.waitForTimeout(60);
   await ok("delete removes the page", (await page.locator("pages-list .page").count()) === 0);
+  await ok("empty state shows", (await page.locator("pages-list p.quiet").innerText()).startsWith("Nothing here yet"));
+
+  // Older days, seeded straight into storage. updatedAt runs opposite to the
+  // day, so the order below can only come from sorting by day.
+  await page.evaluate(() => {
+    const line = (/** @type {string} */ text) => ({ id: "i" + text.length, text, at: 1 });
+    localStorage.setItem("detype:pages:records", JSON.stringify([
+      { id: "a", name: "2026-01-02", createdAt: 3, updatedAt: 3, items: [line("remember the zebra")] },
+      { id: "b", name: "2026-01-03", createdAt: 2, updatedAt: 2, items: [] },
+      { id: "c", name: "2026-01-04", createdAt: 1, updatedAt: 1, items: [line("hello")] },
+    ]));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(120);
+  await ok("active tab persists across reload", await page.locator('.panel[data-panel="pages"]').isVisible());
+  const heads = await page.locator("pages-list .page-head h2").allInnerTexts();
+  const expected = await page.evaluate(() =>
+    ["2026-01-04", "2026-01-02"].map((k) => {
+      const [y, m, d] = k.split("-").map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    })
+  );
+  await ok("pages newest day first, empty days hidden, labelled by date", heads.join("|") === expected.join("|"), heads.join("|"));
+  const counts = await page.locator("pages-list .page-head .quiet").allInnerTexts();
+  await ok("word count per page, singular for one", counts.join("|") === "1 word|3 words", counts.join("|"));
+  await page.fill("pages-list input[type=search]", "ZEBRA");
+  await page.waitForTimeout(60);
+  await ok("find is case-insensitive across days", (await page.locator("pages-list .page").count()) === 1);
+  await page.fill("pages-list input[type=search]", "nope");
+  await page.waitForTimeout(60);
+  await ok("find says when nothing matches", (await page.locator("pages-list p.quiet").innerText()).includes("nope"));
+  await page.fill("pages-list input[type=search]", "");
+  await ok("goal setting persists across reload",
+    (await page.locator("#goal").evaluate((el) => /** @type {HTMLElement} */ (el).hidden)) === false &&
+      (await ls("detype:goalUnit")) === "lines" && (await ls("detype:goalTarget")) === "14");
 
   await clickTab("write");
   await page.waitForTimeout(60);
@@ -167,6 +217,19 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-set-theme="linen"]');
   await page.waitForTimeout(60);
   await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "linen");
+  await ok("theme swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="linen"]', "aria-checked")) === "true" &&
+    (await page.getAttribute('[data-set-theme="dusk"]', "aria-checked")) === "false");
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await ok("linen palette reaches the page", bg === "rgb(245, 241, 232)", bg);
+  const themeColor = await page.getAttribute('meta[name="theme-color"]', "content");
+  await ok("theme-color follows the theme", themeColor === "#eee8da", String(themeColor));
+  await page.click('[data-set-font="mono"]');
+  await page.waitForTimeout(60);
+  await ok("font applies", (await page.getAttribute("html", "data-font")) === "mono");
+  const family = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
+  await ok("mono font reaches the page", family.includes("monospace"), family);
+  await ok("font swatch aria-checked syncs", (await page.getAttribute('[data-set-font="mono"]', "aria-checked")) === "true");
+  await ok("theme and font persist under the detype: namespace", (await ls("detype:theme")) === "linen" && (await ls("detype:font")) === "mono");
   await page.click("#settings-close");
 
   // --- service worker + offline ---------------------------------------------
@@ -187,5 +250,61 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("works offline after reload", (await page.locator("ghost-lines .ghost").count()) === 1);
   await ctx.setOffline(false);
 
+  // --- storage full ----------------------------------------------------------
+  await ok("save warning hidden while saving works", await page.locator("#save-warning").isHidden());
+  await page.evaluate(() => {
+    const w = /** @type {any} */ (window);
+    w.__realSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => {
+      throw new DOMException("full", "QuotaExceededError");
+    };
+  });
+  await page.keyboard.type("this one won't fit");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(60);
+  await ok("save warning shows when a line didn't save", await page.locator("#save-warning").isVisible());
+  await ok("the line still lets go", (await page.inputValue("#line")) === "" && (await page.locator("ghost-lines .ghost").count()) === 2);
+  await page.evaluate(() => {
+    Storage.prototype.setItem = /** @type {any} */ (window).__realSetItem;
+  });
+  await page.keyboard.type("room again");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(60);
+  await ok("save warning clears once a line saves", await page.locator("#save-warning").isHidden());
+
+  // --- styles land (catches a rule lost when moving CSS around) ---------------
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const css = await page.evaluate(() => {
+    const cs = (/** @type {string} */ sel) => getComputedStyle(/** @type {Element} */ (document.querySelector(sel)));
+    return {
+      ghost0: cs('.ghost[data-age="0"]').opacity,
+      ghost2: cs('.ghost[data-age="2"]').opacity,
+      hint: cs("#hint").opacity,
+      line: cs("#line").fontSize,
+      goal: cs("#goal").height,
+      write: cs('.panel[data-panel="write"]').display,
+      pages: cs('.panel[data-panel="pages"]').display,
+      tab: cs(".tab.active").backgroundColor,
+    };
+  });
+  await ok("ghost ages fade", css.ghost0 === "0.22" && css.ghost2 === "0.03", JSON.stringify(css));
+  await ok("hint is gone", css.hint === "0", JSON.stringify(css));
+  await ok("write layout", css.line === "20px" && css.goal === "2px" && css.write === "flex" && css.pages === "none", JSON.stringify(css));
+  await ok("active tab uses the accent", css.tab === "rgb(111, 138, 120)", JSON.stringify(css));
+
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+
+  // --- pre-paint theme script, with app.js kept out ---------------------------
+  const bare = await browser.newContext({ serviceWorkers: "block" });
+  const bp = await bare.newPage();
+  await bp.goto(URL);
+  await bp.evaluate(() => {
+    localStorage.setItem("detype:theme", "linen");
+    localStorage.setItem("detype:font", "sans");
+  });
+  await bp.route("**/app.js", (r) => r.abort());
+  await bp.reload({ waitUntil: "domcontentloaded" });
+  const attrs = await bp.evaluate(() => [document.documentElement.dataset.theme, document.documentElement.dataset.font].join(","));
+  await ok("saved theme and font apply before app.js runs", attrs === "linen,sans", attrs);
+  await bare.close();
 });
