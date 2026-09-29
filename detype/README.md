@@ -43,10 +43,15 @@ Only in this browser's localStorage. Nothing is sent anywhere. That means:
 - `lib/pages.js`: pure helpers (day key, text block, counts, export)
 - `components/ghost-lines.js`: the fading lines
 - `components/pages-list.js`: the pages view
-- everything else is pizza-starter as-is, except `lib/store.js`, which now
-  reports when a write didn't reach storage (`isSaved()`)
+- `theme.css`: the dusk and linen palettes and the three fonts
+- `app.css`: the write and pages views
+- everything else is pizza-starter as-is (version in `STARTER`), except
+  `lib/store.js`, which now reports when a write didn't reach storage
+  (`isSaved()`)
 
 ## Development
 
-The same as pizza-starter: `just serve`, `just dev-init`, `just dev-check`,
-and `just dev-rebuild` after editing any app file.
+The same as pizza-starter: `just serve`, `just dev-init`, `just dev-check`.
+Adding, renaming or deleting a file means updating `ASSETS` in `sw.js`;
+`just warnings` flags it. `cd ../pizza-starter && just drift detype` shows
+what changed on each side since `STARTER`.
