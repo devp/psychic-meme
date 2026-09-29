@@ -1,0 +1,184 @@
+/* This app's own styles: checklist, dialogs, per-theme overrides. */
+
+/* ---- checklist ---- */
+.count { text-align: right; margin: 0 0 6px; color: var(--ink-dim); font-size: 13px; }
+
+/* Sized in em off --list-size, which Shrink to Fit sets (app.js). */
+.checklist { list-style: none; margin: 0 0 14px; padding: 0; font-size: var(--list-size, 15px); }
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.53em;
+  padding: 0.47em 2px;
+  border-bottom: 1px dotted var(--ink-dim);
+}
+.checklist li.done span { color: var(--ink-dim); text-decoration: line-through; }
+/* Any `!`: bold. The pixel font has no bold weight, so overstrike 1px to the
+   right, the way bitmap fonts were emboldened. */
+.checklist li.urgent span { text-shadow: 1px 0 currentColor; }
+:root:not([data-font="pixel"]) .checklist li.urgent span { text-shadow: none; font-weight: 700; }
+/* Decayed to `?`: kept, but fading out of mind. */
+.checklist li.forgotten { opacity: 0.45; }
+
+/* Forget / Remember: the row they touched blinks twice, inverted. */
+@keyframes blink {
+  0%, 50% { background: var(--ink); color: var(--bg); }
+  25%, 75%, 100% { background: transparent; }
+}
+.checklist li[data-flash] { animation: blink 0.8s steps(1, end); }
+.checklist li[data-flash] span { color: inherit; }
+.checklist li[data-flash] input { color: inherit; border-color: currentColor; }
+
+.checklist label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.67em;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
+/* Square box; the tick overshoots the top-right corner, Palm-style.
+   In em, so it grows with Shrink to Fit (1em = 15px normally). */
+.checklist input[type="checkbox"],
+.toggles input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  margin: 0.2em 0 0;
+  width: 1em;
+  height: 1em;
+  font-size: inherit;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.checklist input[type="checkbox"]:checked::after,
+.toggles input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.27em;
+  top: -0.33em;
+  width: 0.4em;
+  height: 0.87em;
+  border: solid var(--ink);
+  border-width: 0 0.2em 0.2em 0;
+  transform: rotate(40deg);
+}
+
+.checklist span { overflow-wrap: anywhere; }
+
+.checklist button[data-remove],
+.checklist button[aria-label="Delete"] {
+  background: none;
+  border: 0;
+  color: var(--ink-dim);
+  font-size: 1.2em;
+  line-height: 1;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.checklist button[aria-label="Delete"]:hover { color: var(--ink); }
+
+.add-row { display: flex; gap: 10px; align-items: flex-end; }
+
+/* A Palm text field: no box, just a dotted underline. */
+.add-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted var(--ink);
+  border-radius: 0;
+}
+.add-row input::placeholder { color: var(--ink-dim); }
+.add-row input:focus { outline: 0; border-bottom-style: solid; }
+
+/* ---- dialogs: framed, with an inverted title bar ---- */
+.dialog {
+  border: 2px solid var(--ink);
+  border-radius: var(--dialog-radius);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0 12px 12px;
+  width: min(92vw, 340px);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+.dialog::backdrop { background: rgb(0 0 0 / 0.25); }
+.dialog h2 {
+  margin: 0 -12px 12px;
+  padding: 2px 8px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 15px;
+  text-align: center;
+}
+.dialog h3 { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
+.dialog section { margin-bottom: 14px; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.swatch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.swatch span {
+  width: 11px;
+  height: 11px;
+  border: 1px solid currentColor;
+}
+
+.about p { margin: 0 0 6px; font-size: 13px; }
+
+.toggles label { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; cursor: pointer; }
+/* warn-ok: input-font-size -- a checkbox; iOS only zooms text fields */
+.toggles input[type="checkbox"] { margin: 0; font-size: 15px; }
+
+/* ---- alert: Palm's confirm box, a big pixel icon beside the question ---- */
+.alert-body { display: flex; gap: 12px; align-items: flex-start; }
+.alert-icon .icon { width: 40px; height: 40px; }
+.alert-list {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+  font-size: 13px;
+  max-height: 30vh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.alert-list:empty { display: none; }
+
+.dialog-msg { margin: 0 0 10px; font-size: 13px; overflow-wrap: anywhere; }
+.dialog-msg:empty { display: none; }
+.dialog-msg code { font-family: var(--font-mono); }
+
+.dialog textarea {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 6px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  resize: vertical;
+}
+.dialog textarea[hidden] { display: none; }
+
+.dialog-buttons { display: flex; gap: 8px; }
+
+/* ---- newton: no title tab; a double rule instead ---- */
+:root[data-theme="newton"] .app-header { border-bottom: 3px double var(--ink); padding-left: 12px; }
+:root[data-theme="newton"] .title-tab { background: none; color: var(--ink); padding: 0 0 4px; font-size: 17px; }
+:root[data-theme="newton"] .dialog { border-width: 3px; border-style: double; }

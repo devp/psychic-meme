@@ -38,7 +38,7 @@ function serve() {
 test("app in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  // Prefer installed Chrome; fall back to `npx playwright install chromium`.
+  // Prefer installed Chrome; fall back to `node_modules/.bin/playwright install chromium`.
   const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   t.after(async () => {
     await browser.close();
@@ -75,6 +75,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   const afterAdd = await page.locator(".checklist li").count();
   await ok("add item works after re-render", afterAdd === 7, `${afterAdd} items`);
   await ok("input clears after add", (await page.inputValue(".add-row input")) === "");
+  await ok("tapping New keeps focus in the input, so the keyboard stays up",
+    await page.locator(".add-row input").evaluate((el) => document.activeElement === el));
   await ok("count updates on add", (await page.locator("forgo-checklist .count").innerText()) === "1 of 7 done");
 
   // --- delete --------------------------------------------------------------
@@ -165,6 +167,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("icons toggle off", (await page.getAttribute("html", "data-icons")) === "off");
   await ok("about lives in options", await page.locator("#settings-dialog .about").isVisible());
   await page.click("#settings-close");
+  await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("forgotodo:theme"))) === "gameboy");
   await page.reload({ waitUntil: "networkidle" });
   await ok("options persist across reload",
     (await page.evaluate(() => [...document.documentElement.attributes].map((a) => a.name + "=" + a.value).join(" ")))
