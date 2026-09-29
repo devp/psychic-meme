@@ -71,7 +71,6 @@
 
 .checklist span { overflow-wrap: anywhere; }
 
-.checklist button[data-remove],
 .checklist button[aria-label="Delete"] {
   background: none;
   border: 0;
