@@ -7,7 +7,6 @@
 // it.
 
 import { persistedValue, recordStore } from "./lib/store.js";
-import { postSlug } from "./lib/gemtext.js";
 
 // localStorage key prefix, from <meta name="app-ns"> in index.html.
 const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
@@ -328,13 +327,4 @@ export function emptyTrash() {
   const doomed = trashedPosts();
   doomed.forEach((p) => purgePost(p.id));
   return doomed.length;
-}
-
-/**
- * What this post is called at the far end -- on smol.pub, the URL.
- * @param {Post} post
- * @returns {string}
- */
-export function slugOf(post) {
-  return postSlug(post);
 }

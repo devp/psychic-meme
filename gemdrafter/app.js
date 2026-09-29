@@ -76,7 +76,7 @@ function saveNow() {
 function saveSoon() {
   if (saveTimer) clearTimeout(saveTimer);
   // window.setTimeout, not the bare one: with @types/node loaded for the
-  // build scripts, the global returns a Node Timeout rather than a handle.
+  // scripts and tests, the global returns a Node Timeout rather than a handle.
   saveTimer = window.setTimeout(saveNow, 300);
 }
 
@@ -464,18 +464,9 @@ const updateBar = /** @type {HTMLElement} */ (document.getElementById("update-ba
 
 if ("serviceWorker" in navigator) {
   const register = () =>
-    navigator.serviceWorker
-      .register("sw.js", {
-        // Default is "imports", which lets the HTTP cache answer for the
-        // scripts sw.js importScripts(). sw.js itself never changes here --
-        // precache-manifest.js is the file that does -- so under the default
-        // a deploy can go unnoticed for as long as the host's max-age (ten
-        // minutes on GitHub Pages). "none" revalidates both, every check.
-        updateViaCache: "none",
-      })
-      .catch(() => {
-        /* not fatal -- the app still works, it just won't survive the subway */
-      });
+    navigator.serviceWorker.register("sw.js").catch(() => {
+      /* not fatal -- the app still works, it just won't survive the subway */
+    });
 
   // Not simply addEventListener("load", ...). Any top-level await in this
   // module defers the rest of its body past the load event, so a load listener
