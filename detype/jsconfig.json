@@ -1,6 +1,6 @@
 {
   "// ": "Typecheck only -- noEmit means the .js files ship byte-identical.",
-  "//exclude": "sw.js and precache-manifest.js are worker scope (see scripts/check-sw.mjs); tests/browser imports playwright, which is opt-in.",
+  "//exclude": "sw.js is worker scope (see scripts/check-sw.mjs); tests/browser imports playwright, which is opt-in.",
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
@@ -16,7 +16,6 @@
   "exclude": [
     "**/vendor/**",
     "**/sw.js",
-    "**/precache-manifest.js",
     "scripts/check-sw.mjs",
     "node_modules"
   ]

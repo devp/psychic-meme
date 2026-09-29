@@ -1,0 +1,159 @@
+/* This app's own styles. Shell styles are in base.css, colours in theme.css. */
+
+/* ---- shared bits ---- */
+.quiet { color: var(--fg-dim); }
+.small { font-size: 13px; }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.field {
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.field:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+button.soft {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--fg-dim);
+  font-size: 14px;
+}
+button.soft:hover,
+button.soft:focus-visible { color: var(--fg); border-color: var(--fg-dim); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- write ---- */
+.panel.write.active { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+
+.write-space {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* The line sits a little below centre, with the fading ones above it. */
+  padding: 16px 20px calc(var(--app-height, 100dvh) * 0.28);
+  max-width: 42rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+ghost-lines { display: block; overflow: hidden; }
+
+.ghost {
+  margin: 0 0 0.35em;
+  font-size: 20px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  transition: opacity 3s ease, filter 3s ease;
+  animation: let-go 2.4s ease-out backwards;
+}
+.ghost[data-age="0"] { opacity: 0.22; }
+.ghost[data-age="1"] { opacity: 0.09; filter: blur(0.6px); }
+.ghost[data-age="2"] { opacity: 0.03; filter: blur(1.5px); }
+
+/* A new line starts where you typed it, fully there, and drifts up and away.
+   No fill-mode forwards: it ends exactly at its age's resting style, which
+   the transition then takes over from. */
+@keyframes let-go {
+  from { opacity: 0.9; transform: translateY(1.5em); filter: none; }
+}
+
+#line {
+  display: block;
+  width: 100%;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--fg);
+  caret-color: var(--accent);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1.5;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: var(--fg-dim);
+  font-size: 13px;
+  opacity: 0.7;
+  transition: opacity 2s ease;
+}
+.hint.gone { opacity: 0; }
+
+.save-warning { margin: 12px 0 0; font-size: 13px; color: var(--accent); }
+
+.goal { height: 2px; background: var(--border); flex-shrink: 0; }
+.goal-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  opacity: 0.7;
+  transition: width 1.5s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost { animation: none; transition: none; }
+  .goal-fill, .hint { transition: none; }
+}
+
+/* ---- pages ---- */
+.pages-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.pages-tools .field { flex: 1; min-width: 0; }
+
+.page {
+  max-width: 42rem;
+  margin: 0 auto 32px;
+}
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  position: sticky;
+  top: -16px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.page-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.page-head .quiet { font-size: 13px; flex-shrink: 0; }
+
+.page-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.page-actions { display: flex; gap: 8px; }
+
+/* ---- settings dialog: additions to base.css ---- */
+.settings h3 .quiet { font-weight: 400; }
+
+.goal-target { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.goal-target .field { width: 7em; }
+.goal-target .field:disabled { opacity: 0.4; }
