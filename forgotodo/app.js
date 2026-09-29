@@ -16,7 +16,6 @@ import { preferredSize, largestFitting } from "./lib/fit.js";
 customElements.define("forgo-checklist", Checklist);
 
 // First run: seed a few sample to-dos.
-// A plain worked example of create() + append() -- read it, then delete it.
 if (lists.getAll().length === 0) {
   const seeded = lists.ensureActive();
   lists.rename(seeded.id, "Unfiled");
