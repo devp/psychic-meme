@@ -56,4 +56,5 @@ Fonts, vendored so they work offline:
 ## Development
 
 The same as pizza-starter: `just serve`, `just dev-init`, `just dev-check`,
-and `just dev-rebuild` after editing any app file.
+`just warnings`. Adding, renaming or deleting an app file (fonts included)
+means updating `ASSETS` in `sw.js`; `just warnings` flags any mismatch.
