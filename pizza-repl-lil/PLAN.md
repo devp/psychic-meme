@@ -1,4 +1,4 @@
-# pizza-repl: candidate engines
+# pizza-repl-<lang>: candidate engines
 
 Runs decker-lil today. This is the shortlist for "more stuff in the future," plus
 what a port actually has to satisfy. Intended as a dispatch doc: each candidate
@@ -6,7 +6,7 @@ below should be enough to start a thread cold.
 
 ## Before vendoring anything: check the licence
 
-**None of these have been licence-checked.** pizza-repl doesn't link to an engine,
+**Apart from Fennel, none of these have been licence-checked.** A pizza-repl doesn't link to an engine,
 it *vendors the file into this repo and ships it offline* — so the licence has to
 permit redistribution, and `NOTICE.md` needs an entry the way lil.js and marked do.
 
@@ -18,7 +18,7 @@ permit redistribution, and `NOTICE.md` needs an entry the way lil.js and marked 
 | Kiki | `smallandnearlysilent.com/kiki/kiki.js` | ❓ **unchecked, and not obviously stated** — Dev flagged this one specifically |
 | OCaml (js_of_ocaml) | compiled toplevel | ❓ unchecked (OCaml is LGPL-with-exception; the *build* matters) |
 | SCI / Scittle | JS build | ❓ unchecked |
-| Fennel + Fengari | two artifacts, two licences | ❓ unchecked |
+| Fennel + Fengari | two artifacts, two licences | ✅ done: pizza-repl-fennel (all MIT) |
 
 Also worth confirming per engine: is there a **redistributable doc corpus**? The
 docs tabs are a real part of this app's value, and lil only worked out because
@@ -27,38 +27,18 @@ a website with no reusable source is a worse fit than its runtime suggests.
 
 ## The seam
 
-It began as exactly one function. It isn't quite that any more, and a porter
-should know where the leaks are before starting.
+A port is a copy of a sibling app with the language layer swapped. Only these
+differ between pizza-repl-lil and pizza-repl-fennel (`diff -r` to check):
 
-**The contract:**
-
-```
-interpreter.js   window.lilRepl = { evaluate: evaluate }
-app.js:188       var result = window.lilRepl.evaluate(source);
-                 // source: string -> { text: string, isError: boolean }
-```
-
-Synchronous. `evaluate` also does two REPL-ish things internally: binds `_` to the
-last result, and collects `print`/`show` side effects to interleave ahead of the
-returned value.
-
-**Language-specific code that has since leaked into `app.js`,** all from the
-transcript-export work:
-
-| what | where | why it's language-specific |
-|---|---|---|
-| comment prefix `#` | `app.js:362`+ (export builder) | every export line assumes lil's comment char |
-| `hasUnterminated()` | `app.js:328` | hand-written scan mirroring **lil's** tokenizer — `#` comments, `\"` escapes, `[` `(` nesting |
-| `usesLastResult()` | `app.js:319` | the `_` convention, and the warning that it won't replay |
-
-So a language descriptor needs at minimum: `evaluate`, `commentPrefix`,
-`hasUnterminated` (or an equivalent "is this entry safe to concatenate" check),
-whether `_` exists, plus the cosmetic set — `placeholder`, greeting, doc tab list,
-and `docs.js`'s markdown preprocessor (currently hardcoded to Decker's `title:` /
-`{{TOC}}` / `images/` conventions).
-
-Don't extract this speculatively. Do one port by hand first and let it tell you
-what actually varies — see sequencing below.
+- `lang.js`: `name`, `comment`, `placeholder`, `greeting`,
+  `evaluate(source) -> {text, isError}` (synchronous), `hasUnterminated`,
+  `replayCaveat`, `preprocessDoc`. An engine that loads async can top-level
+  await in here; app.js waits for it.
+- `vendor/` engine files, `docs/`, `NOTICE.md`, `README.md`.
+- `index.html`: title, app-ns, doc tabs, about text, the engine's `<script>`.
+- `sw.js` `ASSETS`, `manifest.webmanifest`, `package.json` name.
+- Tests: `tests/lang.test.mjs`, `tests/export.test.mjs`, `tests/load-lang.mjs`
+  (runs the engine in node), and the `LANG` block atop `tests/browser/app.test.mjs`.
 
 ## Rubric
 
@@ -117,9 +97,9 @@ sync vs async eval.
 ### Fennel via Fengari
 Two layers — Fennel compiles to Lua, Fengari is a Lua VM in JS — so two artifacts
 and two licences. Lisp syntax with Lua semantics.
-Unknowns: both licences; combined size; how compile-then-run errors surface (a
-Fennel compile error and a Lua runtime error are different things and both need to
-land in `{text, isError}` legibly).
+**Done: pizza-repl-fennel.** Both MIT; about 520KB together (fengari-web 220KB,
+fennel.lua 300KB). Errors land via `fennel.repl`'s `onError` kinds (Parse, Compile,
+Runtime).
 
 ### OCaml via js_of_ocaml
 The strongest typed-FP option, because the constraint in that family isn't the
@@ -131,16 +111,10 @@ of `->` and `|>`.
 
 ## Sequencing
 
-**One in isolation first: oK.** The goal of that thread isn't the language, it's to
-answer: what did I have to touch besides `interpreter.js` and `vendor/`? Every file
-edited beyond those is a leak, and the list of leaks *is* the descriptor spec. Ship
-it as a fork of the directory rather than an abstraction — duplication is honest at
-n=2, and the wrong abstraction at n=1 is expensive.
-
-**Then the rest in parallel**, each with the descriptor from step one in hand.
-Rough grouping if picking a second wave: Tau Prolog and Forth are the interesting
-ones (new paradigms, cheap), Kiki is gated on licence, SCI and OCaml are the
-size-risk pair, Fennel is the most fiddly for the least novelty.
+Fennel went first, not oK: it established the seam above. Next: copy
+pizza-repl-fennel (or -lil, whichever engine is closer), swap the layer.
+Tau Prolog and Forth are the interesting ones (new paradigms, cheap), Kiki is
+gated on licence, SCI and OCaml are the size-risk pair.
 
 ## Definition of done for a port
 
@@ -150,11 +124,12 @@ size-risk pair, Fennel is the most fiddly for the least novelty.
 - The engine and its docs are vendored, cached by `sw.js`, and work offline.
 - `NOTICE.md` credits it, with the licence named.
 - The transcript export round-trips: paste it back, run it, get the same thing.
-  Note the export has language-specific assumptions (see the seam table) — a port
+  Note the export has language-specific assumptions (`comment`, `hasUnterminated`,
+  `replayCaveat` in lang.js) — a port
   that skips these will look fine and then corrupt replays, which is exactly the
   bug that shipped in #16.
-- Smoke test in the `smoke-*.js` shape, asserting real behavior rather than
-  agreeing with the implementation.
+- `just dev-check` green: `tests/lang.test.mjs` and `tests/export.test.mjs` assert
+  real engine behavior, including the export round-trip.
 
 ## Parked
 

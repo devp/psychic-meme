@@ -15,7 +15,7 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
 - [detype](detype) -- freewriting, morning-pages style: type a line, press Enter, let it fade. One page per day to look back on
 - [forgotodo](forgotodo) -- a to-do list with retro Palm/Newton looks
 - [lightsabers](lightsabers)
-- [pizza-repl](pizza-repl) -- a repl for pizza rats: try out some languages in your phone browser/PWA, offline. Runs decker-lil today
+- pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel)
 - [mermaid-utils](mermaid-utils)
 - [prompts-library](prompts-library)
 - `misc`
