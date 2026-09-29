@@ -94,13 +94,15 @@ tests/browser/       the same flows in a real browser, including offline.
 ```sh
 just serve            # http://localhost:8000 -- a service worker needs http://
 just dev-init         # dev tooling; nothing in node_modules ships
-just dev-check        # types, precache manifest, tests
-just dev-rebuild      # regenerate precache-manifest.js after editing app files
-just warnings         # grep-level footgun checks, no node_modules needed
+just dev-check        # types, tests
+just warnings         # grep-level footgun checks, incl. sw.js ASSETS vs files on disk
 just dev-init-browser # opt in to the browser tests
 ```
 
 Without `just` installed, read the `justfile` — every recipe is a one-liner.
+
+Adding, renaming or deleting a file: update `ASSETS` in `sw.js` by hand, or it
+won't be there offline. `just warnings` lists what's missing or gone.
 
 ## Making it yours
 
@@ -111,7 +113,7 @@ Without `just` installed, read the `justfile` — every recipe is a one-liner.
 2. Change `STORES` to your own routine — the list groups in the order you
    declare them, which should be the order you walk.
 3. Retune `lib/seed.js`, or empty it and enter your own pantry once.
-4. `just dev-rebuild`, then `just dev-check`.
+4. `just warnings`, then `just dev-check`.
 
 ## Provenance
 
