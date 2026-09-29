@@ -76,3 +76,29 @@ test("recordStore: persists across instances and notifies subscribers", () => {
   assert.equal(again.getActiveId(), rec.id);
   assert.equal(again.get(rec.id)?.name, "renamed");
 });
+
+test("recordStore: isSaved reports a failed write, and recovers", () => {
+  const s = recordStore("t:pages");
+  const rec = s.create("2026-09-24");
+  assert.equal(s.isSaved(), true);
+  const realSet = localStorage.setItem;
+  localStorage.setItem = () => {
+    throw new Error("QuotaExceededError");
+  };
+  s.append(rec.id, { text: "kept in memory" });
+  assert.equal(s.isSaved(), false);
+  assert.deepEqual(s.get(rec.id)?.items.map((i) => i.text), ["kept in memory"]);
+  localStorage.setItem = realSet;
+  s.append(rec.id, { text: "next" });
+  assert.equal(s.isSaved(), true);
+  assert.equal(recordStore("t:pages").get(rec.id)?.items.length, 2);
+});
+
+test("recordStore: remove drops the record and clears it as active", () => {
+  const s = recordStore("t:pages");
+  const rec = s.create("a");
+  s.remove(rec.id);
+  assert.equal(s.get(rec.id), null);
+  assert.equal(s.getActiveId(), null);
+  assert.equal(recordStore("t:pages").getAll().length, 0);
+});
