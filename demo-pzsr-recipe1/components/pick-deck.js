@@ -14,7 +14,7 @@ import {
 const COMMIT_PX = 84;
 /** Below this, a drag is still deciding which axis it is. */
 const AXIS_PX = 8;
-/** Matches the fling transition in style.css. Kept in sync by hand, once. */
+/** Fling and spring-back duration; the transitions are set inline below. */
 const FLING_MS = 190;
 
 /**
