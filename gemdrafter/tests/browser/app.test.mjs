@@ -68,6 +68,20 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   const body = page.locator("#post-body");
   const status = () => page.locator("#draft-status").innerText();
   const saveState = () => page.locator("#save-state").innerText();
+  /** Swap the clipboard for a recorder; returns a reader for what was written. */
+  const stubClipboard = async () => {
+    await page.evaluate(() => {
+      const w = /** @type {any} */ (window);
+      w.__copied = [];
+      navigator.clipboard.writeText = async (t) => void w.__copied.push(t);
+    });
+    return () => page.evaluate(() => /** @type {any} */ (window).__copied);
+  };
+  /** Click, and read back the file the page hands the browser. */
+  const downloadFrom = async (selector) => {
+    const [dl] = await Promise.all([page.waitForEvent("download"), page.click(selector)]);
+    return { name: dl.suggestedFilename(), text: await readFile(await dl.path(), "utf8") };
+  };
 
   await page.goto(URL, { waitUntil: "networkidle" });
   await settle();
@@ -78,6 +92,9 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("and a slug already decided", (await status()).includes("uploads as untitled"), await status());
   await ok("the host is shown beside the slug",
     (await page.locator("#slug-host").innerText()) === "devp.smol.pub/");
+  const tabLabels = await page.getByRole("tab").allInnerTexts();
+  await ok("one tab per panel, in page order",
+    tabLabels.join(" ") === "draft preview posts index about", tabLabels.join(" "));
 
   // --- typing: status, lint and preview all follow the textarea ------------
   await title.fill("Hello Gemini");
@@ -128,6 +145,8 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
     (await page.locator("#draft-preview .gem-scheme").innerText()) === "gemini");
   await ok("preformatted alt text lands on the element",
     (await page.getAttribute("#draft-preview .gem-pre", "aria-label")) === "alt text");
+  await ok("draft preview links open in a new tab",
+    (await page.getAttribute("#draft-preview .gem-link a", "target")) === "_blank");
 
   // Gemtext has no inline markup, so a draft full of angle brackets is text.
   await clickTab("draft");
@@ -153,6 +172,28 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
     (await status()).includes("uploads as hello-gemini-retitled"), await status());
   await title.fill("Hello Gemini");
   await settleSave();
+
+  // --- copy and download: the file smol.pub's uploader wants ----------------
+  const smolFile = "# Hello Gemini\n\n=> gemini://example.org/ a link\nsome text\n";
+  await body.fill(smolFile);
+  await settleSave();
+  const copied = await stubClipboard();
+  await page.click("#copy-post");
+  await settle();
+  await ok("Copy puts the smol.pub file on the clipboard, heading not doubled",
+    (await copied())[0] === smolFile, JSON.stringify(await copied()));
+  await ok("and says what it will upload as",
+    (await status()) === "Copied, ready to paste as hello-gemini.", await status());
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = () => Promise.reject(new Error("refused"));
+  });
+  await page.click("#copy-post");
+  await settle();
+  await ok("a refused clipboard says so",
+    (await status()) === "Couldn't reach the clipboard — select and copy.", await status());
+  const postFile = await downloadFrom("#download-post");
+  await ok("Download is named by the slug, no extension", postFile.name === "hello-gemini", postFile.name);
+  await ok("and holds the same bytes as Copy", postFile.text === smolFile, JSON.stringify(postFile.text));
 
   // --- the lint rules ------------------------------------------------------
   await clickTab("draft");
@@ -321,6 +362,16 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("capsule title heads the index", (await indexText()).startsWith("# Jackson Heights Gemlog"));
   await ok("the rendered index is the same component",
     (await page.locator("#index-preview .gem-link").count()) === 2);
+  await ok("index preview links stay in the page",
+    (await page.getAttribute("#index-preview .gem-link a", "target")) === "_self");
+  const indexSource = await page.locator("#index-out").evaluate((el) => el.textContent);
+  const indexFile = await downloadFrom("#download-index");
+  await ok("the index downloads as index.gmi", indexFile.name === "index.gmi", indexFile.name);
+  await ok("with what's on screen", indexFile.text === indexSource, JSON.stringify(indexFile.text));
+  const copiedIndex = await stubClipboard();
+  await page.click("#copy-index");
+  await settle();
+  await ok("Copy puts the index on the clipboard", (await copiedIndex())[0] === indexSource);
 
   // --- a post opens from the list and round-trips through storage ----------
   await clickTab("posts");
@@ -336,6 +387,12 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await settle();
   await ok("the edit survived a reload", (await body.inputValue()) === "edited, then left alone");
   await ok("and it's still the same post", (await title.inputValue()) === "Second post");
+  // No settleSave: leaving the page has to flush the debounced write itself.
+  await body.fill("typed, then reloaded at once");
+  await page.reload({ waitUntil: "networkidle" });
+  await settle();
+  await ok("leaving the page flushes a pending save",
+    (await body.inputValue()) === "typed, then reloaded at once", await body.inputValue());
 
   // --- trash, then storage --------------------------------------------------
   await clickTab("posts");
@@ -386,6 +443,28 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("accepting deletes it from storage", (await stored()) === 1, String(await stored()));
   await ok("and the trash goes away", (await page.locator(".trash").count()) === 0);
 
+  // Empty the trash: asks too, and takes only what's in it.
+  await page.locator("post-list .list-head button").click();
+  await settle();
+  await ok("New post from the list opens a blank draft",
+    (await page.locator('.panel[data-panel="draft"]').isVisible()) && (await title.inputValue()) === "");
+  await clickTab("posts");
+  await settle();
+  await page.locator(".post .post-x").first().click();
+  await settle();
+  await page.locator(".trash summary").click();
+  page.once("dialog", (d) => d.dismiss());
+  await page.getByRole("button", { name: "Empty the trash" }).click();
+  await settle();
+  await ok("a declined Empty keeps the trash", (await page.locator(".post.trashed").count()) === 1);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Empty the trash" }).click();
+  await settle();
+  await ok("Empty the trash purges it",
+    (await page.locator(".trash").count()) === 0 && (await stored()) === 1, String(await stored()));
+  await ok("and leaves the live post alone",
+    (await titles()).join(" | ") === "Third post", (await titles()).join(" | "));
+
   // --- theme ---------------------------------------------------------------
   await page.click("#settings-btn");
   await page.click('[data-set-theme="phosphor"]');
@@ -393,7 +472,25 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "phosphor");
   await ok("swatch aria-checked syncs",
     (await page.getAttribute('[data-set-theme="phosphor"]', "aria-checked")) === "true");
+  await page.click('[data-set-font="sans"]');
+  await settle();
+  await ok("font applies", (await page.getAttribute("html", "data-font")) === "sans");
+  await page.fill("#journal-host", "me.example.org//");
+  await settle();
+  await ok("the journal host shows beside the slug, one trailing slash",
+    (await page.locator("#slug-host").innerText()) === "me.example.org/",
+    await page.locator("#slug-host").innerText());
   await page.click("#settings-close");
+  const stored3 = await page.evaluate(() =>
+    ["theme", "font", "host"].map((k) => localStorage.getItem("gemdrafter:" + k)).join(" "));
+  await ok("settings are stored under this app's namespace",
+    stored3 === "phosphor sans me.example.org//", stored3);
+  await page.reload({ waitUntil: "networkidle" });
+  await settle();
+  await ok("theme, font and host survive a reload",
+    (await page.getAttribute("html", "data-theme")) === "phosphor" &&
+      (await page.getAttribute("html", "data-font")) === "sans" &&
+      (await page.locator("#slug-host").innerText()) === "me.example.org/");
 
   // --- gem-preview travels --------------------------------------------------
   // Driven through its property interface, which is the whole point of it.
