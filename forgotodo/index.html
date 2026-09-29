@@ -7,9 +7,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#b4bf98">
 <title>forgotodo</title>
+<!-- localStorage key prefix; state.js and the theme script below read it. -->
+<meta name="app-ns" content="forgotodo">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/forgotodo.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="app.css">
 <script type="importmap">
 {
   "imports": {
@@ -20,11 +24,12 @@
 </script>
 <script>
 // Runs before first paint so the chosen theme doesn't flash the default one.
-// Keep these keys in sync with NS in state.js, and the scheme logic with app.js.
+// Keep the scheme logic in sync with app.js.
 (function () {
   try {
     var root = document.documentElement;
-    var get = function (k) { return localStorage.getItem("forgotodo:" + k); };
+    var ns = document.querySelector('meta[name="app-ns"]').getAttribute("content");
+    var get = function (k) { return localStorage.getItem(ns + ":" + k); };
     var t = get("theme");
     var m = get("mode");
     if (t === "backlight") { t = "palm"; m = m || "dark"; } // backlight is palm's dark mode now
