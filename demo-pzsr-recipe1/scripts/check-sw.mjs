@@ -21,8 +21,8 @@ if (files.length === 0) {
 let failed = false;
 for (const file of files) {
   const r = spawnSync(
-    "npx",
-    ["tsc", "--noEmit", "--allowJs", "--checkJs", "--strict",
+    "node_modules/.bin/tsc",
+    ["--noEmit", "--allowJs", "--checkJs", "--strict",
      "--target", "ES2022", "--module", "ESNext", "--moduleResolution", "bundler",
      "--lib", "ES2022,WebWorker", file],
     { stdio: "inherit", shell: false }

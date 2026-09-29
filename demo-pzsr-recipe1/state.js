@@ -11,7 +11,8 @@
 
 import { persistedValue, recordStore } from "./lib/store.js";
 
-const NS = "supper-deck";
+// localStorage key prefix, from <meta name="app-ns"> in index.html.
+const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
 
 export const theme = persistedValue(NS + ":theme", "dusk");
 export const font = persistedValue(NS + ":font", "sans");
@@ -63,15 +64,6 @@ export const skips = recordStore(NS + ":skips");
 
 /** items: `{ text: string, at: number }` -- feeds the log strip */
 export const activity = recordStore(NS + ":activity");
-
-/** The tabs this app has. Add a panel in index.html, add a line here. */
-export const TABS = [
-  { id: "pick", label: "tonight" },
-  { id: "week", label: "week" },
-  { id: "pantry", label: "pantry" },
-  { id: "shop", label: "shop" },
-  { id: "about", label: "about" },
-];
 
 // ---- views over the records -----------------------------------------------
 // lib/plan.js is pure and takes plain Maps and Sets; these adapt the stores to

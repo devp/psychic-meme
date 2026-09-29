@@ -39,7 +39,7 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
   // Prefer an explicitly-provided binary, then installed Chrome, then
-  // `npx playwright install chromium`. The env var is for container images
+  // `node_modules/.bin/playwright install chromium`. The env var is for container images
   // that ship a browser whose build doesn't match the installed playwright:
   //   PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium just dev-check-tests
   const browser = process.env.PLAYWRIGHT_CHROMIUM_PATH
@@ -71,6 +71,10 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
 
   await page.goto(URL, { waitUntil: "networkidle" });
   await settle();
+
+  const tabLabels = await page.getByRole("tab").evaluateAll((tabs) => tabs.map((b) => b.firstChild?.textContent));
+  await ok("one tab per panel, labelled from the page",
+    tabLabels.join(",") === "tonight,week,pantry,shop,about", tabLabels.join(","));
 
   // --- first run seeds a kitchen -------------------------------------------
   await ok("a card is dealt on first run", (await page.locator(".deck-card:not(.peek)").count()) === 1);

@@ -19,28 +19,22 @@ hit() { # rule file line message; loops below run in subshells, so record to a f
   echo "warn[$rule] $file:$line: $msg" | tee -a "$findings"
 }
 
-md5of() { if command -v md5 >/dev/null; then md5 -q "$1"; else md5sum "$1" | cut -d' ' -f1; fi; }
-
-app_files() { # same set as scripts/build-precache.mjs
+app_files() { # what sw.js's ASSETS should list: everything the page loads
   find . -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.webmanifest' -o -name '*.svg' \) \
     -not -path './node_modules/*' -not -path './scripts/*' -not -path './tests/*' \
-    -not -name 'sw.js' -not -name 'precache-manifest.js' | sed 's#^\./##' | sort
+    -not -name 'sw.js' | sed 's#^\./##' | sort
 }
 app_js() { app_files | grep -E '\.js$' | grep -v '^vendor/'; }
 
-# precache-stale: manifest must list every app file with its current md5.
-if [ -f precache-manifest.js ]; then
-  entries=$(sed -n 's/.*"url": "\(.*\)".*/\1/p' precache-manifest.js)
+# sw-assets: sw.js's ASSETS must match the app files on disk.
+if [ -f sw.js ]; then
+  assets=$(awk '/^const ASSETS = \[/ { on=1; next } on && /^\];/ { exit } on' sw.js | grep -oE '"[^"]+"' | tr -d '"')
   for f in $(app_files); do
-    echo "$entries" | grep -qx "$f" || hit precache-stale precache-manifest.js 1 "$f missing — run just dev-rebuild"
+    echo "$assets" | grep -qxF "$f" || hit sw-assets sw.js 1 "$f is not in ASSETS; offline, it will be missing"
   done
-  for url in $entries; do
-    rev=$(grep -A1 "\"url\": \"$url\"" precache-manifest.js | sed -n 's/.*"revision": "\(.*\)".*/\1/p')
-    if [ ! -f "$url" ]; then
-      hit precache-stale precache-manifest.js 1 "$url listed but not on disk — run just dev-rebuild"
-    elif [ "$rev" != "$(md5of "$url")" ]; then
-      hit precache-stale precache-manifest.js 1 "$url changed — run just dev-rebuild"
-    fi
+  for url in $assets; do
+    [ -f "$url" ] || hit sw-assets sw.js "$(grep -nF "\"$url\"" sw.js | head -1 | cut -d: -f1)" \
+      "$url is in ASSETS but not on disk; install fails, so no offline at all"
   done
 fi
 
@@ -77,7 +71,8 @@ done
 
 # class-field-shadow: a class field named like a reactive property shadows its accessor.
 for f in $(app_js); do
-  props=$(grep -oE 'static properties = \{[^}]*\}' "$f" | grep -oE '[A-Za-z_]+:' | tr -d ':')
+  props=$( { grep -oE 'static properties = \{[^}]*\}' "$f" | grep -oE '[A-Za-z_]+:' | tr -d ':'
+             grep -oE 'static properties = \[[^]]*\]' "$f" | grep -oE '"[A-Za-z_]+"' | tr -d '"'; } )
   for p in $props; do
     grep -nE "^  $p( =|;)" "$f" | while IFS=: read -r n _; do
       hit class-field-shadow "$f" "$n" "field \`$p\` shadows the reactive accessor; assign it in the constructor"
@@ -133,6 +128,15 @@ for f in $(app_files | grep -E '\.css$'); do
     hit input-font-size "$f" "$n" "font-size under 16px on an input makes iOS zoom on focus"
   done
 done
+
+# starter-leftover: names a copy of pizza-starter should have replaced.
+if ! grep -q '"name": "pizza-starter"' package.json 2>/dev/null; then
+  for f in $(app_files | grep -v '^vendor/'); do
+    grep -noE 'pizza-[a-z]+|pizza\.svg' "$f" | while IFS=: read -r n name; do
+      hit starter-leftover "$f" "$n" "\`$name\` is from pizza-starter; rename it for this app"
+    done
+  done
+fi
 
 count=$(wc -l <"$findings" | tr -d ' ')
 echo "warnings: $count"
