@@ -399,10 +399,7 @@ document.addEventListener("click", (e) => {
 });
 
 const settings = /** @type {HTMLDialogElement} */ (document.getElementById("settings-dialog"));
-document.getElementById("settings-btn")?.addEventListener("click", () => {
-  settings.showModal();
-  paintBuild();
-});
+document.getElementById("settings-btn")?.addEventListener("click", () => settings.showModal());
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
 
 // Anything that could be the last moment of the session gets a flush.
@@ -459,9 +456,6 @@ syncAppHeight(syncWritingMode);
 
 // ---- offline --------------------------------------------------------------
 
-const buildStateEl = /** @type {HTMLElement} */ (document.getElementById("build-state"));
-const updateBar = /** @type {HTMLElement} */ (document.getElementById("update-bar"));
-
 if ("serviceWorker" in navigator) {
   const register = () =>
     navigator.serviceWorker.register("sw.js").catch(() => {
@@ -474,51 +468,4 @@ if ("serviceWorker" in navigator) {
   // Check readyState first and this stays correct either way.
   if (document.readyState === "complete") register();
   else window.addEventListener("load", register, { once: true });
-
-  // A new worker claiming this page means a new build is installed -- but the
-  // page in front of you was assembled from the old one, so it's a reload
-  // that shows it. Guarded on there having been a worker already: the first
-  // ever install also fires this, and announcing an update to someone who
-  // just opened the app for the first time is a lie.
-  const hadWorker = Boolean(navigator.serviceWorker.controller);
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (hadWorker) updateBar.hidden = false;
-  });
-}
-
-document.getElementById("update-reload")?.addEventListener("click", () => {
-  saveNow();
-  location.reload();
-});
-
-/**
- * Ask the worker which build it's serving.
- *
- * Over a MessagePort rather than a broadcast, so the reply can't be confused
- * with anyone else's, and with a timeout because a worker that is installing,
- * broken or absent would otherwise leave "checking…" on screen forever.
- *
- * @returns {Promise<{ build: string, files: number }|null>}
- */
-function askBuild() {
-  const worker = navigator.serviceWorker?.controller;
-  if (!worker) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const channel = new MessageChannel();
-    const done = window.setTimeout(() => resolve(null), 1500);
-    channel.port1.onmessage = (e) => {
-      clearTimeout(done);
-      resolve(e.data);
-    };
-    worker.postMessage({ type: "build" }, [channel.port2]);
-  });
-}
-
-function paintBuild() {
-  buildStateEl.textContent = "checking…";
-  askBuild().then((info) => {
-    buildStateEl.textContent = info
-      ? `build ${info.build} · ${info.files} files cached`
-      : "not cached yet — reload once to install offline support";
-  });
 }
