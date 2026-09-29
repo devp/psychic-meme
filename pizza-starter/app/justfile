@@ -1,6 +1,9 @@
 # pizza-starter tasks. Every recipe is a one-liner or calls scripts/, so this
 # file also works as a reference without `just` installed.
 
+# Package manager: $PM, else the one whose lockfile exists, else pnpm if on PATH, else npm.
+pm := env("PM", if path_exists("pnpm-lock.yaml") == "true" { "pnpm" } else if path_exists("package-lock.json") == "true" { "npm" } else { `command -v pnpm >/dev/null && echo pnpm || echo npm` })
+
 default:
     @just --list
 
@@ -14,7 +17,7 @@ warnings *args:
 
 # Install dev tooling. Nothing in node_modules ships.
 dev-init:
-    npm install
+    {{pm}} install
 
 # Re-bundle lit into vendor/ after a version bump.
 dev-vendor:
@@ -25,12 +28,12 @@ dev-check: dev-check-types dev-check-tests dev-check-packages
 
 # Typecheck JSDoc-annotated JS; sw.js separately (worker scope).
 dev-check-types:
-    npx tsc -p jsconfig.json
+    node_modules/.bin/tsc -p jsconfig.json
     node scripts/check-sw.mjs sw.js
 
 # List outdated devDependencies. Informational; never fails.
 dev-check-packages:
-    -npm outdated
+    -{{pm}} outdated
 
 # Unit tests, plus browser tests once playwright is installed.
 dev-check-tests:
@@ -40,6 +43,6 @@ dev-check-tests:
 dev-init-hooks:
     scripts/install-hooks.sh
 
-# Opt in to browser tests. Uses installed Chrome, else `npx playwright install chromium`.
+# Opt in to browser tests. Uses installed Chrome, else `node_modules/.bin/playwright install chromium`.
 dev-init-browser:
-    npm install --save-dev --save-exact playwright
+    {{pm}} add --save-dev --save-exact playwright

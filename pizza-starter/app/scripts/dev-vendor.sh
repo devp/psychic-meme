@@ -11,7 +11,7 @@ trap 'rm -f "$entry"' EXIT
 printf '%s\n' \
   'export { LitElement, html, css, nothing, svg } from "lit";' \
   'export { repeat } from "lit/directives/repeat.js";' >"$entry"
-npx esbuild "$entry" --bundle --format=esm --minify --legal-comments=inline \
+node_modules/.bin/esbuild "$entry" --bundle --format=esm --minify --legal-comments=inline \
   --outfile=vendor/lit.js
 
 cp node_modules/lit/LICENSE vendor/lit.LICENSE.txt
