@@ -7,9 +7,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#14161c">
 <title>Supper Deck</title>
+<!-- localStorage key prefix; state.js and the theme script below read it. -->
+<meta name="app-ns" content="supper-deck">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/supper.svg" type="image/svg+xml">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="app.css">
 <script type="importmap">
 {
   "imports": {
@@ -20,11 +24,11 @@
 </script>
 <script>
 // Runs before first paint so the chosen theme doesn't flash the default one.
-// Keep these keys in sync with NS in state.js.
 (function () {
   try {
-    var t = localStorage.getItem("supper-deck:theme");
-    var f = localStorage.getItem("supper-deck:font");
+    var ns = document.querySelector('meta[name="app-ns"]').getAttribute("content");
+    var t = localStorage.getItem(ns + ":theme");
+    var f = localStorage.getItem(ns + ":font");
     if (t) document.documentElement.setAttribute("data-theme", t);
     if (f) document.documentElement.setAttribute("data-font", f);
   } catch (e) {}
@@ -41,7 +45,7 @@
 <supper-tabs class="tabs"></supper-tabs>
 
 <main class="panels">
-  <section class="panel active" data-panel="pick">
+  <section class="panel active" data-panel="pick" data-label="tonight">
     <pick-deck></pick-deck>
   </section>
 

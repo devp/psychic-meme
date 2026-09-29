@@ -1,85 +1,4 @@
-/* ---- theme tokens ----
-   Every colour lives here. Add a theme by copying a block and adding a swatch
-   button in index.html -- nothing else needs to know.
-
-   Beyond the starter's palette this app needs three state colours, because
-   "low" and "out" are load-bearing everywhere: on the card, in the pantry, on
-   the list. They're tokens, not hard-coded, so a new theme restates them. */
-:root,
-:root[data-theme="dusk"] {
-  color-scheme: dark;
-  --bg: #14161c;
-  --bg-alt: #1b1e27;
-  --bg-raised: #222632;
-  --fg: #e6e8f0;
-  --fg-dim: #8b91a5;
-  --accent: #6fb98f;
-  --accent-ink: #0d2018;
-  --border: #2c313e;
-  --ok: #6fb98f;
-  --low: #d9a13b;
-  --out: #dd6a55;
-}
-
-:root[data-theme="paper"] {
-  color-scheme: light;
-  --bg: #faf7f0;
-  --bg-alt: #f1ecdf;
-  --bg-raised: #ffffff;
-  --fg: #2b2620;
-  --fg-dim: #7a7263;
-  --accent: #2f7d5b;
-  --accent-ink: #f2fbf6;
-  --border: #ded5bf;
-  --ok: #2f7d5b;
-  --low: #a8761a;
-  --out: #b5432f;
-}
-
-:root[data-theme="kitchen"] {
-  color-scheme: dark;
-  --bg: #241a12;
-  --bg-alt: #2e2118;
-  --bg-raised: #3a2a1e;
-  --fg: #f4e7d8;
-  --fg-dim: #b39a80;
-  --accent: #e0a458;
-  --accent-ink: #2a1c10;
-  --border: #4a3626;
-  --ok: #96c08a;
-  --low: #e0a458;
-  --out: #e07a5f;
-}
-
-:root {
-  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-body: var(--font-sans);
-}
-:root[data-font="mono"] { --font-body: var(--font-mono); }
-
-/* ---- base ---- */
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-html, body {
-  margin: 0;
-  /* --app-height is set by syncAppHeight(); the dvh is the pre-JS fallback. */
-  height: var(--app-height, 100dvh);
-  overflow: hidden;
-}
-
-body {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.5;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-button { font: inherit; color: inherit; cursor: pointer; }
+/* This app's own styles. */
 
 .sr-only {
   position: absolute;
@@ -89,57 +8,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   clip-path: inset(50%);
   white-space: nowrap;
 }
-
-/* ---- header ---- */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
-  padding-top: calc(10px + env(safe-area-inset-top));
-  background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.app-header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
-
-.icon-btn {
-  background: none;
-  border: 0;
-  padding: 6px;
-  border-radius: 8px;
-  display: flex;
-  color: var(--fg-dim);
-}
-.icon-btn:hover { color: var(--fg); background: var(--bg-raised); }
-
-/* ---- tabs ---- */
-.tabs {
-  display: flex;
-  gap: 2px;
-  padding: 6px 10px;
-  background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  flex-shrink: 0;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar { display: none; }
-
-.tab {
-  background: none;
-  border: 0;
-  padding: 7px 12px;
-  border-radius: 8px;
-  color: var(--fg-dim);
-  white-space: nowrap;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 
 /* The count that saves you a tab switch. */
 .badge {
@@ -154,19 +22,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   text-align: center;
 }
 .tab.active .badge { background: var(--accent-ink); color: var(--accent); }
-
-/* ---- panels ---- */
-.panels { flex: 1; min-height: 0; position: relative; }
-
-.panel {
-  display: none;
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px;
-}
-.panel.active { display: block; }
 
 .panel-note { margin: 0 0 12px; color: var(--fg-dim); font-size: 13px; }
 
@@ -566,52 +421,7 @@ append-log:empty::after {
 .prose ul { padding-left: 20px; }
 .prose li { margin-bottom: 8px; }
 
-/* ---- settings dialog ---- */
-.settings {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--bg-raised);
-  color: var(--fg);
-  padding: 20px;
-  width: min(92vw, 380px);
-  font-family: var(--font-body);
-}
-.settings::backdrop { background: rgb(0 0 0 / 0.5); }
-.settings h2 { margin: 0 0 16px; font-size: 16px; }
-.settings h3 { margin: 0 0 8px; font-size: 13px; color: var(--fg-dim); font-weight: 500; }
-.settings section { margin-bottom: 18px; }
 .settings-note { margin: 0 0 10px; font-size: 12px; color: var(--fg-dim); }
-
-.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.swatch {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 12px;
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  font-size: 13px;
-  color: var(--fg-dim);
-}
-.swatch span {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-}
-.swatch[aria-checked="true"] { border-color: var(--accent); color: var(--fg); }
-
-.settings .primary {
-  width: 100%;
-  padding: 11px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  border: 0;
-  border-radius: 10px;
-  font-weight: 600;
-}
 .settings .danger {
   width: 100%;
   padding: 10px;

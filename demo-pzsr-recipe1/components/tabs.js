@@ -1,7 +1,8 @@
-import { tab, TABS } from "../state.js";
+import { tab } from "../state.js";
 
 /**
- * Tab strip. Renders once; the `tab` subscriber in app.js marks the active
+ * Tab strip, one tab per `.panel[data-panel]` in the page; `data-label` overrides
+ * the label. Renders once; the `tab` subscriber in app.js marks the active
  * one, and setBadge() keeps the counts current.
  *
  * The badges are the reason this isn't just five buttons: "week 4" and
@@ -10,18 +11,19 @@ import { tab, TABS } from "../state.js";
 export class Tabs extends HTMLElement {
   connectedCallback() {
     this.setAttribute("role", "tablist");
-    for (const t of TABS) {
+    for (const panel of document.querySelectorAll(".panel[data-panel]")) {
+      const id = panel.getAttribute("data-panel") ?? "";
       const button = document.createElement("button");
       button.type = "button";
       button.className = "tab";
       button.setAttribute("role", "tab");
-      button.dataset.tab = t.id;
-      button.textContent = t.label;
+      button.dataset.tab = id;
+      button.textContent = panel.getAttribute("data-label") ?? id;
       const badge = document.createElement("span");
       badge.className = "badge";
       badge.hidden = true;
       button.append(badge);
-      button.addEventListener("click", () => tab.set(t.id));
+      button.addEventListener("click", () => tab.set(id));
       this.append(button);
     }
   }
