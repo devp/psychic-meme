@@ -20,7 +20,7 @@ function fixture(files) {
 
 test("every rule fires on a fixture full of footguns", () => {
   const dir = fixture({
-    "index.html": '<script type="importmap">{"imports":{"lit":"./x.js"}}</script>\n<my-widget></my-widget>\n',
+    "index.html": '<script type="importmap">{"imports":{"lit":"./x.js"}}</script>\n<my-widget></my-widget>\n<title>pizza-starter</title>\n',
     "app.js": [
       'import { x } from "unmapped-pkg";',
       'localStorage.getItem("a");',
@@ -30,6 +30,7 @@ test("every rule fires on a fixture full of footguns", () => {
       "// warn-ok: innerhtml-assign",
       'ok.innerHTML = "";',
     ].join("\n"),
+    "components/v.js": 'class V {\n  static properties = ["items"];\n  items = [];\n}\n',
     "components/w.js": [
       "class W {",
       "  static properties = { record: {} };",
@@ -38,13 +39,12 @@ test("every rule fires on a fixture full of footguns", () => {
       "}",
     ].join("\n"),
     "style.css": "body { height: 100vh; }\ninput { font-size: 14px; }\n",
-    "sw.js": 'importScripts("missing.js");\n',
-    "precache-manifest.js": 'self.__PRECACHE = [\n  {\n    "url": "app.js",\n    "revision": "stale"\n  }\n];\n',
+    "sw.js": 'importScripts("missing.js");\nconst ASSETS = [\n  "app.js",\n  "gone.js",\n];\n',
   });
   const r = spawnSync(script, ["--strict", dir], { encoding: "utf8" });
   assert.equal(r.status, 1);
   for (const rule of [
-    "precache-stale",
+    "sw-assets",
     "import-script-missing",
     "element-undefined",
     "bare-import-unmapped",
@@ -55,10 +55,12 @@ test("every rule fires on a fixture full of footguns", () => {
     "load-after-await",
     "shell-100vh",
     "input-font-size",
+    "starter-leftover",
   ]) {
     assert.match(r.stdout, new RegExp(`warn\\[${rule}\\]`), rule);
   }
   assert.equal(r.stdout.match(/warn\[innerhtml-assign\]/g)?.length, 1, "warn-ok suppresses");
+  assert.match(r.stdout, /warn\[class-field-shadow\] components\/v\.js/, "array-form properties");
 });
 
 test("gemdrafter itself is clean under --strict", () => {

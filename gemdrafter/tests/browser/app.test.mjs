@@ -39,7 +39,7 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
   // Prefer an explicitly-provided binary, then installed Chrome, then
-  // `npx playwright install chromium`. The env var is for container images
+  // `node_modules/.bin/playwright install chromium`. The env var is for container images
   // that ship a browser whose build doesn't match the installed playwright:
   //   PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium just dev-check-tests
   const browser = process.env.PLAYWRIGHT_CHROMIUM_PATH

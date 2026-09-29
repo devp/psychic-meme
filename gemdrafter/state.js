@@ -9,7 +9,8 @@
 import { persistedValue, recordStore } from "./lib/store.js";
 import { postSlug } from "./lib/gemtext.js";
 
-const NS = "gemdrafter";
+// localStorage key prefix, from <meta name="app-ns"> in index.html.
+const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
 
 export const theme = persistedValue(NS + ":theme", "dusk");
 export const font = persistedValue(NS + ":font", "mono");
@@ -38,7 +39,7 @@ export const journalHost = persistedValue(NS + ":host", "devp.smol.pub");
  *               first, capped at MAX_REVISIONS.
  *
  * The alternative was adding fields to StoredRecord, which forks lib/store.js
- * away from pizza-starter -- and the day the starter's store grows a fix, that
+ * away from the starter -- and the day the starter's store grows a fix, that
  * fork is what stops you taking it. Nothing outside this file knows the
  * encoding: everything goes through the accessors below.
  *
@@ -58,15 +59,6 @@ const IDLE_MS = 5 * 60_000;
 
 /** Enough to walk back a bad week. Oldest go first. */
 const MAX_REVISIONS = 20;
-
-/** The tabs this app has. Add a panel in index.html, add a line here. */
-export const TABS = [
-  { id: "draft", label: "draft" },
-  { id: "preview", label: "preview" },
-  { id: "posts", label: "posts" },
-  { id: "index", label: "index" },
-  { id: "about", label: "about" },
-];
 
 /**
  * @typedef {Object} Revision
