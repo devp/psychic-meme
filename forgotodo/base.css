@@ -1,0 +1,135 @@
+/* Shell: reset, layout, the one button shape, header and menu bar, panels.
+   Colours come from theme.css tokens. */
+
+/* ---- base ---- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  /* --app-height is set by syncAppHeight(); the dvh is the pre-JS fallback. */
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  background-color: var(--bg);
+  /* LCD pixel grid */
+  background-image:
+    repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 3px);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* Departure Mono has no bold, and a faux one smears its pixels. */
+html { font-synthesis-weight: none; }
+
+/* The one button shape: outlined rounded rect, inverted while pressed/selected. */
+.swatch,
+.add-row button,
+.dialog .primary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: var(--btn-radius);
+  box-shadow: var(--btn-shadow);
+  padding: 3px 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.swatch:active,
+.add-row button:active,
+.dialog .primary:active,
+.swatch[aria-checked="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* ---- header: black title tab sitting on a full-width rule ---- */
+.app-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 10px 0 0;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  border-bottom: 2px solid var(--ink);
+  flex-shrink: 0;
+  position: relative;
+}
+.app-header h1 { margin: 0; font-size: inherit; }
+.title-tab {
+  display: block;
+  border: 0;
+  border-radius: 0;
+  padding: 3px 14px 1px 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 15px;
+  font-weight: 700;
+  border-top-right-radius: 7px;
+}
+
+/* ---- menu bar: drops over the top of the list, Palm-style ---- */
+.menu-scrim { position: fixed; inset: 0; z-index: 10; }
+.menubar {
+  position: absolute;
+  z-index: 11;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border-bottom: 2px solid var(--ink);
+}
+.menu-titles { display: flex; gap: 2px; padding: 2px 4px; border-bottom: 1px solid var(--ink); }
+.menu-title,
+.menu-items button {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 4px 10px;
+  color: var(--ink);
+  text-align: left;
+}
+.menu-title[aria-expanded="true"] { background: var(--ink); color: var(--bg); }
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  min-width: 12em;
+  margin: 0 0 8px 4px;
+  border: 1px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  background: var(--bg);
+}
+.menu-items[hidden] { display: none; }
+.menu-items button { display: flex; align-items: center; gap: 10px; padding: 7px 12px; }
+.menu-items small { margin-left: auto; padding-left: 18px; font-size: 12px; color: var(--ink-dim); }
+.menu-items button:active,
+.menu-items button:focus-visible { background: var(--ink); color: var(--bg); outline: 0; }
+.menu-items button:active small,
+.menu-items button:focus-visible small { color: inherit; }
+
+/* Pixel icons: 10x10 bitmaps at 2x, so each pixel is a chunky 2px square. */
+.icon { display: block; width: 20px; height: 20px; flex-shrink: 0; }
+:root[data-icons="off"] .menu-items .icon { display: none; }
+
+/* ---- panels ---- */
+.panels { flex: 1; min-height: 0; position: relative; }
+
+.panel {
+  display: none;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 12px;
+}
+.panel.active { display: block; }
