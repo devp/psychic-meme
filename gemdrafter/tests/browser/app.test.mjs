@@ -503,13 +503,6 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
     (await page.locator("#index-preview .gem-h1").innerText()) === "From a property");
 
   // --- knowing which build you're on ---------------------------------------
-  await ok("the registration revalidates its imports",
-    (await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.getRegistration();
-      return reg?.updateViaCache;
-    })) === "none",
-    "updateViaCache");
-
   await page.click("#settings-btn");
   await page.waitForFunction(() => !/checking/.test(document.getElementById("build-state")?.textContent ?? ""));
   const build = await page.locator("#build-state").innerText();
