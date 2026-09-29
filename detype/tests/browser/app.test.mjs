@@ -296,10 +296,20 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("update: the new bytes are cached", (await cachedCss()).includes(MARK));
   await ok("update: no reload while in use", await sameDocument());
 
+  // The line in the box isn't saved until Enter, so a pending reload waits.
+  await page.fill("#line", "half a thought");
+  await resume();
+  await page.waitForTimeout(300);
+  await ok("update: no reload while a line is half-typed", await sameDocument());
+  await ok("update: the half-typed line survives the resume", (await page.inputValue("#line")) === "half a thought");
+  await page.keyboard.press("Enter");
+
   await Promise.all([page.waitForEvent("load"), resume()]);
-  await ok("update: reloads on the next resume", !(await sameDocument()));
+  await ok("update: reloads on the next resume with an empty box", !(await sameDocument()));
   const served = await page.evaluate(async () => (await fetch("app.css")).text());
   await ok("update: the reloaded page gets the new file", served.includes(MARK));
+  const saved = JSON.parse((await ls("detype:pages:records")) ?? "[]").flatMap((p) => p.items.map((i) => i.text));
+  await ok("update: the line finished before the reload was saved", saved.includes("half a thought"));
   overrides.clear();
 
   await ctx.setOffline(true);
