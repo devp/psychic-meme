@@ -54,6 +54,7 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   const ok = (name, cond, extra = "") => t.test(name, () => assert.ok(cond, extra || name));
 
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.grantPermissions(["clipboard-read", "clipboard-write"]);
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -120,9 +121,32 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   });
   await ok("pool matches the library", Number(quickNoCook.match(/^(\d+)/)[1]) === everyNoCook,
     `${quickNoCook} vs ${everyNoCook}`);
+  await ok("clear chip counts active filters", (await page.locator(".chip.clear").innerText()).trim() === "clear 2");
   await page.locator(".chip.clear").click();
   await settle();
   await ok("clear restores the full pool", (await deckCount()) === firstCount);
+
+  const poolSize = async () => Number((await deckCount()).match(/^(\d+)/)[1]);
+  const libraryCount = (/** @type {string} */ src) =>
+    page.evaluate(async (src) => {
+      const { RECIPES } = await import("./data/recipes.js");
+      return RECIPES.filter(new Function("r", "return " + src)).length;
+    }, src);
+  const kids = page.getByRole("button", { name: "kids will eat it" });
+  await kids.click();
+  await settle();
+  await ok("kids chip is pressed", (await kids.getAttribute("aria-pressed")) === "true");
+  await ok("kids chip keeps only kid-safe dishes", (await poolSize()) === (await libraryCount("r.kidOk")),
+    await deckCount());
+  await ok("a kid-safe card says so", (await page.locator(".deck-card:not(.peek) .kid").count()) === 1);
+  await kids.click();
+  await page.getByRole("radio", { name: "bengali", exact: true }).click();
+  await settle();
+  await ok("lane filter narrows to the lane", (await poolSize()) === (await libraryCount('r.lane === "bengali"')),
+    await deckCount());
+  await page.locator(".chip.clear").click();
+  await settle();
+  await ok("clear resets every axis", (await deckCount()) === firstCount && (await page.locator(".chip.clear").count()) === 0);
 
   // --- "nothing to buy" is the pantry-aware filter -------------------------
   await page.getByRole("button", { name: "nothing to buy" }).click();
@@ -142,6 +166,20 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   await ok("a cookable card says so", cookableCard.includes("Everything's in the kitchen"), cookableCard);
   await page.locator(".chip.clear").click();
   await settle();
+
+  const verdict = await page.locator(".deck-card:not(.peek) .card-verdict").innerText();
+  const expected = await page.evaluate(async (name) => {
+    const { RECIPES } = await import("./data/recipes.js");
+    const { STAPLE_BY_ID } = await import("./data/staples.js");
+    const { missingFor } = await import("./lib/plan.js");
+    const { pantryMap } = await import("./state.js");
+    const r = RECIPES.find((x) => x.name === name);
+    const missing = r ? missingFor(r, pantryMap()) : ["?"];
+    return missing.length === 0
+      ? "Everything's in the kitchen."
+      : "Need to buy: " + missing.map((id) => STAPLE_BY_ID.get(id)?.name).join(", ");
+  }, await cardName());
+  await ok("card verdict matches missingFor", verdict === expected, `${verdict} vs ${expected}`);
 
   // --- a button decision lands on the first open night ---------------------
   const pick1 = await cardName();
@@ -203,6 +241,23 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
     await page.evaluate((name) => !!document.body.innerText.includes(name), passed));
   await ok("skip row goes away when empty", (await page.locator(".skip-row").count()) === 0);
 
+  const poolBeforeSwipe = await deckCount();
+  const box3 = await page.locator(".deck-card:not(.peek)").boundingBox();
+  const midY3 = box3.y + box3.height / 2;
+  await page.mouse.move(box3.x + box3.width / 2, midY3);
+  await page.mouse.down();
+  for (const dx of [-20, -60, -110, -150]) await page.mouse.move(box3.x + box3.width / 2 + dx, midY3);
+  await ok("the skip stamp tracks a left drag",
+    (await page.locator(".stamp-skip").evaluate((el) => Number(el.style.opacity))) === 1);
+  await page.mouse.up();
+  await settleFling();
+  await ok("swipe left passes without planning",
+    (await badge("week")) === "2" && (await page.locator(".skip-row").innerText()).includes("1 passed on"));
+  await page.getByRole("button", { name: "reshuffle all" }).click();
+  await settle();
+  await ok("reshuffle all takes every pass back",
+    (await page.locator(".skip-row").count()) === 0 && (await deckCount()) === poolBeforeSwipe);
+
   // --- keyboard is a first-class path --------------------------------------
   const byKey = await cardName();
   await page.locator(".deck-card:not(.peek)").focus();
@@ -239,6 +294,17 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   });
   await ok("what you see is what the pure function returns", listed === generated,
     `${listed} vs ${generated}`);
+
+  await page.getByRole("button", { name: "Copy as text" }).click();
+  await settle();
+  await ok("copy confirms", (await page.getByRole("button", { name: "Copied" }).count()) === 1);
+  const clip = await page.evaluate(() => navigator.clipboard.readText());
+  const firstHead = (await page.locator('.panel[data-panel="shop"] .kind-head').first().textContent())?.trim() ?? "";
+  const [clipStore, clipLine] = clip.split("\n");
+  await ok("copied text is the list, grouped by store",
+    firstHead.startsWith(clipStore) && clipLine.startsWith("- ")
+      && clip.split("\n").filter((l) => l.startsWith("- ")).length === listed,
+    JSON.stringify(clip.slice(0, 80)));
 
   // --- pantry -> list -> pantry, the loop that keeps it honest -------------
   await page.locator(".shop input[type=checkbox]").first().check();
@@ -289,6 +355,19 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   const wed = await page.locator(".night").nth(2).innerText();
   await ok("moving to an occupied night swaps them", wed.includes(mondayDish), wed);
   await ok("nothing was dropped in the swap", (await badge("week")) === "3", await badge("week"));
+  const weekNote = await page.locator("week-plan .panel-note").innerText();
+  const expectedNote = await page.evaluate(async () => {
+    const { RECIPE_BY_ID } = await import("./data/recipes.js");
+    const { formatPrep } = await import("./components/pick-deck.js");
+    const { planItems } = await import("./state.js");
+    const mins = planItems().reduce((n, p) => n + (RECIPE_BY_ID.get(p.recipeId)?.prep ?? 0), 0);
+    return `3 of 7 nights picked · ${formatPrep(mins)} of cooking`;
+  });
+  await ok("week note sums the cooking time", weekNote === expectedNote, `${weekNote} vs ${expectedNote}`);
+  await ok("formatPrep reads like speech", await page.evaluate(async () => {
+    const { formatPrep } = await import("./components/pick-deck.js");
+    return [formatPrep(45), formatPrep(60), formatPrep(90)].join("|");
+  }) === "45 min|1h|1h 30m");
   await page.locator(".night-x").first().click();
   await settle();
   await ok("removing frees the night", (await badge("week")) === "2", await badge("week"));
@@ -308,7 +387,12 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
     (await page.getAttribute('[data-set-theme="kitchen"]', "aria-checked")) === "true");
   await ok("other swatch unchecked",
     (await page.getAttribute('[data-set-theme="dusk"]', "aria-checked")) === "false");
+  await page.click('[data-set-font="mono"]');
+  await settle();
+  await ok("font applies", (await page.getAttribute("html", "data-font")) === "mono");
   await page.click("#settings-close");
+  await ok("storage keys keep the supper-deck namespace", await page.evaluate(() =>
+    localStorage.getItem("supper-deck:theme") === "kitchen" && localStorage.getItem("supper-deck:font") === "mono"));
 
   // --- append-log: the travelling component --------------------------------
   // Driven through its property interface, which is the whole point of it.
@@ -373,6 +457,98 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   await ok("reset reseeds an empty plan", (await badge("week")) === "", `badge ${await badge("week")}`);
   await ok("reset keeps a working pantry",
     (await page.locator(".deck-card:not(.peek)").count()) === 1);
+
+  // --- edge states, in a fresh profile -------------------------------------
+  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p2 = await ctx2.newPage();
+  p2.on("pageerror", (e) => errors.push(String(e)));
+  p2.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  await p2.goto(URL, { waitUntil: "networkidle" });
+  await p2.waitForTimeout(80);
+
+  // Checked on first install, before any request has passed through the
+  // worker: later reloads would cache files at runtime and hide a gap.
+  const uncached = await p2.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    const keys = new Set();
+    for (const name of await caches.keys()) {
+      for (const req of await (await caches.open(name)).keys()) keys.add(new URL(req.url).pathname);
+    }
+    const loaded = performance.getEntriesByType("resource").map((e) => new URL(e.name))
+      .filter((u) => u.origin === location.origin).map((u) => u.pathname);
+    const need = new Set([...loaded, "/index.html", "/data/recipes.js", "/data/staples.js"]);
+    return [...need].filter((p) => !p.endsWith("/sw.js") && !keys.has(p));
+  });
+  await ok("install caches everything the page loads", uncached.length === 0, uncached.join(", "));
+  const badge2 = (tabId) =>
+    p2.locator(`[data-tab="${tabId}"] .badge`).evaluate((el) => (el.hidden ? "" : el.textContent));
+  const tab2 = (name) => p2.getByRole("tab", { name, exact: false }).click();
+
+  for (let i = 0; i < 7; i++) {
+    await p2.getByRole("button", { name: "Cook it" }).click();
+    await p2.waitForTimeout(320);
+  }
+  await ok("seven picks fill the week", (await badge2("week")) === "7", await badge2("week"));
+  await ok("a full week stops dealing",
+    (await p2.locator(".deck-empty").innerText()).includes("Seven nights, seven dishes.")
+      && (await p2.getByRole("button", { name: "Cook it" }).count()) === 0);
+
+  await tab2("week");
+  await p2.waitForTimeout(80);
+  await ok("no night is open", (await p2.locator(".night.open").count()) === 0);
+  await p2.getByRole("button", { name: "Start a fresh week" }).click();
+  await p2.waitForTimeout(80);
+  await ok("a fresh week empties the plan",
+    (await badge2("week")) === "" && (await p2.locator(".night.open").count()) === 7);
+  await ok("last week is kept as its own record", await p2.evaluate(async () => {
+    const { plan } = await import("./state.js");
+    const all = plan.getAll();
+    return all.length === 2 && all.some((r) => r.items.length === 7);
+  }));
+  await ok("the fresh week is logged",
+    (await p2.locator("#decision-log .log-entry").first().innerText()).includes("started a fresh week"));
+
+  await tab2("tonight");
+  await p2.waitForTimeout(80);
+  const combos = await p2.evaluate(async () => {
+    const { RECIPES, LANES, METHODS } = await import("./data/recipes.js");
+    /** @type {{lane: string, method: string, n: number}[]} */
+    const out = [];
+    for (const l of LANES) for (const m of METHODS) {
+      out.push({ lane: l.label, method: m.label, n: RECIPES.filter((r) => r.lane === l.id && r.method === m.id).length });
+    }
+    return { empty: out.find((c) => c.n === 0), one: out.find((c) => c.n === 1) };
+  });
+  const pickCombo = async (c) => {
+    await p2.getByRole("radio", { name: c.lane, exact: true }).click();
+    await p2.getByRole("radio", { name: c.method, exact: true }).click();
+    await p2.waitForTimeout(80);
+  };
+  await pickCombo(combos.empty);
+  const emptyText = await p2.locator(".deck-empty").innerText();
+  await ok("no matches says so and offers to loosen",
+    emptyText.includes("Nothing left in this deck.") && emptyText.includes("clear all"), emptyText);
+  await p2.getByRole("button", { name: "clear all" }).click();
+  await p2.waitForTimeout(80);
+  await ok("clear all deals again", (await p2.locator(".deck-card:not(.peek)").count()) === 1);
+
+  await pickCombo(combos.one);
+  await p2.getByRole("button", { name: "Not tonight" }).click();
+  await p2.waitForTimeout(320);
+  await ok("passing the last card offers a reshuffle",
+    (await p2.locator(".deck-empty").innerText()).includes("take back the 1 you passed on"));
+  await p2.locator(".deck-empty").getByRole("button", { name: "reshuffle" }).click();
+  await p2.waitForTimeout(80);
+  await ok("reshuffle deals the passed card again", (await p2.locator(".deck-count").innerText()).startsWith("1 dish match"));
+
+  const logLen = await p2.evaluate(async () => {
+    const { note, activity } = await import("./state.js");
+    for (let i = 0; i < 50; i++) note("filler " + i);
+    const rec = activity.get(activity.getActiveId() ?? "");
+    return { n: rec?.items.length, last: rec?.items.at(-1)?.text };
+  });
+  await ok("the log keeps the last 40", logLen.n === 40 && logLen.last === "filler 49", JSON.stringify(logLen));
+  await ctx2.close();
 
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });
