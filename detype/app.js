@@ -227,7 +227,8 @@ if ("serviceWorker" in navigator) {
   check();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
-    if (updated) location.reload();
-    else check();
+    if (!updated) check();
+    // The line in the box is only saved on Enter; wait for a resume without one.
+    else if (!lineEl.value) location.reload();
   });
 }
