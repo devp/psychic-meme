@@ -1,0 +1,20 @@
+{
+  "name": "pizza-repl-fennel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "No-build offline-first PWA skeleton. devDependencies are dev-time only -- nothing here ships.",
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "esbuild": "0.28.2",
+    "lit": "3.3.3",
+    "playwright": "1.63.0",
+    "typescript": "7.0.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}
