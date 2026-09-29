@@ -1,9 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-// state.js builds its stores at import time, so localStorage has to exist
-// before the import, which is why this one is dynamic. Node has no
-// localStorage without --localstorage-file.
+// state.js builds its stores at import time, so localStorage -- and the
+// <meta name="app-ns"> it reads its key prefix from -- have to exist before
+// the import, which is why this one is dynamic. Node has no localStorage
+// without --localstorage-file.
+Object.defineProperty(globalThis, "document", {
+  configurable: true,
+  value: {
+    querySelector: (/** @type {string} */ sel) =>
+      sel === 'meta[name="app-ns"]' ? { getAttribute: () => "gemdrafter" } : null,
+  },
+});
 /** @type {Map<string, string>} */
 const data = new Map();
 Object.defineProperty(globalThis, "localStorage", {
