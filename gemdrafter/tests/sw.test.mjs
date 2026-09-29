@@ -8,97 +8,108 @@ import { readFileSync } from "node:fs";
 // these tests exercise the shipped file rather than a copy of its logic.
 const source = readFileSync(new URL("../sw.js", import.meta.url), "utf8");
 
+/** The ASSETS list, read out of the shipped file. */
+const ASSETS = (() => {
+  const m = /^const ASSETS = \[([\s\S]*?)^\];/m.exec(source);
+  assert.ok(m, "sw.js has an ASSETS list");
+  return [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+})();
+
 /**
- * @param {{url: string, revision: string|null}[]} precache
+ * @param {Record<string, string>} cached url -> body, what the cache holds
  * @returns {Map<string, (event: any) => void>}
  */
-function runWorker(precache) {
+function runWorker(cached) {
   /** @type {Map<string, (event: any) => void>} */
   const handlers = new Map();
   const self = {
-    __PRECACHE: precache,
+    registration: { scope: "http://x/" },
+    location: { origin: "http://x" },
     addEventListener: (/** @type {string} */ type, /** @type {any} */ fn) => handlers.set(type, fn),
     skipWaiting: () => {},
     clients: { claim: () => {} },
   };
-  const workbox = {
-    precacheAndRoute: () => {},
-    registerRoute: () => {},
-    createHandlerBoundToURL: () => {},
-    NavigationRoute: class {},
+  const cache = {
+    match: async (/** @type {string} */ url) =>
+      url in cached ? new Response(cached[url]) : undefined,
   };
-  new Function("self", "workbox", "importScripts", source)(self, workbox, () => {});
+  const caches = { open: async () => cache };
+  new Function("self", "caches", source)(self, caches);
   return handlers;
 }
 
 /**
- * @param {{url: string, revision: string|null}[]} precache
- * @returns {{ build: string, files: number }}
+ * @param {Record<string, string>} cached
+ * @returns {Promise<{ build: string, files: number }>}
  */
-function askBuild(precache) {
-  const onMessage = runWorker(precache).get("message");
+async function askBuild(cached) {
+  const onMessage = runWorker(cached).get("message");
   assert.ok(onMessage, "the worker registers a message handler");
   /** @type {any[]} */
   const replies = [];
+  /** @type {Promise<unknown>[]} */
+  const waits = [];
   onMessage({
     data: { type: "build" },
     ports: [{ postMessage: (/** @type {any} */ m) => replies.push(m) }],
+    waitUntil: (/** @type {Promise<unknown>} */ p) => waits.push(p),
   });
+  await Promise.all(waits);
   assert.equal(replies.length, 1, "exactly one reply");
   return replies[0];
 }
 
-const MANIFEST = [
-  { url: "index.html", revision: "aaaa" },
-  { url: "app.js", revision: "bbbb" },
-];
+const CACHED = { "index.html": "<!doctype html>", "app.js": "console.log(1)" };
 
-test("the build id is eight hex characters and counts the files", () => {
-  const info = askBuild(MANIFEST);
+test("sw.js lists the app's own files", () => {
+  for (const f of ["lib/gemtext.js", "components/gem-preview.js", "components/post-list.js",
+    "components/post-history.js", "icons/gem.svg"]) {
+    assert.ok(ASSETS.includes(f), f);
+  }
+});
+
+test("the build id is eight hex characters and counts the cached files", async () => {
+  const info = await askBuild(CACHED);
   assert.match(info.build, /^[0-9a-f]{8}$/);
   assert.equal(info.files, 2);
 });
 
-test("the same deploy gives the same id", () => {
-  assert.equal(askBuild(MANIFEST).build, askBuild(MANIFEST).build);
+test("the same files give the same id", async () => {
+  assert.equal((await askBuild(CACHED)).build, (await askBuild({ ...CACHED })).build);
 });
 
-test("a changed file changes the id -- the whole point of it", () => {
-  const changed = [MANIFEST[0], { url: "app.js", revision: "cccc" }];
-  assert.notEqual(askBuild(MANIFEST).build, askBuild(changed).build);
+test("a changed file changes the id -- the whole point of it", async () => {
+  const changed = { ...CACHED, "app.js": "console.log(2)" };
+  assert.notEqual((await askBuild(CACHED)).build, (await askBuild(changed)).build);
 });
 
-test("so does an added file, a removed one, and a rename", () => {
-  const base = askBuild(MANIFEST).build;
-  assert.notEqual(askBuild([...MANIFEST, { url: "new.js", revision: "dddd" }]).build, base);
-  assert.notEqual(askBuild([MANIFEST[0]]).build, base);
-  assert.notEqual(askBuild([MANIFEST[0], { url: "renamed.js", revision: "bbbb" }]).build, base);
+test("so does an added file and a missing one", async () => {
+  const base = (await askBuild(CACHED)).build;
+  const added = await askBuild({ ...CACHED, "state.js": "" });
+  assert.notEqual(added.build, base);
+  assert.equal(added.files, 3);
+  const missing = await askBuild({ "index.html": CACHED["index.html"] });
+  assert.notEqual(missing.build, base);
+  assert.equal(missing.files, 1);
 });
 
-test("order matters, so a reordered manifest isn't mistaken for the same build", () => {
-  assert.notEqual(askBuild([MANIFEST[1], MANIFEST[0]]).build, askBuild(MANIFEST).build);
-});
-
-test("the real manifest produces one", () => {
-  // Evaluated the same way: it's a classic script assigning to self.
-  const manifest = readFileSync(new URL("../precache-manifest.js", import.meta.url), "utf8");
-  const scope = /** @type {any} */ ({});
-  new Function("self", manifest)(scope);
-  const info = askBuild(scope.__PRECACHE);
-  assert.match(info.build, /^[0-9a-f]{8}$/);
-  assert.equal(info.files, scope.__PRECACHE.length);
+test("bytes moving between files isn't mistaken for the same build", async () => {
+  const a = await askBuild({ "index.html": "ab", "app.js": "" });
+  const b = await askBuild({ "index.html": "a", "app.js": "b" });
+  assert.notEqual(a.build, b.build);
 });
 
 test("a message that isn't ours is ignored, ports or no ports", () => {
-  const onMessage = runWorker(MANIFEST).get("message");
+  const onMessage = runWorker(CACHED).get("message");
   assert.ok(onMessage);
   /** @type {any[]} */
   const replies = [];
   const port = { postMessage: (/** @type {any} */ m) => replies.push(m) };
-  onMessage({ data: { type: "something-else" }, ports: [port] });
-  onMessage({ data: null, ports: [port] });
-  onMessage({ data: "a string from who knows where", ports: [] });
+  const waitUntil = () => assert.fail("no work for a message that isn't ours");
+  onMessage({ data: { type: "something-else" }, ports: [port], waitUntil });
+  onMessage({ data: null, ports: [port], waitUntil });
+  onMessage({ data: "a string from who knows where", ports: [], waitUntil });
   assert.deepEqual(replies, []);
   // And our own message with no port doesn't throw.
-  onMessage({ data: { type: "build" }, ports: [] });
+  onMessage({ data: { type: "build" }, ports: [], waitUntil });
 });
