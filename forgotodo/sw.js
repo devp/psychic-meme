@@ -5,13 +5,16 @@
 // downloads this file, runs `install`, then `activate`, and from then on every
 // request the page makes passes through `fetch` below. The browser re-checks
 // sw.js itself on each visit; if its bytes changed at all, the new version
-// installs and replaces this one. That is the only update trigger -- editing
-// style or app code never re-runs install. (It doesn't need to; see `fetch`.)
+// installs and replaces this one. Editing style or app code doesn't change
+// sw.js, so that path isn't how edits arrive; `check` below is.
 //
-// Strategy: stale-while-revalidate. Answer from the cache immediately, then
-// refetch in the background and overwrite the cached copy. So an edit shows up
-// one reload late: the first reload gets the old file and fetches the new one,
-// the second reload gets the new one. Offline, the refetch just fails quietly.
+// Strategy: cache-first, plus an update check. `fetch` answers from the cache
+// only. On every launch and every resume, app.js posts "check": this worker
+// refetches all of ASSETS, stores them if every fetch succeeded, and tells the
+// page "updated" if any bytes changed. app.js reloads on the next resume. So
+// an edit shows up one reload late while developing, and an installed app
+// picks it up the next time you come back to it. Offline, the check just fails
+// quietly and nothing changes.
 
 const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
 
@@ -91,20 +94,56 @@ sw.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
-      // ignoreSearch: `app.js?x` finds `app.js`.
-      const cached = await cache.match(key, { ignoreSearch: true });
-      // `no-cache` makes the browser ask the server whether the file changed
-      // (a cheap 304 if not) rather than trusting its HTTP cache, which might
-      // keep serving the old copy for a while and delay the edit further.
-      const refresh = fetch(key, { cache: "no-cache" }).then((res) => {
-        if (res.ok) cache.put(key, res.clone());
-        return res;
-      });
-      // Keep the worker alive until the background refresh has been stored.
-      event.waitUntil(refresh.catch(() => {}));
-      // Cached copy if we have one; else wait for the network (and if that
-      // fails too, the request fails, as it would with no worker at all).
-      return cached ?? refresh;
+      // ignoreSearch: `app.js?x` finds `app.js`. Not cached (not in ASSETS):
+      // straight to the network, as with no worker at all.
+      return (await cache.match(key, { ignoreSearch: true })) ?? fetch(req);
     })
   );
+});
+
+// Check: refetch every file in ASSETS and replace the cached copies.
+//
+// ALL-OR-NOTHING, like install: if any fetch fails (offline, flaky network, a
+// deploy half-uploaded), nothing is stored. Storing some files but not others
+// would leave the next launch running new app.js against old state.js.
+//
+// `no-cache` makes the browser ask the server whether each file changed (a
+// cheap 304 if not) instead of trusting its HTTP cache. Launch and resume can
+// both ask at once; they share one check.
+/** @type {Promise<void> | null} */
+let checking = null;
+
+async function check() {
+  const cache = await caches.open(CACHE);
+  const fresh = await Promise.all(
+    ASSETS.map(async (url) => {
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`${url}: ${res.status}`);
+      return { url, res, bytes: new Uint8Array(await res.clone().arrayBuffer()) };
+    })
+  );
+  let changed = false;
+  for (const { url, res, bytes } of fresh) {
+    const old = await cache.match(url);
+    if (old && sameBytes(bytes, new Uint8Array(await old.arrayBuffer()))) continue;
+    await cache.put(url, res);
+    changed = true;
+  }
+  if (!changed) return;
+  // Every open window of this app, including one that loaded before this
+  // worker took over.
+  for (const client of await sw.clients.matchAll({ includeUncontrolled: true })) client.postMessage("updated");
+}
+
+/** @param {Uint8Array} a @param {Uint8Array} b */
+function sameBytes(a, b) {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
+}
+
+sw.addEventListener("message", (event) => {
+  if (event.data !== "check") return;
+  checking ??= check()
+    .catch(() => {})
+    .finally(() => (checking = null));
+  event.waitUntil(checking);
 });
