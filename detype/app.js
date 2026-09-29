@@ -9,7 +9,7 @@ import { Tabs } from "./components/tabs.js";
 import { GhostLines } from "./components/ghost-lines.js";
 import { PagesList } from "./components/pages-list.js";
 
-customElements.define("pizza-tabs", Tabs);
+customElements.define("detype-tabs", Tabs);
 customElements.define("ghost-lines", GhostLines);
 customElements.define("pages-list", PagesList);
 
@@ -149,7 +149,7 @@ tab.subscribe((v) => {
   document.querySelectorAll(".panel").forEach((p) => {
     p.classList.toggle("active", p.getAttribute("data-panel") === v);
   });
-  document.querySelectorAll("pizza-tabs [data-tab]").forEach((b) => {
+  document.querySelectorAll("detype-tabs [data-tab]").forEach((b) => {
     const on = b.getAttribute("data-tab") === v;
     b.classList.toggle("active", on);
     b.setAttribute("aria-selected", String(on));

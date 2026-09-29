@@ -38,7 +38,7 @@ function serve() {
 test("app in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  // Prefer installed Chrome; fall back to `npx playwright install chromium`.
+  // Prefer installed Chrome; fall back to `node_modules/.bin/playwright install chromium`.
   const browser = await chromium
     .launch({ channel: "chrome" })
     .catch(() => chromium.launch())
