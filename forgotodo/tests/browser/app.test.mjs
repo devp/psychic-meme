@@ -108,6 +108,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.waitForTimeout(60);
   const beamed = await page.evaluate(() => /** @type {any} */ (window).__beamed);
   await ok("beam shares the list as plain text", /^- \[x\] HotSync before the trip!!$/m.test(beamed ?? "") && /^- \[ \] Buy AAA batteries!$/m.test(beamed ?? ""), beamed);
+  await ok("beam heads the text with the list name", (beamed ?? "").startsWith("To Do List: Unfiled\n"), beamed);
   await ok("beam dialog closes after sharing", !(await page.locator("#beam-dialog").isVisible()));
 
   await page.evaluate(() => {
@@ -168,6 +169,13 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("options persist across reload",
     (await page.evaluate(() => [...document.documentElement.attributes].map((a) => a.name + "=" + a.value).join(" ")))
       .includes('data-theme=gameboy data-scheme=dark data-font=casual data-icons=off'));
+  await ok("casual font is the body font",
+    (await page.evaluate(() => getComputedStyle(document.body).fontFamily)).startsWith('"Comic Neue"'));
+  await page.click("#title-btn");
+  await ok("icons off hides the menu icons",
+    (await page.locator('[data-menu-items="record"] svg.icon').count()) === 2 &&
+      (await page.locator('[data-menu-items="record"] svg.icon').first().isHidden()));
+  await page.keyboard.press("Escape");
 
   // --- service worker ------------------------------------------------------
   const swState = await page.evaluate(async () => {
@@ -191,6 +199,18 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.waitForTimeout(400);
   const offlineItems = await page.locator(".checklist li").count();
   await ok("works offline after reload", offlineItems === 6, `${offlineItems} items`);
+  const offlineMissing = await page.evaluate(async () => {
+    const urls = ["fonts/DepartureMono-Regular.woff2", "fonts/ComicNeue-Regular.woff2", "fonts/ComicNeue-Bold.woff2", "icons/forgotodo.svg", "manifest.webmanifest"];
+    const missing = [];
+    for (const u of urls) {
+      const res = await fetch(u).catch(() => null);
+      if (!res?.ok) missing.push(u);
+    }
+    return missing;
+  });
+  await ok("fonts and icon are cached for offline", offlineMissing.length === 0, offlineMissing.join(", "));
+  await ok("styles apply offline",
+    (await page.evaluate(() => getComputedStyle(document.body).fontFamily)).startsWith('"Comic Neue"'));
   // query string must not miss the cache
   await page.goto(URL + "?utm_source=subway", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(400);
@@ -336,6 +356,16 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await run("forget");
   await ok("nothing left to forget says so", (await page.locator("#alert-msg").innerText()).includes("already forgotten"));
   await page.click('#alert-dialog button[value="ok"]');
+  await run("recycle");
+  await ok("nothing to recycle says so", (await page.locator("#alert-msg").innerText()) === "Nothing's done yet.");
+  await ok("a notice has no cancel", await page.locator("#alert-cancel").isHidden());
+  await page.click('#alert-dialog button[value="ok"]');
+  await run("sweep");
+  await ok("sweeping a single tier warns it's everything",
+    (await page.locator("#alert-msg").innerText()) === "They're all equally urgent. Delete all 1 to-do?");
+  await page.click('#alert-dialog button[value="cancel"]');
+  await page.waitForTimeout(60);
+  await ok("and cancel keeps it", JSON.stringify(await texts()) === JSON.stringify(["keep?"]));
 
   // --- shrink to fit -----------------------------------------------------
   const size = () => page.locator(".checklist").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
@@ -362,6 +392,50 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   const many = await size();
   const fits = await page.locator('[data-panel="list"]').evaluate((el) => el.scrollHeight <= el.clientHeight);
   await ok("shrinks further to fit", many < 15 && (fits || many === 10), `${many}px, fits: ${fits}`);
+
+  await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+});
+
+test("catch-up and legacy options, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const server = await serve();
+  const URL = `http://127.0.0.1:${server.address().port}/index.html`;
+  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
+  t.after(async () => {
+    await browser.close();
+    server.closeAllConnections();
+    server.close();
+  });
+  const ok = (name, cond, extra = "") => t.test(name, () => assert.ok(cond, extra || name));
+
+  const page = await (await browser.newContext({ serviceWorkers: "block" })).newPage();
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.clock.install({ time: new Date(2026, 8, 27, 12, 0) });
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    localStorage.setItem("forgotodo:theme", "backlight");
+    localStorage.setItem("forgotodo:lists:records", JSON.stringify([
+      { id: "L", name: "Unfiled", createdAt: 0, updatedAt: 0, items: [
+        { id: "a", text: "call mom!", done: false, seenDay: "2026-09-27" },
+        { id: "b", text: "done today", done: true, doneDay: "2026-09-27" },
+      ] },
+    ]));
+    localStorage.setItem("forgotodo:lists:activeId", "L");
+  });
+  await page.goto(URL, { waitUntil: "networkidle" });
+  const texts = () => page.locator(".checklist li span").allInnerTexts();
+
+  await ok("old backlight theme becomes palm with the backlight on",
+    (await page.getAttribute("html", "data-theme")) === "palm" && (await page.getAttribute("html", "data-scheme")) === "dark");
+  await ok("and the migration is saved",
+    (await page.evaluate(() => [localStorage.getItem("forgotodo:theme"), localStorage.getItem("forgotodo:mode")].join())) === "palm,dark");
+  await ok("nothing decays the same day", JSON.stringify(await texts()) === JSON.stringify(["call mom!", "done today"]));
+
+  await page.clock.setSystemTime(new Date(2026, 8, 28, 9, 0));
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.waitForTimeout(60);
+  await ok("coming back the next day catches up", JSON.stringify(await texts()) === JSON.stringify(["call mom"]), JSON.stringify(await texts()));
 
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });
