@@ -24,6 +24,8 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
   - [software-craftsmanship-aphorisms.html](./misc/software-craftsmanship-aphorisms.html)
   - [kids-sleep-window-estimator.html](./misc/kids-sleep-window-estimator.html)
 
+`main` is served at `https://devp.github.io/psychic-meme/`, and each open pull request at `https://devp.github.io/psychic-meme/pr-preview/pr-<number>/` (see [.github/workflows](.github/workflows)). A preview keeps its own saved data, apart from the real apps.
+
 Maybe the hope of sharing something useful is what `psychic-meme` was always about.
 
 *4. What if I have a better idea?*
