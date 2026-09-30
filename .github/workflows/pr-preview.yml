@@ -1,0 +1,25 @@
+# Publish each open PR to gh-pages under pr-preview/pr-<number>/ and comment
+# the link on the PR. The preview is removed when the PR closes.
+# Preview URL: https://devp.github.io/psychic-meme/pr-preview/pr-<number>/<app>/
+name: PR preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+concurrency: preview-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: github.event.action != 'closed'
+        run: .github/scripts/stage-site.sh _site "pr-${{ github.event.number }}"
+      - uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: _site
