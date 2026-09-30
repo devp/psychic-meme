@@ -1,0 +1,48 @@
+# forgotodo tasks. Every recipe is a one-liner or calls scripts/, so this
+# file also works as a reference without `just` installed.
+
+# Package manager: $PM, else the one whose lockfile exists, else pnpm if on PATH, else npm.
+pm := env("PM", if path_exists("pnpm-lock.yaml") == "true" { "pnpm" } else if path_exists("package-lock.json") == "true" { "npm" } else { `command -v pnpm >/dev/null && echo pnpm || echo npm` })
+
+default:
+    @just --list
+
+# Serve the app. A service worker needs http://, not file://.
+serve:
+    python3 -m http.server 8000
+
+# Grep-level footgun checks; needs no node_modules. `just warnings --strict` exits 1 on findings.
+warnings *args:
+    scripts/warnings.sh {{args}}
+
+# Install dev tooling. Nothing in node_modules ships.
+dev-init:
+    {{pm}} install
+
+# Re-bundle lit into vendor/ after a version bump.
+dev-vendor:
+    scripts/dev-vendor.sh
+
+# All checks.
+dev-check: dev-check-types dev-check-tests dev-check-packages
+
+# Typecheck JSDoc-annotated JS; sw.js separately (worker scope).
+dev-check-types:
+    node_modules/.bin/tsc -p jsconfig.json
+    node scripts/check-sw.mjs sw.js
+
+# List outdated devDependencies. Informational; never fails.
+dev-check-packages:
+    -{{pm}} outdated
+
+# Unit tests, plus browser tests once playwright is installed.
+dev-check-tests:
+    node --test 'tests/**/*.test.mjs'
+
+# Install a pre-push hook running `warnings --strict` (repo-wide).
+dev-init-hooks:
+    scripts/install-hooks.sh
+
+# Opt in to browser tests. Uses installed Chrome, else `node_modules/.bin/playwright install chromium`.
+dev-init-browser:
+    {{pm}} add --save-dev --save-exact playwright

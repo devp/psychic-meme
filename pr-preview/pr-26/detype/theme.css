@@ -1,0 +1,35 @@
+/* ---- theme tokens ----
+   Every colour lives here. Add a theme by copying a block and adding a swatch
+   button in index.html -- nothing else needs to know. Low contrast on
+   purpose everywhere except the line you're typing. */
+:root,
+:root[data-theme="dusk"] {
+  --bg: #16181d;
+  --bg-alt: #1b1e24;
+  --bg-raised: #22262e;
+  --fg: #d9dbe0;
+  --fg-dim: #7f8592;
+  --accent: #9bb8a5;
+  --accent-ink: #14201a;
+  --border: #2a2e37;
+}
+
+:root[data-theme="linen"] {
+  --bg: #f5f1e8;
+  --bg-alt: #eee8da;
+  --bg-raised: #fbf8f2;
+  --fg: #3a352d;
+  --fg-dim: #8b8272;
+  --accent: #6f8a78;
+  --accent-ink: #fbf8f2;
+  --border: #ddd4c2;
+}
+
+:root {
+  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --font-body: var(--font-serif);
+}
+:root[data-font="sans"] { --font-body: var(--font-sans); }
+:root[data-font="mono"] { --font-body: var(--font-mono); }

@@ -1,0 +1,19 @@
+{
+  "name": "pizza-repl-fennel",
+  "short_name": "fennel",
+  "description": "A Fennel REPL for pizza rats: in your phone browser, offline.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12141a",
+  "theme_color": "#12141a",
+  "icons": [
+    {
+      "src": "icons/repl.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-theme="palm" data-scheme="light" data-font="pixel" data-icons="on" data-fit="off">
+<head>
+<meta charset="utf-8">
+<!-- interactive-widget=resizes-content is half of the keyboard fix; the other
+     half is syncAppHeight() in lib/viewport.js. Neither works alone. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#b4bf98">
+<title>[pr-26] forgotodo</title>
+<!-- localStorage key prefix; state.js and the theme script below read it. -->
+<meta name="app-ns" content="pr-26:forgotodo">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/forgotodo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="app.css">
+<script type="importmap">
+{
+  "imports": {
+    "lit": "./vendor/lit.js",
+    "lit/directives/repeat.js": "./vendor/lit.js"
+  }
+}
+</script>
+<script>
+// Runs before first paint so the chosen theme doesn't flash the default one.
+// Keep the scheme logic in sync with app.js.
+(function () {
+  try {
+    var root = document.documentElement;
+    var ns = document.querySelector('meta[name="app-ns"]').getAttribute("content");
+    var get = function (k) { return localStorage.getItem(ns + ":" + k); };
+    var t = get("theme");
+    var m = get("mode");
+    if (t === "backlight") { t = "palm"; m = m || "dark"; } // backlight is palm's dark mode now
+    if (t) root.setAttribute("data-theme", t);
+    var dark = m === "dark" || (m === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+    root.setAttribute("data-scheme", dark ? "dark" : "light");
+    ["font", "icons", "fit"].forEach(function (k) {
+      var v = get(k);
+      if (v) root.setAttribute("data-" + k, v);
+    });
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+
+<header class="app-header">
+  <h1><button id="title-btn" class="title-tab" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menubar">To Do List</button></h1>
+  <!-- Palm menu bar: opened from the title tab; tapping the scrim closes it. -->
+  <div id="menu-scrim" class="menu-scrim" hidden></div>
+  <nav id="menubar" class="menubar" aria-label="Menu" hidden>
+    <div class="menu-titles">
+      <button type="button" class="menu-title" data-menu="record" aria-expanded="true">Record</button>
+      <button type="button" class="menu-title" data-menu="organize" aria-expanded="false">Organize</button>
+      <button type="button" class="menu-title" data-cmd="prefs" aria-haspopup="dialog">Options…</button>
+    </div>
+    <div class="menu-items" role="menu" data-menu-items="record">
+      <button type="button" role="menuitem" data-cmd="beam" data-icon="beam">Beam List</button>
+      <button type="button" role="menuitem" data-cmd="receive" data-icon="receive">Receive Beam…</button>
+    </div>
+    <div class="menu-items" role="menu" data-menu-items="organize" hidden>
+      <button type="button" role="menuitem" data-cmd="sweep" data-icon="sweep">Sweep…<small>least urgent</small></button>
+      <button type="button" role="menuitem" data-cmd="recycle" data-icon="recycle">Recycle…<small>done</small></button>
+      <button type="button" role="menuitem" data-cmd="forget" data-icon="forget">Forget<small>one, less</small></button>
+      <button type="button" role="menuitem" data-cmd="remember" data-icon="remember">Remember<small>one, more</small></button>
+    </div>
+  </nav>
+</header>
+
+
+<main class="panels">
+  <section class="panel active" data-panel="list">
+    <forgo-checklist></forgo-checklist>
+  </section>
+</main>
+
+<dialog id="settings-dialog" class="dialog">
+  <h2>Preferences</h2>
+
+  <section>
+    <h3>Theme</h3>
+    <div class="swatches" role="radiogroup" aria-label="Theme">
+      <!-- Each swatch is half light, half dark: the theme in both modes. -->
+      <button type="button" class="swatch" role="radio" data-set-theme="palm" aria-checked="true" aria-label="Palm"><span style="background:linear-gradient(135deg,#b4bf98 50%,#123524 50%)"></span>palm</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="newton" aria-checked="false" aria-label="Newton"><span style="background:linear-gradient(135deg,#dcdcd2 50%,#1f1f1c 50%)"></span>newton</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="gameboy" aria-checked="false" aria-label="Game Boy"><span style="background:linear-gradient(135deg,#9bbc0f 50%,#0f380f 50%)"></span>game boy</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Backlight</h3>
+    <div class="swatches" role="radiogroup" aria-label="Backlight">
+      <button type="button" class="swatch" role="radio" data-set-mode="light" aria-checked="true" aria-label="Light">off</button>
+      <button type="button" class="swatch" role="radio" data-set-mode="dark" aria-checked="false" aria-label="Dark">on</button>
+      <button type="button" class="swatch" role="radio" data-set-mode="system" aria-checked="false" aria-label="System">auto</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Font</h3>
+    <div class="swatches" role="radiogroup" aria-label="Font">
+      <button type="button" class="swatch" role="radio" data-set-font="pixel" aria-checked="true">pixel</button>
+      <button type="button" class="swatch" role="radio" data-set-font="casual" aria-checked="false">casual</button>
+      <button type="button" class="swatch" role="radio" data-set-font="sans" aria-checked="false">plain</button>
+    </div>
+  </section>
+
+  <section class="toggles">
+    <label><input type="checkbox" data-toggle="icons"> Menu icons</label>
+    <label><input type="checkbox" data-toggle="fit"> Shrink to fit</label>
+  </section>
+
+  <section class="about">
+    <h3>About</h3>
+    <p>forgotodo v0.2. A to-do list with a pocket organizer's manners. Works offline; add it to your home screen.</p>
+    <p>Everything lives in this browser's localStorage. Nothing is sent anywhere.</p>
+  </section>
+
+  <div class="dialog-buttons"><button type="button" id="settings-close" class="primary">Done</button></div>
+</dialog>
+
+<dialog id="beam-dialog" class="dialog">
+  <h2>Beam</h2>
+  <p id="beam-status" class="dialog-msg" aria-live="polite"></p>
+  <textarea id="beam-text" rows="6" readonly hidden></textarea>
+  <div class="dialog-buttons"><button type="button" id="beam-close" class="primary">Done</button></div>
+</dialog>
+
+<dialog id="receive-dialog" class="dialog">
+  <h2>Receive Beam</h2>
+  <form id="receive-form" method="dialog">
+    <p class="dialog-msg">Paste a beamed list. Lines like <code>- [ ] task</code> or <code>- [x] task</code> are added to this list.</p>
+    <textarea id="receive-text" name="text" rows="6" autocomplete="off"></textarea>
+    <p id="receive-status" class="dialog-msg" aria-live="polite"></p>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Receive</button>
+      <button type="button" id="receive-cancel" class="primary">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="alert-dialog" class="dialog alert">
+  <h2 id="alert-title"></h2>
+  <form method="dialog">
+    <div class="alert-body">
+      <span id="alert-icon" class="alert-icon"></span>
+      <div>
+        <p id="alert-msg" class="dialog-msg"></p>
+        <ul id="alert-list" class="alert-list"></ul>
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button type="submit" value="ok" class="primary">OK</button>
+      <button type="submit" value="cancel" id="alert-cancel" class="primary">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

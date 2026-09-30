@@ -1,0 +1,92 @@
+/* ---- theme tokens ----
+   Every colour lives here. Add a theme by copying a block (and its dark twin)
+   and adding a swatch button in index.html -- nothing else needs to know.
+   data-scheme is light or dark, resolved from the Backlight option in app.js.
+   --ink is the one "pixel" colour; inverted UI (title tab, selected buttons)
+   swaps --ink and --bg. */
+:root,
+:root[data-theme="palm"] {
+  --bg: #b4bf98;
+  --ink: #1d2416;
+  --ink-dim: #525e40;
+  --grid: rgb(0 0 0 / 0.035);
+  --btn-radius: 9px;
+  --btn-shadow: none;
+  --dialog-radius: 5px;
+}
+
+:root[data-theme="palm"][data-scheme="dark"] {
+  --bg: #123524;
+  --ink: #b8f5a6;
+  --ink-dim: #6aa876;
+  --grid: rgb(0 0 0 / 0.18);
+  --btn-radius: 9px;
+  --btn-shadow: none;
+  --dialog-radius: 5px;
+}
+
+:root[data-theme="newton"] {
+  --bg: #dcdcd2;
+  --ink: #161616;
+  --ink-dim: #5d5d56;
+  --grid: transparent;
+  --btn-radius: 5px;
+  --btn-shadow: 1px 1px 0 var(--ink);
+  --dialog-radius: 12px;
+}
+:root[data-theme="newton"][data-scheme="dark"] {
+  --bg: #1f1f1c;
+  --ink: #e2e2d8;
+  --ink-dim: #9a9a90;
+}
+
+/* Vendored OFL font; see fonts/DepartureMono.LICENSE.txt. No bold weight. */
+@font-face {
+  font-family: "Departure Mono";
+  src: url("fonts/DepartureMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root[data-theme="gameboy"] {
+  --bg: #9bbc0f;
+  --ink: #0f380f;
+  --ink-dim: #306230;
+  --grid: rgb(15 56 15 / 0.06);
+  --btn-radius: 0;
+  --btn-shadow: none;
+  --dialog-radius: 0;
+}
+/* The same four DMG shades, turned over. */
+:root[data-theme="gameboy"][data-scheme="dark"] {
+  --bg: #0f380f;
+  --ink: #9bbc0f;
+  --ink-dim: #8bac0f;
+  --grid: rgb(0 0 0 / 0.14);
+}
+
+:root[data-scheme="dark"] { color-scheme: dark; }
+
+/* Vendored OFL font; see fonts/ComicNeue.LICENSE.txt. Comic Sans, redrawn to
+   be legible -- and Newton's own handwriting-ish face was called Casual. */
+@font-face {
+  font-family: "Comic Neue";
+  src: url("fonts/ComicNeue-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Comic Neue";
+  src: url("fonts/ComicNeue-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  --font-mono: "Departure Mono", Monaco, Menlo, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-casual: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive;
+  --font-body: var(--font-mono);
+}
+:root[data-font="sans"] { --font-body: var(--font-sans); }
+:root[data-font="casual"] { --font-body: var(--font-casual); }

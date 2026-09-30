@@ -1,0 +1,19 @@
+{
+  "name": "detype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A freewriting page that lets lines go. Built on pizza-starter. devDependencies are dev-time only -- nothing here ships.",
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "esbuild": "0.28.2",
+    "lit": "3.3.3",
+    "typescript": "7.0.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

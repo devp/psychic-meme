@@ -1,0 +1,128 @@
+/* This app's own styles. Replace freely. */
+
+/* ---- checklist ---- */
+.count,
+.panel-note { margin: 0 0 12px; color: var(--fg-dim); font-size: 13px; }
+
+.checklist { list-style: none; margin: 0 0 16px; padding: 0; }
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.checklist li.done span { color: var(--fg-dim); text-decoration: line-through; }
+
+.checklist label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+.checklist input[type="checkbox"] {
+  margin: 3px 0 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.checklist span { overflow-wrap: anywhere; }
+
+.checklist button[data-remove] {
+  background: none;
+  border: 0;
+  color: var(--fg-dim);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.checklist button[data-remove]:hover { color: var(--accent); }
+
+.add-row { display: flex; gap: 8px; }
+
+.add-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.add-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.add-row button {
+  padding: 10px 16px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* ---- append-log ---- */
+append-log {
+  display: block;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-alt);
+}
+append-log:empty::after {
+  content: "Nothing yet. Tick something in the list tab.";
+  display: block;
+  padding: 14px;
+  color: var(--fg-dim);
+  font-size: 13px;
+}
+.log-entry {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.log-entry:last-child { border-bottom: 0; }
+.log-entry time { color: var(--fg-dim); margin-right: 8px; }
+
+/* ---- prose ---- */
+.prose { max-width: 60ch; }
+.prose h2 { font-size: 15px; margin: 20px 0 8px; }
+.prose h2:first-child { margin-top: 0; }
+.prose p, .prose li { color: var(--fg-dim); }
+.prose code {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--fg);
+}
+.prose ul { padding-left: 20px; }
+.prose li { margin-bottom: 6px; }
+
+/* ---- list-summary ---- */
+.summary { list-style: none; margin: 0; padding: 0; }
+.summary li {
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.summary li:hover { border-color: var(--accent); }
+pizza-list-summary[empty] .summary { display: none; }

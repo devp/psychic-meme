@@ -1,0 +1,18 @@
+{
+  "name": "forgotodo",
+  "short_name": "forgotodo",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#b4bf98",
+  "theme_color": "#b4bf98",
+  "icons": [
+    {
+      "src": "icons/forgotodo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

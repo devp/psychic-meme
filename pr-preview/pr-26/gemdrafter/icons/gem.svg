@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="gemdrafter">
+  <rect width="64" height="64" rx="12" fill="#12141a"/>
+  <path d="M20 16h24l10 12-22 24-22-24z" fill="none" stroke="#8ab4ff" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M10 28h44M20 16l6 12-6 24M44 16l-6 12 6 24" fill="none" stroke="#8ab4ff" stroke-width="2" stroke-linejoin="round" opacity="0.7"/>
+</svg>

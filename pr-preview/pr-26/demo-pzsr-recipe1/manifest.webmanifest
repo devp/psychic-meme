@@ -1,0 +1,19 @@
+{
+  "name": "Supper Deck",
+  "short_name": "Supper",
+  "description": "One dish at a time, until the week is planned.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14161c",
+  "theme_color": "#14161c",
+  "icons": [
+    {
+      "src": "icons/supper.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
