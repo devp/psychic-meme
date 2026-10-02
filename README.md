@@ -17,6 +17,7 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
 - pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel)
 - [mermaid-utils](mermaid-utils)
 - [prompts-library](prompts-library)
+- [rs-worker](rs-worker) -- a single-user [remoteStorage](https://remotestorage.io) server as one Cloudflare Worker + R2 bucket, so static mini apps can sync data
 - `misc`
   - [15-minute-task-triage.html](./misc/15-minute-task-triage.html)
   - [doom-pile-triage.html](./misc/doom-pile-triage.html)

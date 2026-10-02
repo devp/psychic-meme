@@ -1,0 +1,19 @@
+name = "rs-worker"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+# One R2 bucket holds both documents (data/...) and hashed tokens (tokens/...).
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "remotestorage"
+
+[vars]
+RS_USER = "dev"                      # address becomes dev@<your-storage-host>
+MAX_DOC_BYTES = "10485760"           # 10 MB per document -> 413 above this
+# AUTH_ORIGIN = "https://auth.example.com"   # recommended: OAuth dialog on its own hostname
+# ACCESS_TEAM_DOMAIN = "yourteam.cloudflareaccess.com"  # set these 2 (+ optional ACCESS_EMAIL)
+# ACCESS_AUD = "<Access application AUD tag>"           # to log in via Cloudflare Access
+# ACCESS_EMAIL = "you@example.com"
+
+# Secret, not a var:  npx wrangler secret put RS_PASSWORD
+# (used only when Cloudflare Access is not configured)
