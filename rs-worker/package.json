@@ -1,6 +1,15 @@
 {
   "name": "rs-worker",
   "private": true,
-  "scripts": { "dev": "wrangler dev", "deploy": "wrangler deploy" },
-  "devDependencies": { "wrangler": "^4.147.0" }
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.147.0"
+  },
+  "dependencies": {
+    "hono": "^4.13.12",
+    "jose": "^6.2.12"
+  }
 }
