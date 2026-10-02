@@ -14,7 +14,6 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
 
 - [detype](detype) -- freewriting, morning-pages style: type a line, press Enter, let it fade. One page per day to look back on
 - [forgotodo](forgotodo) -- a to-do list with retro Palm/Newton looks
-- [lightsabers](lightsabers)
 - pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel)
 - [mermaid-utils](mermaid-utils)
 - [prompts-library](prompts-library)
@@ -22,7 +21,6 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
   - [15-minute-task-triage.html](./misc/15-minute-task-triage.html)
   - [doom-pile-triage.html](./misc/doom-pile-triage.html)
   - [software-craftsmanship-aphorisms.html](./misc/software-craftsmanship-aphorisms.html)
-  - [kids-sleep-window-estimator.html](./misc/kids-sleep-window-estimator.html)
 
 Maybe the hope of sharing something useful is what `psychic-meme` was always about.
 
