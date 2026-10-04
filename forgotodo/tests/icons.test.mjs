@@ -16,8 +16,8 @@ test("bitmapSvg: + is dithered on a checkerboard", () => {
   assert.equal(pathOf(bitmapSvg(["++++", "++++"])), "M0 0h1v1h-1zM2 0h1v1h-1zM1 1h1v1h-1zM3 1h1v1h-1z");
 });
 
-test("every menu command has a 10x10 icon", () => {
-  for (const name of ["beam", "receive", "sweep", "recycle", "forget", "remember"]) {
+test("every desktop command has a 10x10 icon", () => {
+  for (const name of ["beam", "receive", "sweep", "recycle", "forget", "remember", "prefs"]) {
     const rows = ICONS[name];
     assert.ok(rows, name);
     assert.equal(rows.length, 10, name);

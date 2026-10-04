@@ -100,14 +100,23 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.waitForTimeout(120);
   await ok("state persists across reload", (await page.locator("forgo-checklist .count").innerText()) === "1 of 6 done");
 
-  // --- menu bar + clock ---------------------------------------------------
+  // --- desktop + clock -----------------------------------------------------
   await page.click("#title-btn");
-  await ok("title tab opens the menu bar", await page.locator("#menubar").isVisible());
+  await ok("title tab opens the desktop", await page.locator("#desktop").isVisible());
+  await ok("every command is an icon with its name",
+    JSON.stringify(await page.locator("#desktop .desk-icons span").allInnerTexts()) ===
+      JSON.stringify(["Beam List", "Receive Beam…", "Sweep…", "Recycle…", "Forget", "Remember", "Options…"]) &&
+      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 7);
+  await ok("desktop groups by category",
+    (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
   const clock = await page.locator("#title-btn").innerText();
   await ok("title tab shows the time while open", /\d:\d\d/.test(clock), clock);
   await page.keyboard.press("Escape");
-  await ok("escape closes the menu", await page.locator("#menubar").isHidden());
+  await ok("escape closes the desktop", await page.locator("#desktop").isHidden());
   await ok("title comes back", (await page.locator("#title-btn").innerText()) === "To Do List");
+  await page.click("#title-btn");
+  await page.click("#desktop h2 >> nth=0");
+  await ok("tapping bare desktop closes it", await page.locator("#desktop").isHidden());
 
   // --- beam: share sheet stubbed; clipboard fallback -----------------------
   await page.evaluate(() => {
@@ -150,8 +159,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   // --- theme ---------------------------------------------------------------
   await page.click("#title-btn");
   await page.click('[data-cmd="prefs"]');
-  await ok("Options… opens preferences and closes the menu",
-    (await page.locator("#settings-dialog").isVisible()) && (await page.locator("#menubar").isHidden()));
+  await ok("Options… opens preferences and closes the desktop",
+    (await page.locator("#settings-dialog").isVisible()) && (await page.locator("#desktop").isHidden()));
   await page.click('[data-set-theme="gameboy"]');
   await page.waitForTimeout(60);
   await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "gameboy");
@@ -185,9 +194,9 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("casual font is the body font",
     (await page.evaluate(() => getComputedStyle(document.body).fontFamily)).startsWith('"Comic Neue"'));
   await page.click("#title-btn");
-  await ok("icons off hides the menu icons",
-    (await page.locator('[data-menu-items="record"] svg.icon').count()) === 2 &&
-      (await page.locator('[data-menu-items="record"] svg.icon').first().isHidden()));
+  await ok("icons off shows the desktop by name",
+    (await page.locator("#desktop svg.icon").first().isHidden()) &&
+      (await page.locator('[data-cmd="beam"] span').isVisible()));
   await page.keyboard.press("Escape");
 
   // --- service worker ------------------------------------------------------
@@ -382,16 +391,9 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   const texts = () => page.locator(".checklist li span").allInnerTexts();
   const run = async (/** @type {string} */ cmd) => {
     await page.click("#title-btn");
-    await page.click('[data-menu="organize"]');
     await page.click(`[data-cmd="${cmd}"]`);
     await page.waitForTimeout(60);
   };
-
-  await page.click("#title-btn");
-  await page.click('[data-menu="organize"]');
-  await ok("organize menu shows its items", await page.locator('[data-cmd="sweep"]').isVisible());
-  await ok("menu items carry pixel icons", (await page.locator('[data-menu-items="organize"] svg.icon').count()) === 4);
-  await page.keyboard.press("Escape");
 
   await run("sweep");
   await ok("sweep asks first, listing what goes",

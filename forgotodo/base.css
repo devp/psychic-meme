@@ -1,4 +1,4 @@
-/* Shell: reset, layout, the one button shape, header and menu bar, panels.
+/* Shell: reset, layout, the one button shape, header and desktop, panels.
    Colours come from theme.css tokens. */
 
 /* ---- base ---- */
@@ -77,49 +77,71 @@ html { font-synthesis-weight: none; }
   border-top-right-radius: 7px;
 }
 
-/* ---- menu bar: drops over the top of the list, Palm-style ---- */
-.menu-scrim { position: fixed; inset: 0; z-index: 10; }
-.menubar {
+/* ---- desktop: command icons laid over the list, launcher-style ---- */
+.desktop {
   position: absolute;
-  z-index: 11;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
-  background: var(--bg);
-  border-bottom: 2px solid var(--ink);
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background-color: var(--bg);
+  /* A sparse dot pattern, like an old desktop's dithered backdrop. */
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 18%, transparent) 0.6px, transparent 0.8px);
+  background-size: 4px 4px;
 }
-.menu-titles { display: flex; gap: 2px; padding: 2px 4px; border-bottom: 1px solid var(--ink); }
-.menu-title,
-.menu-items button {
+.desktop[hidden] { display: none; }
+.desktop section { margin-bottom: 14px; }
+.desktop h2 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-dim);
+  border-bottom: 1px dotted var(--ink-dim);
+}
+.desk-icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 6px 4px;
+}
+.desk-icons button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px;
   background: none;
   border: 0;
   border-radius: 0;
-  padding: 4px 10px;
   color: var(--ink);
+  text-align: center;
+}
+/* Labels sit on a patch of screen colour so the dots don't show through, and
+   invert when tapped, the way a selected icon's name did. */
+.desk-icons span,
+.desk-icons small { background: var(--bg); padding: 0 3px; }
+.desk-icons span { font-size: 13px; line-height: 1.3; }
+.desk-icons small { font-size: 11px; color: var(--ink-dim); }
+.desk-icons button:active span,
+.desk-icons button:focus-visible span { background: var(--ink); color: var(--bg); }
+.desk-icons button:focus-visible { outline: 0; }
+
+/* Pixel icons: 10x10 bitmaps, 4x on the desktop (2x elsewhere), so each pixel
+   is a chunky square. */
+.icon { display: block; width: 20px; height: 20px; flex-shrink: 0; }
+.desk-icons .icon { width: 40px; height: 40px; }
+
+/* Desktop icons off: view by name -- a plain list. */
+:root[data-icons="off"] .desk-icons .icon { display: none; }
+:root[data-icons="off"] .desk-icons { display: flex; flex-direction: column; gap: 0; }
+:root[data-icons="off"] .desk-icons button {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 2px;
   text-align: left;
 }
-.menu-title[aria-expanded="true"] { background: var(--ink); color: var(--bg); }
-.menu-items {
-  display: flex;
-  flex-direction: column;
-  width: max-content;
-  min-width: 12em;
-  margin: 0 0 8px 4px;
-  border: 1px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
-  background: var(--bg);
-}
-.menu-items[hidden] { display: none; }
-.menu-items button { display: flex; align-items: center; gap: 10px; padding: 7px 12px; }
-.menu-items small { margin-left: auto; padding-left: 18px; font-size: 12px; color: var(--ink-dim); }
-.menu-items button:active,
-.menu-items button:focus-visible { background: var(--ink); color: var(--bg); outline: 0; }
-.menu-items button:active small,
-.menu-items button:focus-visible small { color: inherit; }
-
-/* Pixel icons: 10x10 bitmaps at 2x, so each pixel is a chunky 2px square. */
-.icon { display: block; width: 20px; height: 20px; flex-shrink: 0; }
-:root[data-icons="off"] .menu-items .icon { display: none; }
+:root[data-icons="off"] .desk-icons span { font-size: 15px; padding: 0; }
+:root[data-icons="off"] .desk-icons small { margin-left: auto; }
 
 /* ---- panels ---- */
 .panels { flex: 1; min-height: 0; position: relative; }

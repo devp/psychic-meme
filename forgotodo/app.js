@@ -125,43 +125,32 @@ document.addEventListener("click", (e) => {
 const settings = /** @type {HTMLDialogElement} */ (document.getElementById("settings-dialog"));
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
 
-// ---- menu bar -------------------------------------------------------------
-// Tapping the title tab opens the Palm menu bar, and the tab shows the time
-// while it's open.
+// ---- desktop --------------------------------------------------------------
+// Tapping the title tab lays a desktop of command icons over the list, and the
+// tab shows the time while it's open.
 
 const titleBtn = /** @type {HTMLButtonElement} */ (document.getElementById("title-btn"));
-const menubar = /** @type {HTMLElement} */ (document.getElementById("menubar"));
-const scrim = /** @type {HTMLElement} */ (document.getElementById("menu-scrim"));
+const desktop = /** @type {HTMLElement} */ (document.getElementById("desktop"));
 const TITLE = titleBtn.textContent ?? "";
 
-/** @param {string} name */
-function showMenu(name) {
-  menubar.querySelectorAll("[data-menu]").forEach((b) => {
-    b.setAttribute("aria-expanded", String(b.getAttribute("data-menu") === name));
-  });
-  menubar.querySelectorAll("[data-menu-items]").forEach((m) => {
-    /** @type {HTMLElement} */ (m).hidden = m.getAttribute("data-menu-items") !== name;
-  });
-}
-
-function openMenu() {
-  showMenu("record");
-  menubar.hidden = scrim.hidden = false;
+function openDesktop() {
+  desktop.hidden = false;
   titleBtn.setAttribute("aria-expanded", "true");
   titleBtn.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  /** @type {HTMLElement|null} */ (menubar.querySelector('[role="menuitem"]'))?.focus();
+  /** @type {HTMLElement|null} */ (desktop.querySelector("[data-cmd]"))?.focus();
 }
 
-function closeMenu() {
-  menubar.hidden = scrim.hidden = true;
+function closeDesktop() {
+  const hadFocus = desktop.contains(document.activeElement);
+  desktop.hidden = true;
   titleBtn.setAttribute("aria-expanded", "false");
   titleBtn.textContent = TITLE;
+  if (hadFocus) titleBtn.focus();
 }
 
-titleBtn.addEventListener("click", () => (menubar.hidden ? openMenu() : closeMenu()));
-scrim.addEventListener("click", closeMenu);
+titleBtn.addEventListener("click", () => (desktop.hidden ? openDesktop() : closeDesktop()));
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !menubar.hidden) closeMenu();
+  if (e.key === "Escape" && !desktop.hidden) closeDesktop();
 });
 
 /** @type {Record<string, () => void>} */
@@ -175,14 +164,12 @@ const COMMANDS = {
   remember: () => nudge("remember"),
 };
 
-menubar.addEventListener("click", (e) => {
+// An icon runs its command; a tap on bare desktop just closes it.
+desktop.addEventListener("click", (e) => {
   const el = e.target instanceof Element ? e.target : null;
-  const title = el?.closest("[data-menu]");
-  if (title) return showMenu(title.getAttribute("data-menu") ?? "record");
   const cmd = el?.closest("[data-cmd]")?.getAttribute("data-cmd");
-  if (!cmd) return;
-  closeMenu();
-  COMMANDS[cmd]?.();
+  closeDesktop();
+  if (cmd) COMMANDS[cmd]?.();
 });
 
 // ---- beam -----------------------------------------------------------------
