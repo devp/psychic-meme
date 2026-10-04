@@ -1,0 +1,29 @@
+# Publish main to the root of the gh-pages branch.
+# One-time repo setup: Settings -> Pages -> Source: "Deploy from a branch",
+# branch gh-pages, folder / (root).
+name: Deploy to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency: pages-main
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/scripts/stage-site.sh _site
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: _site
+          branch: gh-pages
+          # PR previews live alongside production on gh-pages; leave them be.
+          clean-exclude: pr-preview/
+          # Previews push to the same branch; rebase onto them, don't clobber.
+          force: false
