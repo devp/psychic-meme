@@ -21,7 +21,7 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
   - [15-minute-task-triage.html](./misc/15-minute-task-triage.html)
   - [doom-pile-triage.html](./misc/doom-pile-triage.html)
   - [software-craftsmanship-aphorisms.html](./misc/software-craftsmanship-aphorisms.html)
-  - [qr.html](./misc/qr.html) -- QR code for the URL after the `#`; the pizza apps link to it from Options
+  - [qr](./misc/qr/) -- QR code for any URL or text, drawn in the browser: `misc/qr/?q=<url or text>`, or open it bare for a form. The pizza apps link to it from Options
 
 Maybe the hope of sharing something useful is what `psychic-meme` was always about.
 

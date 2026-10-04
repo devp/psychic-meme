@@ -97,9 +97,9 @@ const settings = /** @type {HTMLDialogElement} */ (document.getElementById("sett
 document.getElementById("settings-btn")?.addEventListener("click", () => settings.showModal());
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
 
-// Share: the QR page reads the app's URL from the hash (never sent to a server).
+// Share: the QR page (misc/qr/) encodes whatever ?q= holds.
 const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
-if (shareLink) shareLink.hash = encodeURIComponent(new URL(".", location.href).href);
+if (shareLink) shareLink.search = new URLSearchParams({ q: new URL(".", location.href).href }).toString();
 
 // ---- phone ----------------------------------------------------------------
 

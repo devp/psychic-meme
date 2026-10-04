@@ -26,7 +26,7 @@ sed -i.bak "s/\"name\": \"pizza-starter\"/\"name\": \"$slug\"/" "$top/$dest/pack
 # app-ns prefixes localStorage keys, which every app on the origin shares.
 sed -i.bak "s/<meta name=\"app-ns\" content=\"pizza-starter\">/<meta name=\"app-ns\" content=\"$slug\">/" "$top/$dest/index.html"
 # The shared QR page lives in misc/ at the repo root; app/ is one level deeper than a copy.
-sed -i.bak 's|href="../../misc/qr.html"|href="../misc/qr.html"|' "$top/$dest/index.html"
+sed -i.bak 's|href="../../misc/qr/"|href="../misc/qr/"|' "$top/$dest/index.html"
 rm "$top/$dest/package.json.bak" "$top/$dest/index.html.bak"
 cat >"$top/$dest/STARTER" <<STAMP
 from: $prefix
