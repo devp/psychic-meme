@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tak-board</title>
+  <script type="module" src="./tak-board.js"></script>
+  <style>
+    :root { color-scheme: light dark; font: 15px/1.45 system-ui, sans-serif; }
+    body { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+    h1 { margin: 0 0 0.25rem; font-size: 1.4rem; }
+    h2 { margin: 2.5rem 0 0.75rem; font-size: 1.05rem; }
+    p { margin: 0.25rem 0; }
+    code { font-size: 0.9em; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 1.5rem; }
+    figure { margin: 0; }
+    figcaption { margin-top: 0.4rem; font-size: 0.85rem; }
+    tak-board { width: 100%; }
+    details { margin-top: 0.2rem; }
+    .try { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 22rem); gap: 1.5rem; align-items: start; }
+    @media (max-width: 40rem) { .try { grid-template-columns: 1fr; } }
+    textarea { width: 100%; box-sizing: border-box; font: 0.85rem monospace; }
+    label { display: block; margin-top: 0.5rem; font-size: 0.85rem; }
+    footer { margin-top: 3rem; font-size: 0.8rem; opacity: 0.75; }
+  </style>
+</head>
+<body>
+  <h1>&lt;tak-board&gt;</h1>
+  <p>Renders a <a href="https://ustak.org/tak-rules/">Tak</a> position from TPS. Drawing is
+    <a href="https://github.com/gruppler/TPS-Ninja">TPS-Ninja</a>'s, unmodified.</p>
+  <p><code>&lt;script type="module" src="tak-board.js"&gt;&lt;/script&gt;</code> then
+    <code>&lt;tak-board tps="…"&gt;&lt;/tak-board&gt;</code>.</p>
+
+  <h2>6x6 puzzles from recent PlayTak games</h2>
+  <div class="grid" id="puzzles"></div>
+
+  <h2>Attributes</h2>
+  <div class="grid">
+    <figure>
+      <tak-board tps="6"></tak-board>
+      <figcaption><code>tps="6"</code>: empty board of that size</figcaption>
+    </figure>
+    <figure>
+      <tak-board tps="x5,2/1,1,1,1,12,x/x4,1211C,2S/x3,2C,2,x/2,2,x,1,1,x/1,2,2,2,21,2 1 16" turn="black"></tak-board>
+      <figcaption><code>turn="black"</code> overrides the side to move in the TPS</figcaption>
+    </figure>
+    <figure>
+      <tak-board tps="x5,2/1,1,1,1,12,x/x4,1211C,2S/x3,2C,2,x/2,2,x,1,1,x/1,2,2,2,21,2 1 16" plies="3e4+ Sd6 f5"></tak-board>
+      <figcaption><code>plies="3e4+ Sd6 f5"</code>: plays moves first (here, the solution), highlights the last</figcaption>
+    </figure>
+    <figure>
+      <tak-board tps="x5,2/1,1,1,1,12,x/x4,1211C,2S/x3,2C,2,x/2,2,x,1,1,x/1,2,2,2,21,2 1 16" theme="discord" axis-labels="false" unplayed-pieces="false"></tak-board>
+      <figcaption><code>theme="discord" axis-labels="false" unplayed-pieces="false"</code></figcaption>
+    </figure>
+    <figure>
+      <tak-board tps="2,x3,1/x,2,1,x2/x,1C,2,x2/x,1,2S,2C,x/1,x4 1 6"></tak-board>
+      <figcaption>5x5</figcaption>
+    </figure>
+    <figure>
+      <tak-board tps="not a position"></tak-board>
+      <figcaption>Invalid TPS shows the error</figcaption>
+    </figure>
+  </div>
+
+  <h2>Try one</h2>
+  <div class="try">
+    <tak-board id="try-board" tps="x6/x6/x6/x6/x6/x6 1 1"></tak-board>
+    <form id="try-form">
+      <label for="try-tps">TPS</label>
+      <textarea id="try-tps" rows="4" spellcheck="false">x2,2,12,x2/x,12112,2,x3/x,1S,12C,21S,x2/2,12,1,2212,1S,1/112S,2,2,x,1,x/x,21,x,1S,221C,1 2 34</textarea>
+      <label for="try-turn">turn</label>
+      <select id="try-turn">
+        <option value="">from TPS</option>
+        <option value="white">white</option>
+        <option value="black">black</option>
+      </select>
+      <label for="try-plies">plies (optional)</label>
+      <textarea id="try-plies" rows="2" spellcheck="false"></textarea>
+    </form>
+  </div>
+
+  <footer>
+    tak-board is AGPL-3.0-or-later and bundles TPS-Ninja by Craig Laparo (AGPL-3.0) and lodash-es (MIT).
+    <a href="https://github.com/devp/psychic-meme/tree/main/tak-board">Source</a> ·
+    <a href="NOTICE.md">NOTICE</a>
+  </footer>
+
+  <script type="module">
+    // Positions from taklifter's 6x6 corpus (dump 2026-09-29), replayed to TPS with tps-ninja's Board.
+    const puzzles = [
+      { id: "6-1-874150", kind: "1-ply road", tps: "1,2,1,1211211C,2S,x/1,1,112,1112S,1121,x/x,12,x,2C,x,1/2,2,2,2,21,221/x4,2,2/2,x5 2 32", solution: ["d2"] },
+      { id: "6-1-874149", kind: "1-ply road", tps: "x5,2/1,1,1,1,12211C,2S/x4,1,2S/x3,2C,2,x/2,2,x,1,1,x/1,2,2,2,21,2 1 17", solution: ["e5>"] },
+      { id: "6-3-874149", kind: "tinue in 3", tps: "x5,2/1,1,1,1,12,x/x4,1211C,2S/x3,2C,2,x/2,2,x,1,1,x/1,2,2,2,21,2 1 16", solution: ["3e4+", "Sd6", "f5"] },
+      { id: "6-3-874085", kind: "tinue in 3", tps: "x2,2,12,x2/x,12112,2,x3/x,1S,12C,21S,x2/2,12,1,2212,1S,1/112S,2,2,x,1,x/x,21,x,1S,221C,1 2 34", solution: ["3d3<12", "2e1+11", "d2"] },
+      { id: "6-5-874149", kind: "tinue in 5", tps: "x5,2/1,1,1,1,1,2/x3,1C,121,2S/x3,2C,2,x/2,2,x,1,1,x/1,2,2,2,21,2 1 15", solution: ["d4>", "f5<", "3e4+", "Sd6", "f5"] },
+      { id: "6-5-874085", kind: "tinue in 5", tps: "x2,2,12,x2/x,12112,2,x3/x,1S,1S,21S,x2/2,12,12C,2212,1S,1/112S,2,2,x,1,x/x,2,1,1S,221C,1 2 33", solution: ["c3+", "c1<", "3d3<12", "2e1+11", "d2"] },
+    ];
+    const grid = document.getElementById("puzzles");
+    for (const p of puzzles) {
+      const toMove = p.tps.split(" ")[1] === "1" ? "White" : "Black";
+      const figure = document.createElement("figure");
+      const board = document.createElement("tak-board");
+      board.setAttribute("tps", p.tps);
+      const caption = document.createElement("figcaption");
+      caption.innerHTML = `<strong>${toMove} to play</strong> · ${p.kind} · <code>${p.id}</code>
+        <details><summary>Solution</summary><code>${p.solution.join(" ")}</code></details>`;
+      caption.querySelector("details").addEventListener("toggle", (e) => {
+        if (e.target.open) board.setAttribute("plies", p.solution.join(" "));
+        else board.removeAttribute("plies");
+      });
+      figure.append(board, caption);
+      grid.append(figure);
+    }
+
+    const tryBoard = document.getElementById("try-board");
+    const [tps, turn, plies] = ["try-tps", "try-turn", "try-plies"].map((id) => document.getElementById(id));
+    const update = () => {
+      tryBoard.setAttribute("tps", tps.value.trim());
+      turn.value ? tryBoard.setAttribute("turn", turn.value) : tryBoard.removeAttribute("turn");
+      plies.value.trim() ? tryBoard.setAttribute("plies", plies.value.trim()) : tryBoard.removeAttribute("plies");
+    };
+    document.getElementById("try-form").addEventListener("input", update);
+    update();
+  </script>
+</body>
+</html>
