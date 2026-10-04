@@ -103,6 +103,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .settings h3 { margin: 0 0 8px; font-size: 13px; color: var(--fg-dim); font-weight: 500; }
 .settings section { margin-bottom: 18px; }
 
+.share-link { color: var(--accent); font-size: 14px; }
+
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .swatch {

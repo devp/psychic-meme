@@ -189,6 +189,10 @@ document.addEventListener("click", (e) => {
 const settings = /** @type {HTMLDialogElement} */ ($("settings-dialog"));
 $("settings-btn").addEventListener("click", () => settings.showModal());
 $("settings-close").addEventListener("click", () => settings.close());
+
+// Share: the QR page (misc/qr/) encodes whatever ?q= holds.
+const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
+if (shareLink) shareLink.search = new URLSearchParams({ q: new URL(".", location.href).href }).toString();
 settings.addEventListener("close", () => {
   if (tab.get() === "write") lineEl.focus({ preventScroll: true });
 });

@@ -125,6 +125,10 @@ document.addEventListener("click", (e) => {
 const settings = /** @type {HTMLDialogElement} */ (document.getElementById("settings-dialog"));
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
 
+// Share: the QR page (misc/qr/) encodes whatever ?q= holds.
+const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
+if (shareLink) shareLink.search = new URLSearchParams({ q: new URL(".", location.href).href }).toString();
+
 // ---- desktop --------------------------------------------------------------
 // Tapping the title tab lays a desktop of command icons over the list, and the
 // tab shows the time while it's open.

@@ -402,6 +402,10 @@ const settings = /** @type {HTMLDialogElement} */ (document.getElementById("sett
 document.getElementById("settings-btn")?.addEventListener("click", () => settings.showModal());
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
 
+// Share: the QR page (misc/qr/) encodes whatever ?q= holds.
+const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
+if (shareLink) shareLink.search = new URLSearchParams({ q: new URL(".", location.href).href }).toString();
+
 // Anything that could be the last moment of the session gets a flush.
 // pagehide fires where beforeunload doesn't, which on iOS is most of the time.
 document.addEventListener("visibilitychange", () => {

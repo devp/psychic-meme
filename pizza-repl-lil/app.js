@@ -220,6 +220,10 @@ document.addEventListener("click", (e) => {
 const settings = /** @type {HTMLDialogElement} */ (byId("settings-dialog"));
 byId("settings-btn").addEventListener("click", () => settings.showModal());
 
+// Share: the QR page (misc/qr/) encodes whatever ?q= holds.
+const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
+if (shareLink) shareLink.search = new URLSearchParams({ q: new URL(".", location.href).href }).toString();
+
 /**
  * Copy, then flash ✓ or ✕ on the button. The fallback covers pages without the
  * async Clipboard API, e.g. served over plain http to a phone on the LAN.
