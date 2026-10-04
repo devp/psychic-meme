@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 
 // Opt-in: skipped unless playwright is installed (`just dev-init-browser`).
@@ -9,6 +10,26 @@ let chromium;
 try {
   ({ chromium } = await import("playwright"));
 } catch {}
+
+// Installed Chrome; else Playwright's own (`node_modules/.bin/playwright install
+// chromium`); else a Chromium the environment ships under
+// PLAYWRIGHT_BROWSERS_PATH, as some cloud containers do. Call it before
+// serve(): if no browser launches, the test fails rather than hanging on a
+// server nobody closes.
+async function launch() {
+  const tries = [() => chromium.launch({ channel: "chrome" }), () => chromium.launch()];
+  const shipped = process.env.PLAYWRIGHT_BROWSERS_PATH && join(process.env.PLAYWRIGHT_BROWSERS_PATH, "chromium");
+  if (shipped && existsSync(shipped)) tries.push(() => chromium.launch({ executablePath: shipped }));
+  let error;
+  for (const attempt of tries) {
+    try {
+      return await attempt();
+    } catch (e) {
+      error = e;
+    }
+  }
+  throw error;
+}
 
 const root = new URL("../..", import.meta.url).pathname;
 const TYPES = {
@@ -46,10 +67,9 @@ function serve() {
 }
 
 test("app in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const browser = await launch();
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  // Prefer installed Chrome; fall back to `node_modules/.bin/playwright install chromium`.
-  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   t.after(async () => {
     await browser.close();
     server.closeAllConnections();
@@ -307,9 +327,9 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
 });
 
 test("forgetting, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const browser = await launch();
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   t.after(async () => {
     await browser.close();
     server.closeAllConnections();
@@ -357,9 +377,9 @@ test("forgetting, in a real browser", { skip: !chromium && "playwright not insta
 });
 
 test("organize and shrink to fit, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const browser = await launch();
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   t.after(async () => {
     await browser.close();
     server.closeAllConnections();
@@ -462,9 +482,9 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
 });
 
 test("catch-up and legacy options, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const browser = await launch();
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   t.after(async () => {
     await browser.close();
     server.closeAllConnections();
@@ -506,9 +526,9 @@ test("catch-up and legacy options, in a real browser", { skip: !chromium && "pla
 });
 
 test("an update reload on resume, with a day's catch-up, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const browser = await launch();
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   t.after(async () => {
     overrides.clear();
     await browser.close();
