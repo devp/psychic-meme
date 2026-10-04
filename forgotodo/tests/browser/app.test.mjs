@@ -125,8 +125,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("title tab opens the desktop", await page.locator("#desktop").isVisible());
   await ok("every command is an icon with its name",
     JSON.stringify(await page.locator("#desktop .desk-icons span").allInnerTexts()) ===
-      JSON.stringify(["Beam List", "Receive Beam…", "Sweep…", "Recycle…", "Forget", "Remember", "Options…"]) &&
-      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 7);
+      JSON.stringify(["Beam List", "Receive Beam…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Options…"]) &&
+      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 10);
   await ok("desktop groups by category",
     (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
   const clock = await page.locator("#title-btn").innerText();
@@ -364,11 +364,12 @@ test("forgetting, in a real browser", { skip: !chromium && "playwright not insta
 
   const rows = await page.locator(".checklist li span").allInnerTexts();
   await ok("decays, purges, and sorts most to least urgent",
-    JSON.stringify(rows) === JSON.stringify(["urgent!!", "fresh done", "plain?", "long gone?"]), JSON.stringify(rows));
+    JSON.stringify(rows) === JSON.stringify(["urgent!!", "fresh done", "plain?"]), JSON.stringify(rows));
   await ok("items with ! are marked urgent",
     (await page.locator(".checklist li.urgent span").allInnerTexts()).join() === "urgent!!");
-  await ok("forgotten items are faded, not deleted",
-    (await page.locator(".checklist li.forgotten").count()) === 2);
+  await ok("one day in, ? is faded", (await page.locator(".checklist li.faded").count()) === 1);
+  await ok("nine days in, it's forgotten: hidden, but counted",
+    (await page.locator("forgo-checklist .count").innerText()) === "1 of 4 done · 1 forgotten");
 
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(100);
@@ -398,8 +399,9 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
     const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     const items = [
       { id: "a", text: "keep!", done: false, seenDay: today },
-      { id: "b", text: "meh?", done: false, seenDay: today },
-      { id: "c", text: "whatever?", done: false, seenDay: today },
+      { id: "b", text: "meh??", done: false, seenDay: today },
+      { id: "c", text: "whatever??", done: false, seenDay: today },
+      { id: "e", text: "maybe?", done: false, seenDay: today },
       { id: "d", text: "did it", done: true, doneDay: today },
     ];
     localStorage.setItem("forgotodo:lists:records", JSON.stringify([
@@ -415,42 +417,96 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
     await page.waitForTimeout(60);
   };
 
+  const count = () => page.locator("forgo-checklist .count").innerText();
+  const okBtn = () => page.click('#alert-dialog button[value="ok"]');
+  const same = (/** @type {string[]} */ a, /** @type {string[]} */ b) => JSON.stringify(a) === JSON.stringify(b);
+
+  await ok("forgotten to-dos are hidden but counted",
+    same(await texts(), ["keep!", "did it", "maybe?"]) && (await count()) === "1 of 5 done · 2 forgotten");
+
+  // --- sweep: the forgotten ------------------------------------------------
   await run("sweep");
-  await ok("sweep asks first, listing what goes",
-    (await page.locator("#alert-list li").allInnerTexts()).join() === "meh?,whatever?");
+  await ok("sweep shows the forgotten first",
+    (await page.locator("#alert-list li").allInnerTexts()).join() === "meh??,whatever??");
   await page.click('#alert-dialog button[value="cancel"]');
   await page.waitForTimeout(60);
-  await ok("cancel keeps everything", (await texts()).length === 4);
+  await ok("cancel keeps them", (await count()) === "1 of 5 done · 2 forgotten");
   await run("sweep");
-  await page.click('#alert-dialog button[value="ok"]');
+  await okBtn();
   await page.waitForTimeout(60);
-  await ok("sweep deletes the lowest tier only", JSON.stringify(await texts()) === JSON.stringify(["keep!", "did it"]));
-
-  await run("recycle");
-  await page.click('#alert-dialog button[value="ok"]');
-  await page.waitForTimeout(60);
-  await ok("recycle deletes done items", JSON.stringify(await texts()) === JSON.stringify(["keep!"]));
-
-  await run("remember");
-  await ok("remember raises one", JSON.stringify(await texts()) === JSON.stringify(["keep!!"]));
-  await ok("the touched row blinks", (await page.locator("li[data-flash]").count()) === 1);
-  await run("forget");
-  await run("forget");
-  await run("forget");
-  await ok("forget lowers one, to a ?", JSON.stringify(await texts()) === JSON.stringify(["keep?"]));
-  await run("forget");
-  await ok("nothing left to forget says so", (await page.locator("#alert-msg").innerText()).includes("already forgotten"));
-  await page.click('#alert-dialog button[value="ok"]');
-  await run("recycle");
-  await ok("nothing to recycle says so", (await page.locator("#alert-msg").innerText()) === "Nothing's done yet.");
+  await ok("sweep deletes only the forgotten", same(await texts(), ["keep!", "did it", "maybe?"]) && (await count()) === "1 of 3 done");
+  await run("sweep");
+  await ok("nothing forgotten says so", (await page.locator("#alert-msg").innerText()) === "Nothing forgotten.");
   await ok("a notice has no cancel", await page.locator("#alert-cancel").isHidden());
-  await page.click('#alert-dialog button[value="ok"]');
-  await run("sweep");
-  await ok("sweeping a single tier warns it's everything",
-    (await page.locator("#alert-msg").innerText()) === "They're all equally urgent. Delete all 1 to-do?");
-  await page.click('#alert-dialog button[value="cancel"]');
+  await okBtn();
+
+  await run("recycle");
+  await okBtn();
   await page.waitForTimeout(60);
-  await ok("and cancel keeps it", JSON.stringify(await texts()) === JSON.stringify(["keep?"]));
+  await ok("recycle deletes done items", same(await texts(), ["keep!", "maybe?"]));
+
+  // --- forget / remember ---------------------------------------------------
+  await run("forget");
+  await page.waitForTimeout(700);
+  await ok("forget poofs the lowest tier away", same(await texts(), ["keep!"]) && (await count()) === "0 of 2 done · 1 forgotten");
+  await run("remember");
+  await ok("remember brings it back at neutral", same(await texts(), ["keep!", "maybe"]));
+  await ok("and it blinks", (await page.locator('li[data-anim="blink"]').count()) === 1);
+  await run("remember");
+  await ok("nothing forgotten to remember says so", (await page.locator("#alert-msg").innerText()) === "Nothing's forgotten.");
+  await okBtn();
+  await run("forget");
+  await page.waitForTimeout(700);
+  await run("forget");
+  await page.waitForTimeout(700);
+  await ok("forget works up the tiers", same(await texts(), []) && (await count()) === "0 of 2 done · 2 forgotten");
+  await run("forget");
+  await ok("nothing left to forget says so", (await page.locator("#alert-msg").innerText()) === "Nothing left to forget.");
+  await okBtn();
+  await run("remember");
+  await run("remember");
+  await ok("remember twice, both back", same((await texts()).sort(), ["keep", "maybe"]));
+
+  // --- shake up: rig the dice ----------------------------------------------
+  await page.evaluate(() => (Math.random = () => 0.1));
+  await run("shake");
+  await ok("shake up moves each to-do (all up, on these dice)", same((await texts()).sort(), ["keep!", "maybe!"]));
+  await ok("and sums it up", (await count()) === "2 up · 0 down");
+
+  // --- fast forward --------------------------------------------------------
+  await page.locator(".checklist li", { hasText: "maybe!" }).locator("input[type=checkbox]").check();
+  await page.waitForTimeout(60);
+  await run("fastforward");
+  await ok("fast forward says what tomorrow brings",
+    (await page.locator("#alert-msg").innerText()) === "Tomorrow's list, today: 1 to-do drop a tier, 1 done cleared. Go ahead?");
+  await okBtn();
+  await page.waitForTimeout(60);
+  await ok("and then it's tomorrow", same(await texts(), ["keep"]));
+
+  // --- edit ----------------------------------------------------------------
+  await run("edit");
+  await ok("edit arms: the tab says what's next", (await page.locator("#title-btn").innerText()) === "Edit: tap a to-do");
+  await page.click(".checklist li span");
+  await ok("tapping a row opens it, without ticking it",
+    (await page.locator(".edit-field").isVisible()) && !(await page.locator(".checklist li input[type=checkbox]").count()));
+  await page.fill(".edit-field", "keep going!");
+  await page.press(".edit-field", "Enter");
+  await page.waitForTimeout(60);
+  await ok("enter saves the edit", same(await texts(), ["keep going!"]) && (await page.locator("#title-btn").innerText()) === "To Do List");
+  await run("edit");
+  await page.click("#title-btn");
+  await ok("tapping the tab cancels edit mode",
+    (await page.locator("#title-btn").innerText()) === "To Do List" && (await page.locator("#desktop").isHidden()));
+  await page.click(".checklist li span");
+  await page.waitForTimeout(60);
+  await ok("and taps tick again", (await page.locator(".checklist li.done").count()) === 1);
+  await page.click(".checklist li span");
+
+  // --- typing ?? files it straight away ------------------------------------
+  await page.fill(".add-row input", "someday maybe??");
+  await page.press(".add-row input", "Enter");
+  await page.waitForTimeout(60);
+  await ok("?? files it away, with a word", same(await texts(), ["keep going!"]) && (await count()) === "Filed away, forgotten.");
 
   // --- shrink to fit -----------------------------------------------------
   const size = () => page.locator(".checklist").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));

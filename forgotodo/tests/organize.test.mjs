@@ -1,21 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sweepable, recyclable, raiseOnce, forgetOne, rememberOne } from "../lib/organize.js";
+import { sweepable, recyclable, raiseOnce, forgetOne, rememberOne, shakeUp } from "../lib/organize.js";
 
 const items = [
   { id: "a", text: "a!!" },
   { id: "b", text: "b" },
   { id: "c", text: "c?" },
   { id: "d", text: "d?" },
+  { id: "g", text: "g??" },
+  { id: "h", text: "h???" },
   { id: "e", text: "e??", done: true },
   { id: "f", text: "f", done: true },
 ];
 const ids = (/** @type {{ id: string }[]} */ xs) => xs.map((x) => x.id);
+/** A random() that hands back these rolls in turn. @param {number[]} rolls */
+const rolls = (rolls) => () => rolls.shift() ?? 0.99;
 
-test("sweep takes the lowest open tier, never done items", () => {
-  assert.deepEqual(ids(sweepable(items)), ["c", "d"]);
-  assert.deepEqual(ids(sweepable([{ id: "x", text: "x" }, { id: "y", text: "y" }])), ["x", "y"]);
-  assert.deepEqual(sweepable([{ id: "z", text: "z", done: true }]), []);
+test("sweep takes the forgotten, never done items", () => {
+  assert.deepEqual(ids(sweepable(items)), ["g", "h"]);
+  assert.deepEqual(sweepable([{ id: "x", text: "x?" }]), []);
 });
 
 test("recycle takes done items", () => {
@@ -23,22 +26,40 @@ test("recycle takes done items", () => {
 });
 
 test("raise is decay run backwards", () => {
-  const walk = ["foo?"];
-  for (let i = 0; i < 3; i++) walk.push(raiseOnce(walk[walk.length - 1]));
-  assert.deepEqual(walk, ["foo?", "foo", "foo!", "foo!!"]);
-  assert.equal(raiseOnce("huh???"), "huh");
+  const walk = ["foo??"];
+  for (let i = 0; i < 4; i++) walk.push(raiseOnce(walk[walk.length - 1]));
+  assert.deepEqual(walk, ["foo??", "foo?", "foo", "foo!", "foo!!"]);
+  assert.equal(raiseOnce("huh???"), "huh?");
   assert.equal(raiseOnce("wat?!"), "wat!");
-  assert.equal(raiseOnce("foo ! "), "foo !!");
 });
 
-test("forget picks an open, not-yet-forgotten item", () => {
-  assert.deepEqual(forgetOne(items, () => 0), { id: "a", text: "a!" });
-  assert.deepEqual(forgetOne(items, () => 0.99), { id: "b", text: "b?" });
-  assert.equal(forgetOne([{ id: "c", text: "c?" }]), null);
+test("forget takes one from the lowest tier still showing, straight to forgotten", () => {
+  assert.deepEqual(forgetOne(items, () => 0), { id: "c", text: "c??" });
+  assert.deepEqual(forgetOne(items, () => 0.99), { id: "d", text: "d??" });
+  assert.deepEqual(forgetOne([{ id: "a", text: "a!" }, { id: "b", text: "b!!" }]), { id: "a", text: "a??" });
+  assert.equal(forgetOne([{ id: "g", text: "g??" }]), null);
 });
 
-test("remember picks any open item", () => {
-  assert.deepEqual(rememberOne(items, () => 0.99), { id: "d", text: "d" });
-  assert.deepEqual(rememberOne(items, () => 0), { id: "a", text: "a!!!" });
-  assert.equal(rememberOne([{ id: "f", text: "f", done: true }]), null);
+test("remember brings one forgotten back at neutral", () => {
+  assert.deepEqual(rememberOne(items, () => 0), { id: "g", text: "g" });
+  assert.deepEqual(rememberOne(items, () => 0.99), { id: "h", text: "h" });
+  assert.equal(rememberOne([{ id: "c", text: "c?" }]), null);
+});
+
+test("shake up: 30% up, 30% down, 40% stays; forgotten can rise but not sink", () => {
+  const open = [
+    { id: "a", text: "a" },
+    { id: "b", text: "b" },
+    { id: "c", text: "c" },
+    { id: "d", text: "d?" },
+    { id: "g", text: "g??" },
+    { id: "h", text: "h??" },
+    { id: "f", text: "f", done: true },
+  ];
+  assert.deepEqual(shakeUp(open, rolls([0.29, 0.3, 0.6, 0.59, 0.1, 0.5])), [
+    { id: "a", text: "a!", move: "up" },
+    { id: "b", text: "b?", move: "down" },
+    { id: "d", text: "d??", move: "forgotten" },
+    { id: "g", text: "g?", move: "remembered" },
+  ]);
 });

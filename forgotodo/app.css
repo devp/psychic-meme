@@ -18,17 +18,44 @@
    right, the way bitmap fonts were emboldened. */
 .checklist li.urgent span { text-shadow: 1px 0 currentColor; }
 :root:not([data-font="pixel"]) .checklist li.urgent span { text-shadow: none; font-weight: 700; }
-/* Decayed to `?`: kept, but fading out of mind. */
-.checklist li.forgotten { opacity: 0.45; }
+/* Decayed to `?`: still here, but fading out of mind. (At `??` it's hidden.) */
+.checklist li.faded { opacity: 0.45; }
+.count .hidden-count { opacity: 0.7; }
 
-/* Forget / Remember: the row they touched blinks twice, inverted. */
+/* Remember / Shake Up: rows that moved blink twice, inverted. */
 @keyframes blink {
   0%, 50% { background: var(--ink); color: var(--bg); }
   25%, 75%, 100% { background: transparent; }
 }
-.checklist li[data-flash] { animation: blink 0.8s steps(1, end); }
-.checklist li[data-flash] span { color: inherit; }
-.checklist li[data-flash] input { color: inherit; border-color: currentColor; }
+.checklist li[data-anim="blink"] { animation: blink 0.8s steps(1, end); }
+.checklist li[data-anim="blink"] span { color: inherit; }
+.checklist li[data-anim="blink"] input { color: inherit; border-color: currentColor; }
+
+/* Forget: the row fades out in four hard steps, like a 1-bit screen would. */
+@keyframes poof {
+  to { opacity: 0; }
+}
+.checklist li[data-anim="poof"] { animation: poof 0.5s steps(4, end) forwards; }
+
+/* Edit armed: rows wait for a tap, marked with a dashed outline. */
+.checklist.edit-armed li { cursor: text; outline: 1px dashed var(--ink-dim); outline-offset: -1px; }
+.checklist.edit-armed label,
+.checklist.edit-armed input[type="checkbox"] { cursor: text; }
+
+/* The row being edited: a Palm text field, like the add row's. */
+.checklist .edit-field {
+  flex: 1;
+  min-width: 0;
+  padding: 0 2px;
+  font: inherit;
+  font-size: max(16px, 1em); /* < 16px makes iOS zoom on focus */
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+}
+.checklist .edit-field:focus { outline: 0; }
 
 .checklist label {
   display: flex;
