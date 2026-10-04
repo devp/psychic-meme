@@ -1,4 +1,4 @@
-// Menu icons, drawn as bitmaps: `#` is a pixel, `+` a dithered one (drawn on
+// Desktop icons, drawn as bitmaps: `#` is a pixel, `+` a dithered one (drawn on
 // alternate pixels, checkerboard-style, the way 1-bit screens did greys), `.`
 // is blank. Rows can be any width. Rendered as a crisp SVG in currentColor,
 // so every theme gets them for free.
@@ -76,6 +76,18 @@ export const ICONS = {
     "..........",
     "....##....",
     "....##....",
+  ],
+  prefs: [
+    ".#...#..#.",
+    "###..#..#.",
+    "###..#..#.",
+    ".#...#.###",
+    ".#...#.###",
+    ".#..###.#.",
+    ".#..###.#.",
+    ".#...#..#.",
+    ".#...#..#.",
+    ".#...#..#.",
   ],
 };
 

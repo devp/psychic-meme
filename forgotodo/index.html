@@ -47,26 +47,7 @@
 <body>
 
 <header class="app-header">
-  <h1><button id="title-btn" class="title-tab" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="menubar">To Do List</button></h1>
-  <!-- Palm menu bar: opened from the title tab; tapping the scrim closes it. -->
-  <div id="menu-scrim" class="menu-scrim" hidden></div>
-  <nav id="menubar" class="menubar" aria-label="Menu" hidden>
-    <div class="menu-titles">
-      <button type="button" class="menu-title" data-menu="record" aria-expanded="true">Record</button>
-      <button type="button" class="menu-title" data-menu="organize" aria-expanded="false">Organize</button>
-      <button type="button" class="menu-title" data-cmd="prefs" aria-haspopup="dialog">Options…</button>
-    </div>
-    <div class="menu-items" role="menu" data-menu-items="record">
-      <button type="button" role="menuitem" data-cmd="beam" data-icon="beam">Beam List</button>
-      <button type="button" role="menuitem" data-cmd="receive" data-icon="receive">Receive Beam…</button>
-    </div>
-    <div class="menu-items" role="menu" data-menu-items="organize" hidden>
-      <button type="button" role="menuitem" data-cmd="sweep" data-icon="sweep">Sweep…<small>least urgent</small></button>
-      <button type="button" role="menuitem" data-cmd="recycle" data-icon="recycle">Recycle…<small>done</small></button>
-      <button type="button" role="menuitem" data-cmd="forget" data-icon="forget">Forget<small>one, less</small></button>
-      <button type="button" role="menuitem" data-cmd="remember" data-icon="remember">Remember<small>one, more</small></button>
-    </div>
-  </nav>
+  <h1><button id="title-btn" class="title-tab" type="button" aria-expanded="false" aria-controls="desktop">To Do List</button></h1>
 </header>
 
 
@@ -74,6 +55,34 @@
   <section class="panel active" data-panel="list">
     <forgo-checklist></forgo-checklist>
   </section>
+
+  <!-- The desktop: every command as an icon, opened from the title tab and
+       laid over the list. Tapping an icon runs it; tapping anywhere else
+       closes it. Groups are Palm launcher categories. -->
+  <nav id="desktop" class="desktop" aria-label="Desktop" hidden>
+    <section>
+      <h2>Record</h2>
+      <div class="desk-icons">
+        <button type="button" data-cmd="beam" data-icon="beam"><span>Beam List</span></button>
+        <button type="button" data-cmd="receive" data-icon="receive"><span>Receive Beam…</span></button>
+      </div>
+    </section>
+    <section>
+      <h2>Organize</h2>
+      <div class="desk-icons">
+        <button type="button" data-cmd="sweep" data-icon="sweep"><span>Sweep…</span><small>least urgent</small></button>
+        <button type="button" data-cmd="recycle" data-icon="recycle"><span>Recycle…</span><small>done</small></button>
+        <button type="button" data-cmd="forget" data-icon="forget"><span>Forget</span><small>one, less</small></button>
+        <button type="button" data-cmd="remember" data-icon="remember"><span>Remember</span><small>one, more</small></button>
+      </div>
+    </section>
+    <section>
+      <h2>System</h2>
+      <div class="desk-icons">
+        <button type="button" data-cmd="prefs" data-icon="prefs" aria-haspopup="dialog"><span>Options…</span></button>
+      </div>
+    </section>
+  </nav>
 </main>
 
 <dialog id="settings-dialog" class="dialog">
@@ -108,13 +117,13 @@
   </section>
 
   <section class="toggles">
-    <label><input type="checkbox" data-toggle="icons"> Menu icons</label>
+    <label><input type="checkbox" data-toggle="icons"> Desktop icons</label>
     <label><input type="checkbox" data-toggle="fit"> Shrink to fit</label>
   </section>
 
   <section class="about">
     <h3>About</h3>
-    <p>forgotodo v0.2. A to-do list with a pocket organizer's manners. Works offline; add it to your home screen.</p>
+    <p>forgotodo v0.3. A to-do list with a pocket organizer's manners. Works offline; add it to your home screen.</p>
     <p>Everything lives in this browser's localStorage. Nothing is sent anywhere.</p>
   </section>
 

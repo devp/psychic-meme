@@ -25,9 +25,11 @@ auto (follows the system). The old `backlight` theme is palm with it on.
 - Catch-up happens when the app opens or comes back to the foreground, so days
   it sat unopened still count.
 
-## Menu
+## Desktop
 
-Tap the title tab: the menu bar drops down and the tab shows the time.
+Tap the title tab: a desktop of pixel icons covers the list, and the tab
+shows the time. Tap an icon to run it; tap bare desktop (or press Escape, or
+the tab again) to close it. Icons are grouped like Palm launcher categories.
 
 - **Record > Beam List** sends the list as a Markdown task list (`- [ ] task` / `- [x] task`)
   through the share sheet, or copies it. Keep it somewhere as a backup.
@@ -38,10 +40,10 @@ Tap the title tab: the menu bar drops down and the tab shows the time.
 - **Organize > Forget** knocks one random open to-do down a step, as a day of
   neglect would; **Remember** brings one up a step (`foo?` → `foo` → `foo!`).
   The row blinks so you can see which.
-- **Options…** opens theme, backlight, font, toggles, and about.
+- **System > Options…** opens theme, backlight, font, toggles, and about.
 
-Menu items have 10×10 pixel icons (drawn in `lib/icons.js` as ASCII bitmaps);
-**Menu icons** in Options turns them off.
+The icons are 10×10 bitmaps, drawn in `lib/icons.js` as ASCII art and shown
+at 4×. **Desktop icons** in Options turns them off for a plain list by name.
 
 **Shrink to fit** in Options: big type for three to-dos or fewer, a little
 smaller with each one after, then as small as it takes (down to 10px) for the
