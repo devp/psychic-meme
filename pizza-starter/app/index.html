@@ -113,6 +113,14 @@
     </div>
   </section>
 
+  <section>
+    <h3>Share</h3>
+    <!-- One shared page for every app, outside each app's service worker scope
+         (which would answer it with index.html). new-app.sh rewrites ../../ to ../
+         since copies sit at the repo root. app.js appends #<this app's URL>. -->
+    <a id="share-link" class="share-link" href="../../misc/qr.html" target="_blank" rel="noopener">Show a QR code for this app ↗</a>
+  </section>
+
   <button type="button" id="settings-close" class="primary">Done</button>
 </dialog>
 
