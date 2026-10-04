@@ -6,14 +6,15 @@ import { syncAppHeight } from "./lib/viewport.js";
 import { theme, mode, font, icons, fit, lists } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toBeamText, fromBeamText } from "./lib/beam.js";
-import { dayKey, forgetChanges } from "./lib/forget.js";
-import { sweepable, recyclable, forgetOne, rememberOne } from "./lib/organize.js";
+import { dayKey, forgetChanges, fastForwardChanges, isForgotten } from "./lib/forget.js";
+import { sweepable, recyclable, forgetOne, rememberOne, shakeUp } from "./lib/organize.js";
 import { ICONS, bitmapSvg } from "./lib/icons.js";
 import { preferredSize, largestFitting } from "./lib/fit.js";
 
 // Components read their state from state.js, so defining them is the whole of
 // it -- nothing to inject, nothing to sequence.
 customElements.define("forgo-checklist", Checklist);
+const checklist = /** @type {Checklist} */ (document.querySelector("forgo-checklist"));
 
 // First run: seed a few sample to-dos.
 if (lists.getAll().length === 0) {
@@ -28,12 +29,17 @@ if (lists.getAll().length === 0) {
 // Lazy: catch up on however many days have passed whenever the app is opened
 // or comes back to the foreground. See lib/forget.js for the rules.
 
-function forget() {
+/** @param {import("./lib/forget.js").ForgetChange[]} changes */
+function apply(changes) {
   const rec = lists.ensureActive();
-  for (const c of forgetChanges(/** @type {any} */ (rec.items), dayKey())) {
+  for (const c of changes) {
     if ("remove" in c) lists.removeItem(rec.id, c.id);
     else lists.updateItem(rec.id, c.id, c.patch);
   }
+}
+
+function forget() {
+  apply(forgetChanges(/** @type {any} */ (lists.ensureActive().items), dayKey()));
 }
 forget();
 document.addEventListener("visibilitychange", () => {
@@ -152,9 +158,20 @@ function closeDesktop() {
   if (hadFocus) titleBtn.focus();
 }
 
-titleBtn.addEventListener("click", () => (desktop.hidden ? openDesktop() : closeDesktop()));
+titleBtn.addEventListener("click", () => {
+  if (checklist.editArmed) checklist.cancelEdit();
+  else if (desktop.hidden) openDesktop();
+  else closeDesktop();
+});
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !desktop.hidden) closeDesktop();
+  if (e.key !== "Escape") return;
+  if (!desktop.hidden) closeDesktop();
+  else if (checklist.editArmed) checklist.cancelEdit();
+});
+
+// Edit mode: the tab says what the next tap does, and tapping it cancels.
+checklist.addEventListener("edit-armed", (e) => {
+  titleBtn.textContent = /** @type {CustomEvent} */ (e).detail ? "Edit: tap a to-do" : TITLE;
 });
 
 /** @type {Record<string, () => void>} */
@@ -164,8 +181,11 @@ const COMMANDS = {
   prefs: () => settings.showModal(),
   sweep,
   recycle,
-  forget: () => nudge("forget"),
-  remember: () => nudge("remember"),
+  forget: forgetCmd,
+  remember,
+  edit: () => checklist.armEdit(),
+  shake,
+  fastforward: fastForward,
 };
 
 // An icon runs its command; a tap on bare desktop just closes it.
@@ -240,8 +260,9 @@ receiveForm.addEventListener("submit", (e) => {
 });
 
 // ---- organize -------------------------------------------------------------
-// Sweep and Recycle delete, so they ask first, Palm-alert style. Forget and
-// Remember are one random step each way, and blink the row they touched.
+// Sweep, Recycle and Fast Forward ask first, Palm-alert style. Forget,
+// Remember and Shake Up are random, and show you their work with a blink (or,
+// for Forget, a poof).
 
 const alertDialog = /** @type {HTMLDialogElement} */ (document.getElementById("alert-dialog"));
 const alertTitle = /** @type {HTMLElement} */ (document.getElementById("alert-title"));
@@ -276,16 +297,13 @@ async function sweep() {
   const rec = lists.ensureActive();
   const doomed = sweepable(/** @type {any} */ (rec.items));
   if (doomed.length === 0) {
-    await ask({ title: "Sweep", icon: "sweep", message: "Nothing to sweep.", cancel: false });
+    await ask({ title: "Sweep", icon: "sweep", message: "Nothing forgotten.", cancel: false });
     return;
   }
-  const all = doomed.length === rec.items.filter((i) => !i.done).length;
   const ok = await ask({
     title: "Sweep",
     icon: "sweep",
-    message: all
-      ? `They're all equally urgent. Delete all ${todos(doomed.length)}?`
-      : `Delete the ${todos(doomed.length)} at the lowest priority?`,
+    message: `Delete ${todos(doomed.length)} you've forgotten?`,
     items: doomed.map((i) => i.text),
   });
   if (ok) doomed.forEach((i) => lists.removeItem(rec.id, i.id));
@@ -307,33 +325,102 @@ async function recycle() {
   if (ok) done.forEach((i) => lists.removeItem(rec.id, i.id));
 }
 
-/** @param {"forget"|"remember"} which */
-async function nudge(which) {
+/** @param {string} id */
+const rowOf = (id) => /** @type {HTMLElement|null} */ (checklist.querySelector(`li[data-id="${CSS.escape(id)}"]`));
+
+/**
+ * Run a one-shot CSS animation on a row; data-anim names the keyframes.
+ * Resolves when it ends, or straight away if the row isn't there.
+ * @param {HTMLElement|null} row
+ * @param {"blink"|"poof"} anim
+ * @returns {Promise<void>}
+ */
+function animate(row, anim) {
+  if (!row) return Promise.resolve();
+  row.dataset.anim = anim;
+  return new Promise((resolve) => {
+    const done = () => {
+      delete row.dataset.anim;
+      resolve();
+    };
+    row.addEventListener("animationend", done, { once: true });
+    setTimeout(done, 1000); // in case animations never run
+  });
+}
+
+/** Blink the rows with these ids, once they've rendered. @param {string[]} ids */
+async function blink(ids) {
+  await checklist.updateComplete;
+  const rows = ids.map(rowOf).filter((r) => r !== null);
+  rows[0]?.scrollIntoView({ block: "nearest" });
+  rows.forEach((r) => animate(r, "blink"));
+}
+
+// Forget is silent on purpose: a row puffs away and you aren't told which.
+async function forgetCmd() {
   const rec = lists.ensureActive();
-  const change = (which === "forget" ? forgetOne : rememberOne)(/** @type {any} */ (rec.items));
+  const change = forgetOne(/** @type {any} */ (rec.items));
   if (!change) {
-    await ask({
-      title: which === "forget" ? "Forget" : "Remember",
-      icon: which,
-      message: which === "forget" ? "Everything open is already forgotten." : "Nothing open to remember.",
-      cancel: false,
-    });
+    await ask({ title: "Forget", icon: "forget", message: "Nothing left to forget.", cancel: false });
+    return;
+  }
+  await animate(rowOf(change.id), "poof");
+  lists.updateItem(rec.id, change.id, { text: change.text });
+}
+
+async function remember() {
+  const rec = lists.ensureActive();
+  const change = rememberOne(/** @type {any} */ (rec.items));
+  if (!change) {
+    await ask({ title: "Remember", icon: "remember", message: "Nothing's forgotten.", cancel: false });
     return;
   }
   lists.updateItem(rec.id, change.id, { text: change.text });
-  await checklist.updateComplete;
-  const row = /** @type {HTMLElement|null} */ (checklist.querySelector(`li[data-id="${CSS.escape(change.id)}"]`));
-  if (!row) return;
-  row.scrollIntoView({ block: "nearest" });
-  row.dataset.flash = which;
-  row.addEventListener("animationend", () => delete row.dataset.flash, { once: true });
+  blink([change.id]);
+}
+
+function shake() {
+  const rec = lists.ensureActive();
+  const moved = shakeUp(/** @type {any} */ (rec.items));
+  moved.forEach((m) => lists.updateItem(rec.id, m.id, { text: m.text }));
+  /** @param {string} move */
+  const n = (move) => moved.filter((m) => m.move === move).length;
+  const parts = [`${n("up")} up`, `${n("down")} down`];
+  if (n("forgotten")) parts.push(`${n("forgotten")} forgotten`);
+  if (n("remembered")) parts.push(`${n("remembered")} remembered`);
+  checklist.note(moved.length ? parts.join(" · ") : "Nothing moved.");
+  blink(moved.filter((m) => m.move !== "forgotten").map((m) => m.id));
+}
+
+// A day's rollover on demand. Day stamps stay put, so it's an extra day: the
+// real one still comes tonight.
+async function fastForward() {
+  const rec = lists.ensureActive();
+  const changes = fastForwardChanges(/** @type {any} */ (rec.items));
+  if (changes.length === 0) {
+    await ask({ title: "Fast Forward", icon: "fastforward", message: "Nothing would change.", cancel: false });
+    return;
+  }
+  const texts = changes.flatMap((c) => ("patch" in c && c.patch.text ? [c.patch.text] : []));
+  const lost = texts.filter(isForgotten).length;
+  const dropped = texts.length - lost;
+  const cleared = changes.length - texts.length;
+  const parts = [];
+  if (dropped) parts.push(`${todos(dropped)} drop a tier`);
+  if (lost) parts.push(`${lost} forgotten`);
+  if (cleared) parts.push(`${cleared} done cleared`);
+  const ok = await ask({
+    title: "Fast Forward",
+    icon: "fastforward",
+    message: `Tomorrow's list, today: ${parts.join(", ")}. Go ahead?`,
+  });
+  if (ok) apply(changes);
 }
 
 // ---- shrink to fit --------------------------------------------------------
 // Sets --list-size on the checklist: big for a short list, smaller per to-do,
 // then as small as it takes (to a floor) for the whole panel to fit unscrolled.
 
-const checklist = /** @type {Checklist} */ (document.querySelector("forgo-checklist"));
 const panel = /** @type {HTMLElement} */ (document.querySelector('[data-panel="list"]'));
 // The panel's height with the keyboard down. Fitting to the keyboard-up height
 // would shrink everything each time you start typing.

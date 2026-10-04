@@ -1,8 +1,9 @@
 // The forgetting. Priority is written in the text itself -- trailing `!`s
 // raise it, trailing `?`s lower it -- so it survives a beam round-trip.
-// Each local day a to-do goes unfinished it loses a `!`, or gains a `?` once it
-// has none. `foo?` is where it ends up: kept, but shown faded. Done items are
-// removed the day after they were checked.
+// Each local day a to-do goes unfinished it drops a tier:
+//   foo!! -> foo! -> foo -> foo? (faded) -> foo?? (forgotten)
+// Forgotten is the bottom: hidden from the list but still counted, until it's
+// swept or remembered. Done items are removed the day after they were checked.
 
 /**
  * Local calendar day, e.g. "2026-09-27".
@@ -40,20 +41,43 @@ export function priorityOf(text) {
   return 0;
 }
 
+/** The bottom tier: `foo??`, or more `?`s typed by hand. */
+export const FORGOTTEN = -2;
+
 /** @param {string} text */
+export function tierOf(text) {
+  return Math.max(FORGOTTEN, priorityOf(text));
+}
+
+/** `foo?`: still shown, faded. @param {string} text */
+export function isFaded(text) {
+  return tierOf(text) === -1;
+}
+
+/** `foo??`: hidden, but counted. @param {string} text */
 export function isForgotten(text) {
-  return priorityOf(text) < 0;
+  return tierOf(text) === FORGOTTEN;
 }
 
 /**
- * One day's decay: drop a `!`, else end in a single `?`.
+ * The same text, re-suffixed for a tier: `!` per point up, `?` per point down.
+ * @param {string} text
+ * @param {number} tier
+ * @returns {string}
+ */
+export function withTier(text, tier) {
+  const base = text.trimEnd().replace(/[!?]+$/, "").trimEnd();
+  return base + (tier > 0 ? "!".repeat(tier) : "?".repeat(-Math.max(FORGOTTEN, tier)));
+}
+
+/**
+ * One day's decay: down a tier, stopping at forgotten.
  * @param {string} text
  * @returns {string}
  */
 export function decayOnce(text) {
-  const t = text.trimEnd();
-  if (priorityOf(t) > 0) return t.slice(0, -1).trimEnd();
-  return t.replace(/[!?]+$/, "").trimEnd() + "?";
+  const tier = tierOf(text);
+  return tier === FORGOTTEN ? text.trimEnd() : withTier(text, tier - 1);
 }
 
 /**
@@ -92,6 +116,23 @@ export function forgetChanges(items, today) {
       text = next;
     }
     changes.push({ id: item.id, patch: text === item.text ? { seenDay: today } : { text, seenDay: today } });
+  }
+  return changes;
+}
+
+/**
+ * Fast Forward: one extra day's rollover, right now. Open to-dos drop a tier
+ * and done ones go, as if the night had passed. Day stamps are left alone, so
+ * the real tomorrow still rolls over too.
+ * @param {ForgetItem[]} items
+ * @returns {ForgetChange[]}
+ */
+export function fastForwardChanges(items) {
+  /** @type {ForgetChange[]} */
+  const changes = [];
+  for (const item of items) {
+    if (item.done) changes.push({ id: item.id, remove: true });
+    else if (decayOnce(item.text) !== item.text) changes.push({ id: item.id, patch: { text: decayOnce(item.text) } });
   }
   return changes;
 }

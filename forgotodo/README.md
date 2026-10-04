@@ -19,11 +19,15 @@ auto (follows the system). The old `backlight` theme is palm with it on.
 
 - Priority is in the text: each trailing `!` is +1, a trailing `?` is -1
   (`foo!!` is 2, `what?` is -1; a mix like `wat?!` is 0). Most urgent first.
-- Every day a to-do stays open it loses a `!`, or once it has none, ends in
-  `?`. That's the end: `foo?` stays, faded, until you delete or finish it.
+- Every day a to-do stays open it drops a tier:
+  `foo!!` → `foo!` → `foo` → `foo?` (faded) → `foo??` (forgotten).
+- **Forgotten** is the bottom. It's hidden from the list but still counted
+  ("2 of 9 done · 3 forgotten") until you sweep it or it's remembered. Type
+  `??` on the end of a new to-do to file it straight there.
 - Done items disappear the day after you check them.
 - Catch-up happens when the app opens or comes back to the foreground, so days
   it sat unopened still count.
+- Beam carries the suffixes, so forgotten to-dos survive a backup too.
 
 ## Desktop
 
@@ -34,12 +38,19 @@ the tab again) to close it. Icons are grouped like Palm launcher categories.
 - **Record > Beam List** sends the list as a Markdown task list (`- [ ] task` / `- [x] task`)
   through the share sheet, or copies it. Keep it somewhere as a backup.
 - **Record > Receive Beam…** takes that text back, adding its to-dos to the list.
-- **Organize > Sweep…** deletes the open to-dos at the lowest priority (after
-  asking, and listing them).
+- **Record > Edit** arms edit mode: the next to-do you tap becomes a text field
+  (Enter saves; Escape, tapping away, or tapping the tab cancels). An edit
+  resets that to-do's daily decay, and editing its `!`/`?` sets its priority.
+- **Organize > Sweep…** shows the forgotten to-dos and offers to delete them.
 - **Organize > Recycle…** deletes the done ones now instead of tomorrow.
-- **Organize > Forget** knocks one random open to-do down a step, as a day of
-  neglect would; **Remember** brings one up a step (`foo?` → `foo` → `foo!`).
-  The row blinks so you can see which.
+- **Organize > Forget** forgets one random to-do from the lowest tier still
+  showing. It puffs away and you're not told which.
+- **Organize > Remember** brings one random forgotten to-do back, at neutral.
+- **Organize > Shake Up** rolls for every open to-do, forgotten ones too: 30%
+  up a tier, 30% down, 40% stays. Movers blink; a note sums it up.
+- **Organize > Fast Forward…** runs a day's rollover now ("tomorrow's list,
+  today"), after saying what it'll do. It's an extra day: the real one still
+  comes tonight.
 - **System > Options…** opens theme, backlight, font, toggles, and about.
 
 The icons are 10×10 bitmaps, drawn in `lib/icons.js` as ASCII art and shown

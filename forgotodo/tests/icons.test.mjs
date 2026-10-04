@@ -17,7 +17,7 @@ test("bitmapSvg: + is dithered on a checkerboard", () => {
 });
 
 test("every desktop command has a 10x10 icon", () => {
-  for (const name of ["beam", "receive", "sweep", "recycle", "forget", "remember", "prefs"]) {
+  for (const name of ["beam", "receive", "sweep", "recycle", "forget", "remember", "prefs", "edit", "shake", "fastforward"]) {
     const rows = ICONS[name];
     assert.ok(rows, name);
     assert.equal(rows.length, 10, name);
