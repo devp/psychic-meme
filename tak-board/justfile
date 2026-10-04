@@ -1,0 +1,21 @@
+# tak-board tasks. Every recipe is a one-liner or calls scripts/, so this
+# file also works as a reference without `just` installed.
+
+default:
+    @just --list
+
+# Serve the demo at http://localhost:8000
+serve:
+    python3 -m http.server 8000
+
+# Install build tooling. Nothing in node_modules ships.
+dev-init:
+    pnpm install
+
+# Rebuild tak-board.js from src/ and tps-ninja. Commit the result.
+build:
+    scripts/build.sh
+
+# Unit tests, plus a check that tak-board.js is up to date with src/.
+dev-check:
+    node --test 'tests/**/*.test.mjs'
