@@ -140,6 +140,13 @@ const settings = /** @type {HTMLDialogElement} */ (document.getElementById("sett
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
 const about = /** @type {HTMLDialogElement} */ (document.getElementById("about-dialog"));
 document.getElementById("about-close")?.addEventListener("click", () => about.close());
+const help = /** @type {HTMLDialogElement} */ (document.getElementById("help-dialog"));
+document.getElementById("help-close")?.addEventListener("click", () => help.close());
+// Opens over About; Done drops back to it.
+document.getElementById("help-link")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  help.showModal();
+});
 if (firstRun) about.showModal();
 
 // Share: the QR page (misc/qr/) encodes whatever ?q= holds.
@@ -191,6 +198,7 @@ const COMMANDS = {
   receive: () => receiveDialog.showModal(),
   themes: () => themes.showModal(),
   prefs: () => settings.showModal(),
+  help: () => help.showModal(),
   about: () => about.showModal(),
   sweep,
   recycle,

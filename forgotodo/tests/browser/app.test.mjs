@@ -128,8 +128,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("title tab opens the desktop", await page.locator("#desktop").isVisible());
   await ok("every command is an icon with its name",
     JSON.stringify(await page.locator("#desktop .desk-icons span").allInnerTexts()) ===
-      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Themes…", "Options…", "About…"]) &&
-      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 12);
+      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Themes…", "Options…", "Help…", "About…"]) &&
+      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 13);
   await ok("desktop groups by category",
     (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
   const clock = await page.locator("#title-btn").innerText();
@@ -220,6 +220,11 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="about"]');
   await ok("About… has about and share",
     (await page.locator("#about-dialog .about").isVisible()) && (await page.locator("#about-dialog #share-link").isVisible()));
+  await page.click("#help-link");
+  await ok("About links to Help", await page.locator("#help-dialog").isVisible());
+  await page.click("#help-close");
+  await ok("closing Help goes back to About",
+    (await page.locator("#help-dialog").isHidden()) && (await page.locator("#about-dialog").isVisible()));
   await page.click("#about-close");
   await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("forgotodo:theme"))) === "akihabara");
   await page.reload({ waitUntil: "networkidle" });

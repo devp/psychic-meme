@@ -84,6 +84,7 @@
       <div class="desk-icons">
         <button type="button" data-cmd="themes" data-icon="themes" aria-haspopup="dialog"><span>Themes…</span></button>
         <button type="button" data-cmd="prefs" data-icon="prefs" aria-haspopup="dialog"><span>Options…</span></button>
+        <button type="button" data-cmd="help" data-icon="help" aria-haspopup="dialog"><span>Help…</span></button>
         <button type="button" data-cmd="about" data-icon="about" aria-haspopup="dialog"><span>About…</span></button>
       </div>
     </section>
@@ -146,10 +147,20 @@
     <p>Works offline. Everything lives in this browser's localStorage. Nothing is sent anywhere.</p>
     <!-- A global page, not part of this app: https://devp.github.io/psychic-meme/misc/qr/ draws a QR
          code for whatever ?q= holds. app.js adds ?q=<this app's URL>. -->
+    <p><a id="help-link" href="#help">How it works →</a></p>
     <p><a id="share-link" class="share-link" href="https://devp.github.io/psychic-meme/misc/qr/" target="_blank" rel="noopener">Share this app ↗</a></p>
   </section>
 
   <div class="dialog-buttons"><button type="button" id="about-close" class="primary">Done</button></div>
+</dialog>
+
+<dialog id="help-dialog" class="dialog">
+  <h2>Help</h2>
+
+  <section class="help">
+  </section>
+
+  <div class="dialog-buttons"><button type="button" id="help-close" class="primary">Done</button></div>
 </dialog>
 
 <dialog id="send-dialog" class="dialog">
