@@ -37,7 +37,10 @@ button.soft:focus-visible { color: var(--fg); border-color: var(--fg-dim); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---- write ---- */
-.panel.write.active { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+/* Hidden by visibility, not display: leaving display:none restarts the
+   ghosts' let-go animation every time you come back to this tab. */
+.panel.write { display: flex; flex-direction: column; padding: 0; overflow: hidden; visibility: hidden; }
+.panel.write.active { visibility: visible; }
 
 .write-space {
   flex: 1;
