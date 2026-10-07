@@ -558,6 +558,54 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });
 
+test("erase all data, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+  const browser = await launch();
+  const server = await serve();
+  const URL = `http://127.0.0.1:${server.address().port}/index.html`;
+  t.after(async () => {
+    await browser.close();
+    server.closeAllConnections();
+    server.close();
+  });
+  const ok = (name, cond, extra = "") => t.test(name, () => assert.ok(cond, extra || name));
+
+  const page = await (await browser.newContext({ serviceWorkers: "block" })).newPage();
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    localStorage.setItem("other-app:keep", "1");
+    localStorage.setItem("forgotodo:theme", "akihabara");
+    localStorage.setItem("forgotodo:lists:records", JSON.stringify([
+      { id: "L", name: "Unfiled", createdAt: 0, updatedAt: 0, items: [{ id: "a", text: "mine", done: false }] },
+    ]));
+    localStorage.setItem("forgotodo:lists:activeId", "L");
+  });
+  await page.goto(URL, { waitUntil: "networkidle" });
+  const openErase = async () => {
+    await page.click("#title-btn");
+    await page.click('[data-cmd="prefs"]');
+    await page.click("#erase-all");
+  };
+  const answer = (v) => page.click(`#alert-dialog button[value="${v}"]`);
+
+  await openErase();
+  await answer("ok");
+  await answer("cancel");
+  await ok("cancelling any confirm keeps everything",
+    (await page.locator(".checklist li").allInnerTexts()).join().includes("mine"));
+  await page.click("#settings-close");
+
+  await openErase();
+  await answer("ok");
+  await answer("ok");
+  await Promise.all([page.waitForEvent("load"), answer("ok")]);
+  await page.waitForTimeout(120);
+  await ok("three OKs erase and start a first run",
+    (await page.locator("#about-dialog").isVisible()) && (await page.locator(".checklist li").count()) === 6 &&
+      (await page.getAttribute("html", "data-theme")) === "palo-alto");
+  await ok("other apps' keys survive", (await page.evaluate(() => localStorage.getItem("other-app:keep"))) === "1");
+});
+
 test("catch-up and legacy options, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
   const browser = await launch();
   const server = await serve();

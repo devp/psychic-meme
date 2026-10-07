@@ -40,6 +40,24 @@ function writeRaw(key, value) {
 }
 
 /**
+ * Remove every key starting with `prefix` -- one app's data, not the whole
+ * origin's (other apps share it).
+ * @param {string} prefix
+ */
+export function clearPrefix(prefix) {
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(prefix)) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    /* best effort */
+  }
+}
+
+/**
  * A single persisted scalar -- theme, font, active tab. Anything where the
  * value *is* the state.
  *

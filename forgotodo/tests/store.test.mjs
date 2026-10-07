@@ -1,6 +1,6 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { persistedValue, recordStore } from "../lib/store.js";
+import { persistedValue, recordStore, clearPrefix } from "../lib/store.js";
 
 // Node has no localStorage without --localstorage-file.
 /** @type {Map<string, string>} */
@@ -13,6 +13,10 @@ beforeEach(() => {
       getItem: (/** @type {string} */ k) => (data.has(k) ? data.get(k) : null),
       setItem: (/** @type {string} */ k, /** @type {string} */ v) => data.set(k, String(v)),
       removeItem: (/** @type {string} */ k) => data.delete(k),
+      key: (/** @type {number} */ i) => [...data.keys()][i] ?? null,
+      get length() {
+        return data.size;
+      },
     },
   });
 });
@@ -75,4 +79,13 @@ test("recordStore: persists across instances and notifies subscribers", () => {
   const again = recordStore("t:lists");
   assert.equal(again.getActiveId(), rec.id);
   assert.equal(again.get(rec.id)?.name, "renamed");
+});
+
+test("clearPrefix: removes only that app's keys", () => {
+  data.set("t:theme", "x");
+  data.set("t:lists:records", "[]");
+  data.set("other:theme", "y");
+  data.set("tt:theme", "z");
+  clearPrefix("t:");
+  assert.deepEqual([...data.keys()], ["other:theme", "tt:theme"]);
 });

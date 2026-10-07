@@ -64,6 +64,10 @@ the tab again) to close it.
 The icons are 10×10 bitmaps, drawn in `lib/icons.js` as ASCII art and shown
 at 4×. **Desktop icons** in Options turns them off for a plain list by name.
 
+**Erase all data…** in Options deletes this app's to-dos and settings on this
+device (other apps on the same site are untouched), after three confirms,
+then starts over as a first run.
+
 **Shrink to fit** in Options (on for new installs): big type for three to-dos or fewer, a little
 smaller with each one after, then as small as it takes (down to 10px) for the
 whole list to fit without scrolling.

@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, mode, font, icons, fit, lists } from "./state.js";
+import { theme, mode, font, icons, fit, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { dayKey, forgetChanges, fastForwardChanges, isForgotten } from "./lib/forget.js";
@@ -437,6 +437,22 @@ async function fastForward() {
   });
   if (ok) apply(changes);
 }
+
+// ---- erase ----------------------------------------------------------------
+// Options > Erase all data: asks three times, then reloads into a first run.
+
+document.getElementById("erase-all")?.addEventListener("click", async () => {
+  const steps = [
+    { title: "Erase", message: "Erase every to-do and setting in this app, on this device?" },
+    { title: "Erase", message: "Really? There's no undo. Send your list first if you want a copy." },
+    { title: "Erase", message: "Last chance: erase it all and start fresh?" },
+  ];
+  for (const step of steps) {
+    if (!(await ask({ ...step, icon: "forget" }))) return;
+  }
+  eraseAll();
+  location.reload();
+});
 
 // ---- shrink to fit --------------------------------------------------------
 // Sets --list-size on the checklist: big for a short list, smaller per to-do,
