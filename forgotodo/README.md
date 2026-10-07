@@ -11,6 +11,7 @@ installable, and designed for phones.
 - **palm**: grey-green LCD, faint pixel grid
 - **newton**: paper-grey, double rules, raised buttons
 - **game boy**: the four-shade DMG green
+- **papyrus**: a parchment scroll in Papyrus (the font wins over Font; macOS/iOS only, `fantasy` elsewhere)
 
 Each has a dark twin. **Backlight** in Options is off (light), on (dark), or
 auto (follows the system). The old `backlight` theme is palm with it on.
