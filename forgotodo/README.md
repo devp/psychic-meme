@@ -57,7 +57,7 @@ the tab again) to close it.
   comes tonight.
 - **System > Themes…** picks theme, backlight, and font.
 - **System > Options…** has the toggles below.
-- **System > Help…** explains how to use it; About links there too.
+- **System > Help…** explains how to use it.
 - **System > About…** says what this is and links a QR code to share it; it
   also opens on first run.
 

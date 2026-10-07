@@ -142,11 +142,6 @@ const about = /** @type {HTMLDialogElement} */ (document.getElementById("about-d
 document.getElementById("about-close")?.addEventListener("click", () => about.close());
 const help = /** @type {HTMLDialogElement} */ (document.getElementById("help-dialog"));
 document.getElementById("help-close")?.addEventListener("click", () => help.close());
-// Opens over About; Done drops back to it.
-document.getElementById("help-link")?.addEventListener("click", (e) => {
-  e.preventDefault();
-  help.showModal();
-});
 if (firstRun) about.showModal();
 
 // Share: the QR page (misc/qr/) encodes whatever ?q= holds.

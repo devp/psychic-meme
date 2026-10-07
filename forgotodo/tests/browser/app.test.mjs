@@ -220,12 +220,11 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="about"]');
   await ok("About… has about and share",
     (await page.locator("#about-dialog .about").isVisible()) && (await page.locator("#about-dialog #share-link").isVisible()));
-  await page.click("#help-link");
-  await ok("About links to Help", await page.locator("#help-dialog").isVisible());
-  await page.click("#help-close");
-  await ok("closing Help goes back to About",
-    (await page.locator("#help-dialog").isHidden()) && (await page.locator("#about-dialog").isVisible()));
   await page.click("#about-close");
+  await page.click("#title-btn");
+  await page.click('[data-cmd="help"]');
+  await ok("Help… opens help", await page.locator("#help-dialog").isVisible());
+  await page.click("#help-close");
   await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("forgotodo:theme"))) === "akihabara");
   await page.reload({ waitUntil: "networkidle" });
   await ok("options persist across reload",
