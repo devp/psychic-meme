@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="palo-alto" data-scheme="light" data-font="pixel" data-icons="on" data-fit="off">
+<html lang="en" data-theme="palo-alto" data-scheme="light" data-font="sans" data-icons="on" data-fit="off">
 <head>
 <meta charset="utf-8">
 <!-- interactive-widget=resizes-content is half of the keyboard fix; the other
@@ -95,9 +95,9 @@
     <h3>Theme</h3>
     <div class="swatches" role="radiogroup" aria-label="Theme">
       <!-- Each swatch is half light, half dark: the theme in both modes. -->
-      <button type="button" class="swatch" role="radio" data-set-theme="palo-alto" aria-checked="true" aria-label="Palo Alto"><span style="background:linear-gradient(135deg,#b4bf98 50%,#123524 50%)"></span>palo alto</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="cupertino" aria-checked="false" aria-label="Cupertino"><span style="background:linear-gradient(135deg,#dcdcd2 50%,#1f1f1c 50%)"></span>cupertino</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="akihabara" aria-checked="false" aria-label="Akihabara"><span style="background:linear-gradient(135deg,#9bbc0f 50%,#0f380f 50%)"></span>akihabara</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="palo-alto" data-theme-font="sans" aria-checked="true" aria-label="Palo Alto"><span style="background:linear-gradient(135deg,#b4bf98 50%,#123524 50%)"></span>palo alto</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="cupertino" data-theme-font="casual" aria-checked="false" aria-label="Cupertino"><span style="background:linear-gradient(135deg,#dcdcd2 50%,#1f1f1c 50%)"></span>cupertino</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="akihabara" data-theme-font="pixel" aria-checked="false" aria-label="Akihabara"><span style="background:linear-gradient(135deg,#9bbc0f 50%,#0f380f 50%)"></span>akihabara</button>
       <button type="button" class="swatch" role="radio" data-set-theme="alexandria" aria-checked="false" aria-label="Alexandria"><span style="background:linear-gradient(135deg,#e6d3a3 50%,#2e2216 50%)"></span>alexandria</button>
     </div>
   </section>
@@ -114,9 +114,9 @@
   <section>
     <h3>Font</h3>
     <div class="swatches" role="radiogroup" aria-label="Font">
-      <button type="button" class="swatch" role="radio" data-set-font="pixel" aria-checked="true">pixel</button>
+      <button type="button" class="swatch" role="radio" data-set-font="pixel" aria-checked="false">pixel</button>
       <button type="button" class="swatch" role="radio" data-set-font="casual" aria-checked="false">casual</button>
-      <button type="button" class="swatch" role="radio" data-set-font="sans" aria-checked="false">plain</button>
+      <button type="button" class="swatch" role="radio" data-set-font="sans" aria-checked="true">plain</button>
     </div>
   </section>
 

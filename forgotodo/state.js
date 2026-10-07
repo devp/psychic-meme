@@ -9,7 +9,7 @@ const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content"
 
 export const theme = persistedValue(NS + ":theme", "palo-alto");
 export const mode = persistedValue(NS + ":mode", "light"); // light | dark | system
-export const font = persistedValue(NS + ":font", "pixel");
+export const font = persistedValue(NS + ":font", "sans");
 export const icons = persistedValue(NS + ":icons", "on");
 export const fit = persistedValue(NS + ":fit", "off");
 export const lists = recordStore(NS + ":lists");

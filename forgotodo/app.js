@@ -121,11 +121,16 @@ document.addEventListener("click", (e) => {
   const el = e.target instanceof Element ? e.target : null;
   if (!el) return;
   const t = el.closest("[data-set-theme]");
-  if (t) theme.set(t.getAttribute("data-set-theme") ?? "palo-alto");
+  if (t) {
+    theme.set(t.getAttribute("data-set-theme") ?? "palo-alto");
+    // Choosing a theme picks its font too; the Font row can still change it.
+    const tf = t.getAttribute("data-theme-font");
+    if (tf) font.set(tf);
+  }
   const m = el.closest("[data-set-mode]");
   if (m) mode.set(m.getAttribute("data-set-mode") ?? "light");
   const f = el.closest("[data-set-font]");
-  if (f) font.set(f.getAttribute("data-set-font") ?? "pixel");
+  if (f) font.set(f.getAttribute("data-set-font") ?? "sans");
 });
 
 const settings = /** @type {HTMLDialogElement} */ (document.getElementById("settings-dialog"));
