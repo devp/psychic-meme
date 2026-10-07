@@ -42,7 +42,7 @@
 .checklist.edit-armed label,
 .checklist.edit-armed input[type="checkbox"] { cursor: text; }
 
-/* The row being edited: a Palm text field, like the add row's. */
+/* The row being edited: a bare text field, like the add row's. */
 .checklist .edit-field {
   flex: 1;
   min-width: 0;
@@ -66,7 +66,7 @@
   min-width: 0;
 }
 
-/* Square box; the tick overshoots the top-right corner, Palm-style.
+/* Square box; the tick overshoots the top-right corner.
    In em, so it grows with Shrink to Fit (1em = 15px normally). */
 .checklist input[type="checkbox"],
 .toggles input[type="checkbox"] {
@@ -111,7 +111,7 @@
 
 .add-row { display: flex; gap: 10px; align-items: flex-end; }
 
-/* A Palm text field: no box, just a dotted underline. */
+/* A bare text field: no box, just a dotted underline. */
 .add-row input {
   flex: 1;
   min-width: 0;
@@ -170,7 +170,7 @@
 /* warn-ok: input-font-size -- a checkbox; iOS only zooms text fields */
 .toggles input[type="checkbox"] { margin: 0; font-size: 15px; }
 
-/* ---- alert: Palm's confirm box, a big pixel icon beside the question ---- */
+/* ---- alert: a confirm box, a big pixel icon beside the question ---- */
 .alert-body { display: flex; gap: 12px; align-items: flex-start; }
 .alert-icon .icon { width: 40px; height: 40px; }
 .alert-list {
@@ -204,23 +204,23 @@
 
 .dialog-buttons { display: flex; gap: 8px; }
 
-/* ---- newton: no title tab; a double rule instead ---- */
-:root[data-theme="newton"] .app-header { border-bottom: 3px double var(--ink); padding-left: 12px; }
-:root[data-theme="newton"] .title-tab { background: none; color: var(--ink); padding: 0 0 4px; font-size: 17px; }
-:root[data-theme="newton"] .dialog { border-width: 3px; border-style: double; }
+/* ---- cupertino: no title tab; a double rule instead ---- */
+:root[data-theme="cupertino"] .app-header { border-bottom: 3px double var(--ink); padding-left: 12px; }
+:root[data-theme="cupertino"] .title-tab { background: none; color: var(--ink); padding: 0 0 4px; font-size: 17px; }
+:root[data-theme="cupertino"] .dialog { border-width: 3px; border-style: double; }
 
-/* ---- papyrus: a scroll, rolled at top and bottom ---- */
-:root[data-theme="papyrus"] {
+/* ---- alexandria: a scroll, rolled at top and bottom ---- */
+:root[data-theme="alexandria"] {
   /* Reed fibres both ways, fine grain, then a darkened edge. */
   --paper:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.24 0 0 0 0 0.15 0 0 0 0 0.05 0.7 0 0 0 -0.22'/%3E%3C/filter%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003 0.4' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.22 0 0 0 0 0.08 0.9 0 0 0 -0.38'/%3E%3C/filter%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.35 0.004' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.22 0 0 0 0 0.08 0.6 0 0 0 -0.27'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
     radial-gradient(ellipse at center, transparent 55%, rgb(70 40 10 / 0.28));
 }
-:root[data-theme="papyrus"] body,
-:root[data-theme="papyrus"] .desktop { background-image: var(--paper); background-size: 320px 320px, 100% 100%; }
-:root[data-theme="papyrus"] .app-header { padding-top: 6px; }
-:root[data-theme="papyrus"] body::before,
-:root[data-theme="papyrus"] body::after {
+:root[data-theme="alexandria"] body,
+:root[data-theme="alexandria"] .desktop { background-image: var(--paper); background-size: 320px 320px, 100% 100%; }
+:root[data-theme="alexandria"] .app-header { padding-top: 6px; }
+:root[data-theme="alexandria"] body::before,
+:root[data-theme="alexandria"] body::after {
   content: "";
   flex-shrink: 0;
   height: 14px;
@@ -229,5 +229,5 @@
   background: linear-gradient(var(--roll), var(--roll-hi) 35%, var(--roll) 70%, color-mix(in srgb, var(--roll) 60%, black));
   box-shadow: 0 2px 3px rgb(0 0 0 / 0.3);
 }
-:root[data-theme="papyrus"] body::before { margin-top: env(safe-area-inset-top); }
-:root[data-theme="papyrus"] .title-tab { border-radius: 3px 3px 0 0; }
+:root[data-theme="alexandria"] body::before { margin-top: env(safe-area-inset-top); }
+:root[data-theme="alexandria"] .title-tab { border-radius: 3px 3px 0 0; }

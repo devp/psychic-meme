@@ -7,7 +7,7 @@ import { persistedValue, recordStore } from "./lib/store.js";
 // localStorage key prefix, from <meta name="app-ns"> in index.html.
 const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
 
-export const theme = persistedValue(NS + ":theme", "palm");
+export const theme = persistedValue(NS + ":theme", "palo-alto");
 export const mode = persistedValue(NS + ":mode", "light"); // light | dark | system
 export const font = persistedValue(NS + ":font", "pixel");
 export const icons = persistedValue(NS + ":icons", "on");

@@ -52,9 +52,9 @@ document.addEventListener("visibilitychange", () => {
 
 const root = document.documentElement;
 
-// "backlight" used to be its own theme; it's palm in dark mode now.
+// "backlight" used to be its own theme; it's palo alto in dark mode now.
 if (theme.get() === "backlight") {
-  theme.set("palm");
+  theme.set("palo-alto");
   mode.set("dark");
 }
 
@@ -121,7 +121,7 @@ document.addEventListener("click", (e) => {
   const el = e.target instanceof Element ? e.target : null;
   if (!el) return;
   const t = el.closest("[data-set-theme]");
-  if (t) theme.set(t.getAttribute("data-set-theme") ?? "palm");
+  if (t) theme.set(t.getAttribute("data-set-theme") ?? "palo-alto");
   const m = el.closest("[data-set-mode]");
   if (m) mode.set(m.getAttribute("data-set-mode") ?? "light");
   const f = el.closest("[data-set-font]");

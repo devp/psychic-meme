@@ -181,11 +181,11 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="prefs"]');
   await ok("Options… opens preferences and closes the desktop",
     (await page.locator("#settings-dialog").isVisible()) && (await page.locator("#desktop").isHidden()));
-  await page.click('[data-set-theme="gameboy"]');
+  await page.click('[data-set-theme="akihabara"]');
   await page.waitForTimeout(60);
-  await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "gameboy");
-  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="gameboy"]', "aria-checked")) === "true");
-  await ok("other swatch unchecked", (await page.getAttribute('[data-set-theme="palm"]', "aria-checked")) === "false");
+  await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "akihabara");
+  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="akihabara"]', "aria-checked")) === "true");
+  await ok("other swatch unchecked", (await page.getAttribute('[data-set-theme="palo-alto"]', "aria-checked")) === "false");
   await page.click('[data-set-mode="dark"]');
   await page.waitForTimeout(60);
   await ok("backlight on means the dark scheme", (await page.getAttribute("html", "data-scheme")) === "dark");
@@ -206,11 +206,11 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("icons toggle off", (await page.getAttribute("html", "data-icons")) === "off");
   await ok("about lives in options", await page.locator("#settings-dialog .about").isVisible());
   await page.click("#settings-close");
-  await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("forgotodo:theme"))) === "gameboy");
+  await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("forgotodo:theme"))) === "akihabara");
   await page.reload({ waitUntil: "networkidle" });
   await ok("options persist across reload",
     (await page.evaluate(() => [...document.documentElement.attributes].map((a) => a.name + "=" + a.value).join(" ")))
-      .includes('data-theme=gameboy data-scheme=dark data-font=casual data-icons=off'));
+      .includes('data-theme=akihabara data-scheme=dark data-font=casual data-icons=off'));
   await ok("casual font is the body font",
     (await page.evaluate(() => getComputedStyle(document.body).fontFamily)).startsWith('"Comic Neue"'));
   await page.click("#title-btn");
@@ -567,10 +567,10 @@ test("catch-up and legacy options, in a real browser", { skip: !chromium && "pla
   await page.goto(URL, { waitUntil: "networkidle" });
   const texts = () => page.locator(".checklist li span").allInnerTexts();
 
-  await ok("old backlight theme becomes palm with the backlight on",
-    (await page.getAttribute("html", "data-theme")) === "palm" && (await page.getAttribute("html", "data-scheme")) === "dark");
+  await ok("old backlight theme becomes palo alto with the backlight on",
+    (await page.getAttribute("html", "data-theme")) === "palo-alto" && (await page.getAttribute("html", "data-scheme")) === "dark");
   await ok("and the migration is saved",
-    (await page.evaluate(() => [localStorage.getItem("forgotodo:theme"), localStorage.getItem("forgotodo:mode")].join())) === "palm,dark");
+    (await page.evaluate(() => [localStorage.getItem("forgotodo:theme"), localStorage.getItem("forgotodo:mode")].join())) === "palo-alto,dark");
   await ok("nothing decays the same day", JSON.stringify(await texts()) === JSON.stringify(["call mom!", "done today"]));
 
   await page.clock.setSystemTime(new Date(2026, 8, 28, 9, 0));

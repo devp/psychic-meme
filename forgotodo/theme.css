@@ -5,7 +5,7 @@
    --ink is the one "pixel" colour; inverted UI (title tab, selected buttons)
    swaps --ink and --bg. */
 :root,
-:root[data-theme="palm"] {
+:root[data-theme="palo-alto"] {
   --bg: #b4bf98;
   --ink: #1d2416;
   --ink-dim: #525e40;
@@ -15,7 +15,7 @@
   --dialog-radius: 5px;
 }
 
-:root[data-theme="palm"][data-scheme="dark"] {
+:root[data-theme="palo-alto"][data-scheme="dark"] {
   --bg: #123524;
   --ink: #b8f5a6;
   --ink-dim: #6aa876;
@@ -25,7 +25,7 @@
   --dialog-radius: 5px;
 }
 
-:root[data-theme="newton"] {
+:root[data-theme="cupertino"] {
   --bg: #dcdcd2;
   --ink: #161616;
   --ink-dim: #5d5d56;
@@ -34,7 +34,7 @@
   --btn-shadow: 1px 1px 0 var(--ink);
   --dialog-radius: 12px;
 }
-:root[data-theme="newton"][data-scheme="dark"] {
+:root[data-theme="cupertino"][data-scheme="dark"] {
   --bg: #1f1f1c;
   --ink: #e2e2d8;
   --ink-dim: #9a9a90;
@@ -48,7 +48,7 @@
   font-display: swap;
 }
 
-:root[data-theme="gameboy"] {
+:root[data-theme="akihabara"] {
   --bg: #9bbc0f;
   --ink: #0f380f;
   --ink-dim: #306230;
@@ -57,8 +57,8 @@
   --btn-shadow: none;
   --dialog-radius: 0;
 }
-/* The same four DMG shades, turned over. */
-:root[data-theme="gameboy"][data-scheme="dark"] {
+/* The same four shades, turned over. */
+:root[data-theme="akihabara"][data-scheme="dark"] {
   --bg: #0f380f;
   --ink: #9bbc0f;
   --ink-dim: #8bac0f;
@@ -68,7 +68,7 @@
 :root[data-scheme="dark"] { color-scheme: dark; }
 
 /* Vendored OFL font; see fonts/ComicNeue.LICENSE.txt. Comic Sans, redrawn to
-   be legible -- and Newton's own handwriting-ish face was called Casual. */
+   be legible. */
 @font-face {
   font-family: "Comic Neue";
   src: url("fonts/ComicNeue-Regular.woff2") format("woff2");
@@ -106,10 +106,10 @@
 :root[data-font="sans"] { --font-body: var(--font-sans); }
 :root[data-font="casual"] { --font-body: var(--font-casual); }
 
-/* Papyrus: dried reed paper, brown ink. Papyrus the font isn't redistributable;
+/* Alexandria: dried reed paper, brown ink. Papyrus the font isn't redistributable;
    it ships with macOS/iOS, elsewhere it falls back to whatever fantasy is. The
    font is the joke, so it overrides the Font option. */
-:root[data-theme="papyrus"] {
+:root[data-theme="alexandria"] {
   --bg: #e6d3a3;
   --ink: #3b2814;
   --ink-dim: #7d5f37;
@@ -122,7 +122,7 @@
   --font-body: Papyrus, "Papyrus Condensed", fantasy;
 }
 /* By lamplight. */
-:root[data-theme="papyrus"][data-scheme="dark"] {
+:root[data-theme="alexandria"][data-scheme="dark"] {
   --bg: #2e2216;
   --ink: #ecd9ae;
   --ink-dim: #a88b5f;

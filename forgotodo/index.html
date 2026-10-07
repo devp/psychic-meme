@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="palm" data-scheme="light" data-font="pixel" data-icons="on" data-fit="off">
+<html lang="en" data-theme="palo-alto" data-scheme="light" data-font="pixel" data-icons="on" data-fit="off">
 <head>
 <meta charset="utf-8">
 <!-- interactive-widget=resizes-content is half of the keyboard fix; the other
@@ -32,7 +32,7 @@
     var get = function (k) { return localStorage.getItem(ns + ":" + k); };
     var t = get("theme");
     var m = get("mode");
-    if (t === "backlight") { t = "palm"; m = m || "dark"; } // backlight is palm's dark mode now
+    if (t === "backlight") { t = "palo-alto"; m = m || "dark"; } // backlight is palo alto's dark mode now
     if (t) root.setAttribute("data-theme", t);
     var dark = m === "dark" || (m === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
     root.setAttribute("data-scheme", dark ? "dark" : "light");
@@ -95,10 +95,10 @@
     <h3>Theme</h3>
     <div class="swatches" role="radiogroup" aria-label="Theme">
       <!-- Each swatch is half light, half dark: the theme in both modes. -->
-      <button type="button" class="swatch" role="radio" data-set-theme="palm" aria-checked="true" aria-label="Palo Alto"><span style="background:linear-gradient(135deg,#b4bf98 50%,#123524 50%)"></span>palo alto</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="newton" aria-checked="false" aria-label="Cupertino"><span style="background:linear-gradient(135deg,#dcdcd2 50%,#1f1f1c 50%)"></span>cupertino</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="gameboy" aria-checked="false" aria-label="Akihabara"><span style="background:linear-gradient(135deg,#9bbc0f 50%,#0f380f 50%)"></span>akihabara</button>
-      <button type="button" class="swatch" role="radio" data-set-theme="papyrus" aria-checked="false" aria-label="Alexandria"><span style="background:linear-gradient(135deg,#e6d3a3 50%,#2e2216 50%)"></span>alexandria</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="palo-alto" aria-checked="true" aria-label="Palo Alto"><span style="background:linear-gradient(135deg,#b4bf98 50%,#123524 50%)"></span>palo alto</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="cupertino" aria-checked="false" aria-label="Cupertino"><span style="background:linear-gradient(135deg,#dcdcd2 50%,#1f1f1c 50%)"></span>cupertino</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="akihabara" aria-checked="false" aria-label="Akihabara"><span style="background:linear-gradient(135deg,#9bbc0f 50%,#0f380f 50%)"></span>akihabara</button>
+      <button type="button" class="swatch" role="radio" data-set-theme="alexandria" aria-checked="false" aria-label="Alexandria"><span style="background:linear-gradient(135deg,#e6d3a3 50%,#2e2216 50%)"></span>alexandria</button>
     </div>
   </section>
 
