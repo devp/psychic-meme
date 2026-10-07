@@ -16,8 +16,9 @@ import { preferredSize, largestFitting } from "./lib/fit.js";
 customElements.define("forgo-checklist", Checklist);
 const checklist = /** @type {Checklist} */ (document.querySelector("forgo-checklist"));
 
-// First run: seed a few sample to-dos.
-if (lists.getAll().length === 0) {
+// First run: seed a few sample to-dos (and show About, further down).
+const firstRun = lists.getAll().length === 0;
+if (firstRun) {
   const seeded = lists.ensureActive();
   lists.rename(seeded.id, "Unfiled");
   SETUP_STEPS.forEach((step) => lists.append(seeded.id, step));
@@ -139,6 +140,7 @@ const settings = /** @type {HTMLDialogElement} */ (document.getElementById("sett
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
 const about = /** @type {HTMLDialogElement} */ (document.getElementById("about-dialog"));
 document.getElementById("about-close")?.addEventListener("click", () => about.close());
+if (firstRun) about.showModal();
 
 // Share: the QR page (misc/qr/) encodes whatever ?q= holds.
 const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));

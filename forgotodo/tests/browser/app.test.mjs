@@ -87,6 +87,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.goto(URL, { waitUntil: "networkidle" });
 
   // --- seeding -------------------------------------------------------------
+  await ok("About opens on first run", await page.locator("#about-dialog").isVisible());
+  await page.click("#about-close");
   const items = await page.locator(".checklist li").count();
   await ok("checklist seeds on first run", items === 6, `${items} items`);
   await ok("count line renders", (await page.locator("forgo-checklist .count").innerText()) === "0 of 6 done");
@@ -119,6 +121,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(120);
   await ok("state persists across reload", (await page.locator("forgo-checklist .count").innerText()) === "1 of 6 done");
+  await ok("About doesn't open again", await page.locator("#about-dialog").isHidden());
 
   // --- desktop + clock -----------------------------------------------------
   await page.click("#title-btn");

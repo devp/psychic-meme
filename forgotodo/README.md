@@ -57,7 +57,8 @@ the tab again) to close it.
   comes tonight.
 - **System > Themes…** picks theme, backlight, and font.
 - **System > Options…** has the toggles below.
-- **System > About…** says what this is and links a QR code to share it.
+- **System > About…** says what this is and links a QR code to share it; it
+  also opens on first run.
 
 The icons are 10×10 bitmaps, drawn in `lib/icons.js` as ASCII art and shown
 at 4×. **Desktop icons** in Options turns them off for a plain list by name.
