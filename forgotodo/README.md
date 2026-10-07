@@ -16,7 +16,7 @@ installable, and designed for phones.
 Choosing palo alto, cupertino or akihabara also sets its font (plain, casual,
 pixel); change Font afterwards to override.
 
-Each has a dark twin. **Backlight** in Options is off (light), on (dark), or
+Each has a dark twin. **Backlight** in Themes is off (light), on (dark), or
 auto (follows the system). The old `backlight` theme is palo alto with it on.
 
 ## Forgetting
@@ -55,7 +55,9 @@ the tab again) to close it.
 - **Organize > Fast Forward…** runs a day's rollover now ("tomorrow's list,
   today"), after saying what it'll do. It's an extra day: the real one still
   comes tonight.
-- **System > Options…** opens theme, backlight, font, toggles, and about.
+- **System > Themes…** picks theme, backlight, and font.
+- **System > Options…** has the toggles below.
+- **System > About…** says what this is and links a QR code to share it.
 
 The icons are 10×10 bitmaps, drawn in `lib/icons.js` as ASCII art and shown
 at 4×. **Desktop icons** in Options turns them off for a plain list by name.

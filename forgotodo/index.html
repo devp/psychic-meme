@@ -82,14 +82,16 @@
     <section>
       <h2>System</h2>
       <div class="desk-icons">
+        <button type="button" data-cmd="themes" data-icon="themes" aria-haspopup="dialog"><span>Themes…</span></button>
         <button type="button" data-cmd="prefs" data-icon="prefs" aria-haspopup="dialog"><span>Options…</span></button>
+        <button type="button" data-cmd="about" data-icon="about" aria-haspopup="dialog"><span>About…</span></button>
       </div>
     </section>
   </nav>
 </main>
 
-<dialog id="settings-dialog" class="dialog">
-  <h2>Preferences</h2>
+<dialog id="themes-dialog" class="dialog">
+  <h2>Themes</h2>
 
   <section>
     <h3>Theme</h3>
@@ -120,13 +122,24 @@
     </div>
   </section>
 
+  <div class="dialog-buttons"><button type="button" id="themes-close" class="primary">Done</button></div>
+</dialog>
+
+<dialog id="settings-dialog" class="dialog">
+  <h2>Preferences</h2>
+
   <section class="toggles">
     <label><input type="checkbox" data-toggle="icons"> Desktop icons</label>
     <label><input type="checkbox" data-toggle="fit"> Shrink to fit</label>
   </section>
 
+  <div class="dialog-buttons"><button type="button" id="settings-close" class="primary">Done</button></div>
+</dialog>
+
+<dialog id="about-dialog" class="dialog">
+  <h2>About</h2>
+
   <section class="about">
-    <h3>About</h3>
     <p>forgotodo v0.4. A to-do list with a pocket organizer's manners. Works offline; add it to your home screen.</p>
     <p>Everything lives in this browser's localStorage. Nothing is sent anywhere.</p>
   </section>
@@ -138,7 +151,7 @@
     <a id="share-link" class="share-link" href="https://devp.github.io/psychic-meme/misc/qr/" target="_blank" rel="noopener">Show a QR code for this app ↗</a>
   </section>
 
-  <div class="dialog-buttons"><button type="button" id="settings-close" class="primary">Done</button></div>
+  <div class="dialog-buttons"><button type="button" id="about-close" class="primary">Done</button></div>
 </dialog>
 
 <dialog id="send-dialog" class="dialog">

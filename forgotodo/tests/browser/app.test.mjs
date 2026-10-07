@@ -125,8 +125,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("title tab opens the desktop", await page.locator("#desktop").isVisible());
   await ok("every command is an icon with its name",
     JSON.stringify(await page.locator("#desktop .desk-icons span").allInnerTexts()) ===
-      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Options…"]) &&
-      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 10);
+      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Themes…", "Options…", "About…"]) &&
+      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 12);
   await ok("desktop groups by category",
     (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
   const clock = await page.locator("#title-btn").innerText();
@@ -178,9 +178,9 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
 
   // --- theme ---------------------------------------------------------------
   await page.click("#title-btn");
-  await page.click('[data-cmd="prefs"]');
-  await ok("Options… opens preferences and closes the desktop",
-    (await page.locator("#settings-dialog").isVisible()) && (await page.locator("#desktop").isHidden()));
+  await page.click('[data-cmd="themes"]');
+  await ok("Themes… opens and closes the desktop",
+    (await page.locator("#themes-dialog").isVisible()) && (await page.locator("#desktop").isHidden()));
   await page.click('[data-set-theme="cupertino"]');
   await page.waitForTimeout(60);
   await ok("choosing a theme picks its font", (await page.getAttribute("html", "data-font")) === "casual");
@@ -205,11 +205,19 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-set-font="casual"]');
   await page.waitForTimeout(60);
   await ok("casual font applies", (await page.getAttribute("html", "data-font")) === "casual");
+  await page.click("#themes-close");
+  await page.click("#title-btn");
+  await page.click('[data-cmd="prefs"]');
+  await ok("Options… opens preferences", await page.locator("#settings-dialog").isVisible());
   await page.click('[data-toggle="icons"]');
   await page.waitForTimeout(60);
   await ok("icons toggle off", (await page.getAttribute("html", "data-icons")) === "off");
-  await ok("about lives in options", await page.locator("#settings-dialog .about").isVisible());
   await page.click("#settings-close");
+  await page.click("#title-btn");
+  await page.click('[data-cmd="about"]');
+  await ok("About… has about and share",
+    (await page.locator("#about-dialog .about").isVisible()) && (await page.locator("#about-dialog #share-link").isVisible()));
+  await page.click("#about-close");
   await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("forgotodo:theme"))) === "akihabara");
   await page.reload({ waitUntil: "networkidle" });
   await ok("options persist across reload",

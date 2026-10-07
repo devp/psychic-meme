@@ -133,8 +133,12 @@ document.addEventListener("click", (e) => {
   if (f) font.set(f.getAttribute("data-set-font") ?? "sans");
 });
 
+const themes = /** @type {HTMLDialogElement} */ (document.getElementById("themes-dialog"));
+document.getElementById("themes-close")?.addEventListener("click", () => themes.close());
 const settings = /** @type {HTMLDialogElement} */ (document.getElementById("settings-dialog"));
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
+const about = /** @type {HTMLDialogElement} */ (document.getElementById("about-dialog"));
+document.getElementById("about-close")?.addEventListener("click", () => about.close());
 
 // Share: the QR page (misc/qr/) encodes whatever ?q= holds.
 const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
@@ -183,7 +187,9 @@ checklist.addEventListener("edit-armed", (e) => {
 const COMMANDS = {
   send,
   receive: () => receiveDialog.showModal(),
+  themes: () => themes.showModal(),
   prefs: () => settings.showModal(),
+  about: () => about.showModal(),
   sweep,
   recycle,
   forget: forgetCmd,
