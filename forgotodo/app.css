@@ -136,7 +136,7 @@
   padding: 0 12px 12px;
   width: min(92vw, 340px);
   font-family: var(--font-body);
-  overflow: hidden;
+  overflow: hidden auto; /* scroll only when taller than the screen */
 }
 .dialog::backdrop { background: rgb(0 0 0 / 0.25); }
 .dialog h2 {
