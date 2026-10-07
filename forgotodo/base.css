@@ -28,8 +28,9 @@ body {
 
 button { font: inherit; color: inherit; cursor: pointer; }
 
-/* Departure Mono has no bold, and a faux one smears its pixels. */
-html { font-synthesis-weight: none; }
+/* Departure Mono has no bold, and a faux one smears its pixels. Geneva and
+   Papyrus have none either, but fake it fine. Alexandria is always Papyrus. */
+:root[data-font="pixel"]:not([data-theme="alexandria"]) { font-synthesis-weight: none; }
 
 /* The one button shape: outlined rounded rect, inverted while pressed/selected. */
 .swatch,
