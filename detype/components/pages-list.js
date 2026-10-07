@@ -1,12 +1,13 @@
 import { LitElement, html, nothing } from "lit";
 import { pages } from "../state.js";
-import { blob, dayLabel, measure } from "../lib/pages.js";
+import { blob, byMonth, dayLabel, measure, monthLabel } from "../lib/pages.js";
 
 /**
  * Every day, newest first, each as one blob of text. For looking back --
  * scrolling through for the to-do list you know you wrote down somewhere.
  *
- * Emits `page-download` and `page-delete` (detail: the day's record) and
+ * Emits `page-download` and `page-delete` (detail: the day's record),
+ * `month-download` and `month-delete` (detail: `{ month, days }`), and
  * `pages-download-all` rather than doing any of it itself; app.js owns files
  * and confirmation.
  */
@@ -40,10 +41,32 @@ export class PagesList extends LitElement {
 
   /**
    * @param {string} type
-   * @param {import("../lib/store.js").StoredRecord} [day]
+   * @param {unknown} [detail]
    */
-  _emit(type, day) {
-    this.dispatchEvent(new CustomEvent(type, { detail: day, bubbles: true }));
+  _emit(type, detail) {
+    this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true }));
+  }
+
+  /** @param {import("../lib/store.js").StoredRecord} d */
+  _page(d) {
+    const { words } = measure(d.items);
+    return html`
+      <article class="page" aria-labelledby=${"h-" + d.name}>
+        <header class="page-head">
+          <h2 id=${"h-" + d.name}>${dayLabel(d.name)}</h2>
+          <span class="quiet">${words} ${words === 1 ? "word" : "words"}</span>
+        </header>
+        <div class="page-text">${blob(d.items)}</div>
+        <div class="page-actions">
+          <button type="button" class="soft" @click=${() => this._emit("page-download", d)}>
+            download
+          </button>
+          <button type="button" class="soft" @click=${() => this._emit("page-delete", d)}>
+            delete
+          </button>
+        </div>
+      </article>
+    `;
   }
 
   render() {
@@ -76,26 +99,30 @@ export class PagesList extends LitElement {
         : shown.length === 0
           ? html`<p class="quiet">No page mentions “${this._query.trim()}”.</p>`
           : nothing}
-      ${shown.map((d) => {
-        const { words } = measure(d.items);
-        return html`
-          <article class="page" aria-labelledby=${"h-" + d.name}>
-            <header class="page-head">
-              <h2 id=${"h-" + d.name}>${dayLabel(d.name)}</h2>
-              <span class="quiet">${words} ${words === 1 ? "word" : "words"}</span>
-            </header>
-            <div class="page-text">${blob(d.items)}</div>
-            <div class="page-actions">
-              <button type="button" class="soft" @click=${() => this._emit("page-download", d)}>
-                download
-              </button>
-              <button type="button" class="soft" @click=${() => this._emit("page-delete", d)}>
-                delete
-              </button>
-            </div>
-          </article>
-        `;
-      })}
+      ${q
+        ? shown.map((d) => this._page(d))
+        : // Month actions only on the full list: never delete what a search hides.
+          byMonth(shown).map((g) => {
+            const { words } = measure(g.days.flatMap((d) => d.items));
+            const n = g.days.length;
+            return html`
+              <section class="month" aria-labelledby=${"m-" + g.month}>
+                <header class="month-head">
+                  <h2 id=${"m-" + g.month}>${monthLabel(g.month)}</h2>
+                  <span class="quiet">${n} ${n === 1 ? "page" : "pages"} · ${words} ${words === 1 ? "word" : "words"}</span>
+                  <div class="page-actions">
+                    <button type="button" class="soft" @click=${() => this._emit("month-download", g)}>
+                      download month
+                    </button>
+                    <button type="button" class="soft" @click=${() => this._emit("month-delete", g)}>
+                      delete month
+                    </button>
+                  </div>
+                </header>
+                ${g.days.map((d) => this._page(d))}
+              </section>
+            `;
+          })}
     `;
   }
 }

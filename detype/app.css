@@ -154,6 +154,19 @@ ghost-lines { display: block; overflow: hidden; }
 
 .page-actions { display: flex; gap: 8px; }
 
+.month { margin-bottom: 16px; }
+.month-head {
+  max-width: 42rem;
+  margin: 0 auto 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.month-head h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.month-head .quiet { font-size: 13px; }
+.month-head .page-actions { flex-basis: 100%; }
+
 /* ---- settings dialog: additions to base.css ---- */
 .settings h3 .quiet { font-weight: 400; }
 

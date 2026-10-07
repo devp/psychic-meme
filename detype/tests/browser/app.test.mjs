@@ -175,11 +175,11 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("download all heads each day with its date", allText.startsWith(`# ${today}\n\nthe kettle is on\n`), JSON.stringify(allText.slice(0, 80)));
 
   page.once("dialog", (d) => d.dismiss());
-  await page.getByRole("button", { name: "delete" }).click();
+  await page.getByRole("button", { name: "delete", exact: true }).click();
   await page.waitForTimeout(60);
   await ok("cancelled delete keeps the page", (await page.locator("pages-list .page").count()) === 1);
   page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "delete" }).click();
+  await page.getByRole("button", { name: "delete", exact: true }).click();
   await page.waitForTimeout(60);
   await ok("delete removes the page", (await page.locator("pages-list .page").count()) === 0);
   await ok("empty state shows", (await page.locator("pages-list p.quiet").innerText()).startsWith("Nothing here yet"));
@@ -192,6 +192,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
       { id: "a", name: "2026-01-02", createdAt: 3, updatedAt: 3, items: [line("remember the zebra")] },
       { id: "b", name: "2026-01-03", createdAt: 2, updatedAt: 2, items: [] },
       { id: "c", name: "2026-01-04", createdAt: 1, updatedAt: 1, items: [line("hello")] },
+      { id: "d", name: "2025-12-31", createdAt: 4, updatedAt: 4, items: [line("old year")] },
     ]));
   });
   await page.reload({ waitUntil: "networkidle" });
@@ -199,21 +200,48 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("active tab persists across reload", await page.locator('.panel[data-panel="pages"]').isVisible());
   const heads = await page.locator("pages-list .page-head h2").allInnerTexts();
   const expected = await page.evaluate(() =>
-    ["2026-01-04", "2026-01-02"].map((k) => {
+    ["2026-01-04", "2026-01-02", "2025-12-31"].map((k) => {
       const [y, m, d] = k.split("-").map(Number);
       return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
     })
   );
   await ok("pages newest day first, empty days hidden, labelled by date", heads.join("|") === expected.join("|"), heads.join("|"));
   const counts = await page.locator("pages-list .page-head .quiet").allInnerTexts();
-  await ok("word count per page, singular for one", counts.join("|") === "1 word|3 words", counts.join("|"));
+  await ok("word count per page, singular for one", counts.join("|") === "1 word|3 words|2 words", counts.join("|"));
   await page.fill("pages-list input[type=search]", "ZEBRA");
   await page.waitForTimeout(60);
   await ok("find is case-insensitive across days", (await page.locator("pages-list .page").count()) === 1);
+  await ok("no month actions while searching", (await page.locator("pages-list .month-head").count()) === 0);
   await page.fill("pages-list input[type=search]", "nope");
   await page.waitForTimeout(60);
   await ok("find says when nothing matches", (await page.locator("pages-list p.quiet").innerText()).includes("nope"));
   await page.fill("pages-list input[type=search]", "");
+  await page.waitForTimeout(60);
+
+  const months = await page.locator("pages-list .month-head h2").allInnerTexts();
+  const monthsExpected = await page.evaluate(() =>
+    [[2026, 0], [2025, 11]].map(([y, m]) => new Date(y, m, 1).toLocaleDateString(undefined, { year: "numeric", month: "long" }))
+  );
+  await ok("pages grouped by month, newest first", months.join("|") === monthsExpected.join("|"), months.join("|"));
+  await ok("month totals", (await page.locator("pages-list .month-head .quiet").first().innerText()) === "2 pages · 4 words");
+  const jan = page.locator("pages-list .month").first();
+  const [dlMonth] = await Promise.all([page.waitForEvent("download"), jan.getByRole("button", { name: "download month" }).click()]);
+  await ok("download month", dlMonth.suggestedFilename() === "detype-2026-01.txt", dlMonth.suggestedFilename());
+  const monthText = await readFile(await dlMonth.path(), "utf8");
+  await ok("month download is that month only, oldest first",
+    monthText === "# 2026-01-02\n\nremember the zebra\n\n# 2026-01-04\n\nhello\n", JSON.stringify(monthText));
+  /** @type {string} */
+  let monthPrompt = "";
+  page.once("dialog", (d) => ((monthPrompt = d.message()), d.dismiss()));
+  await jan.getByRole("button", { name: "delete month" }).click();
+  await page.waitForTimeout(60);
+  await ok("month delete asks with counts", monthPrompt.startsWith("Delete 2 pages (4 words) from "), monthPrompt);
+  await ok("cancelled month delete keeps the pages", (await page.locator("pages-list .page").count()) === 3);
+  page.once("dialog", (d) => d.accept());
+  await jan.getByRole("button", { name: "delete month" }).click();
+  await page.waitForTimeout(60);
+  const left = await page.locator("pages-list .page-head h2").allInnerTexts();
+  await ok("month delete removes only that month", left.length === 1 && left[0] === expected[2], left.join("|"));
   await ok("goal setting persists across reload",
     (await page.locator("#goal").evaluate((el) => /** @type {HTMLElement} */ (el).hidden)) === false &&
       (await ls("detype:goalUnit")) === "lines" && (await ls("detype:goalTarget")) === "14");

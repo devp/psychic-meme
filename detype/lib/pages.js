@@ -98,3 +98,31 @@ export function allPagesText(days) {
     .map((d) => `# ${d.name}\n\n${blob(d.items)}\n`)
     .join("\n");
 }
+
+/**
+ * Days grouped by month (YYYY-MM), keeping the order they came in.
+ * @template {{ name: string }} D
+ * @param {D[]} days
+ * @returns {{ month: string, days: D[] }[]}
+ */
+export function byMonth(days) {
+  /** @type {{ month: string, days: D[] }[]} */
+  const groups = [];
+  for (const d of days) {
+    const month = d.name.slice(0, 7);
+    const last = groups.at(-1);
+    if (last?.month === month) last.days.push(d);
+    else groups.push({ month, days: [d] });
+  }
+  return groups;
+}
+
+/**
+ * "September 2026".
+ * @param {string} month YYYY-MM
+ * @returns {string}
+ */
+export function monthLabel(month) {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { year: "numeric", month: "long" });
+}

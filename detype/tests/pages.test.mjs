@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dayKey, dayLabel, cleanLine, blob, measure, progress, allPagesText, GOAL_DEFAULTS } from "../lib/pages.js";
+import { dayKey, dayLabel, cleanLine, blob, measure, progress, allPagesText, byMonth, monthLabel, GOAL_DEFAULTS } from "../lib/pages.js";
 
 test("dayKey: local date, zero-padded", () => {
   assert.equal(dayKey(new Date(2026, 0, 5, 23, 59)), "2026-01-05");
@@ -52,4 +52,17 @@ test("allPagesText: oldest first, each under its date", () => {
     { name: "2026-09-23", items: [{ text: "first" }, { text: "second" }] },
   ]);
   assert.equal(out, "# 2026-09-23\n\nfirst\nsecond\n\n# 2026-09-24\n\nlater\n");
+});
+
+test("byMonth: consecutive days of a month group together, order kept", () => {
+  const days = [{ name: "2026-10-02" }, { name: "2026-10-01" }, { name: "2026-09-30" }, { name: "2025-10-05" }];
+  assert.deepEqual(
+    byMonth(days).map((g) => [g.month, g.days.map((d) => d.name)]),
+    [["2026-10", ["2026-10-02", "2026-10-01"]], ["2026-09", ["2026-09-30"]], ["2025-10", ["2025-10-05"]]]
+  );
+  assert.deepEqual(byMonth([]), []);
+});
+
+test("monthLabel: reads the key as a local month", () => {
+  assert.equal(monthLabel("2026-01"), new Date(2026, 0, 1).toLocaleDateString(undefined, { year: "numeric", month: "long" }));
 });

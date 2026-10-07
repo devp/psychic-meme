@@ -4,7 +4,7 @@
 
 import { syncAppHeight, autoGrow } from "./lib/viewport.js";
 import { theme, font, tab, goalUnit, goalTarget, pages, pageFor } from "./state.js";
-import { dayKey, cleanLine, blob, progress, allPagesText, GOAL_DEFAULTS } from "./lib/pages.js";
+import { dayKey, cleanLine, blob, measure, progress, allPagesText, monthLabel, GOAL_DEFAULTS } from "./lib/pages.js";
 import { Tabs } from "./components/tabs.js";
 import { GhostLines } from "./components/ghost-lines.js";
 import { PagesList } from "./components/pages-list.js";
@@ -108,6 +108,20 @@ pagesList.addEventListener("pages-download-all", () => {
 pagesList.addEventListener("page-delete", (e) => {
   const day = /** @type {CustomEvent} */ (e).detail;
   if (window.confirm(`Delete the page for ${day.name}? This can't be undone.`)) pages.remove(day.id);
+});
+
+pagesList.addEventListener("month-download", (e) => {
+  const { month, days } = /** @type {CustomEvent} */ (e).detail;
+  download(`detype-${month}.txt`, allPagesText(days));
+});
+
+pagesList.addEventListener("month-delete", (e) => {
+  const { month, days } = /** @type {CustomEvent} */ (e).detail;
+  const { words } = measure(days.flatMap((/** @type {{ items: any[] }} */ d) => d.items));
+  const what = `${days.length} ${days.length === 1 ? "page" : "pages"} (${words} words) from ${monthLabel(month)}`;
+  if (window.confirm(`Delete ${what}? This can't be undone.`)) {
+    for (const d of days) pages.remove(d.id);
+  }
 });
 
 /**
