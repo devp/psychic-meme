@@ -409,6 +409,7 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await page.addInitScript(() => {
     if (sessionStorage.getItem("seeded")) return;
     sessionStorage.setItem("seeded", "1");
+    localStorage.setItem("forgotodo:fit", "off");
     const d = new Date();
     const pad = (/** @type {number} */ n) => String(n).padStart(2, "0");
     const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
