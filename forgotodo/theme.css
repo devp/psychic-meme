@@ -82,9 +82,24 @@
   font-display: swap;
 }
 
+/* Vendored, Latin-only subset; see fonts/DejaVuSans.LICENSE.txt. DejaVu is
+   Bitstream Vera, the free font nearest to Geneva -- which only Macs have. */
+@font-face {
+  font-family: "DejaVu Sans";
+  src: url("fonts/DejaVuSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DejaVu Sans";
+  src: url("fonts/DejaVuSans-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
   --font-mono: "Departure Mono", Monaco, Menlo, Consolas, monospace;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: Geneva, "DejaVu Sans", Verdana, sans-serif;
   --font-casual: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive;
   --font-body: var(--font-mono);
 }

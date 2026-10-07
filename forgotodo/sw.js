@@ -50,6 +50,8 @@ const ASSETS = [
   "fonts/DepartureMono-Regular.woff2",
   "fonts/ComicNeue-Regular.woff2",
   "fonts/ComicNeue-Bold.woff2",
+  "fonts/DejaVuSans-Regular.woff2",
+  "fonts/DejaVuSans-Bold.woff2",
   "icons/forgotodo.svg",
 ];
 
