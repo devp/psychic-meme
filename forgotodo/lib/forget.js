@@ -1,5 +1,5 @@
 // The forgetting. Priority is written in the text itself -- trailing `!`s
-// raise it, trailing `?`s lower it -- so it survives a beam round-trip.
+// raise it, trailing `?`s lower it -- so it survives a send round-trip.
 // Each local day a to-do goes unfinished it drops a tier:
 //   foo!! -> foo! -> foo -> foo? (faded) -> foo?? (forgotten)
 // Forgotten is the bottom: hidden from the list but still counted, until it's

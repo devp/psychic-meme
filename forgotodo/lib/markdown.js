@@ -1,4 +1,4 @@
-// Beam format: a Markdown task list, one to-do per line as `- [ ] text` or
+// List text: a Markdown task list, one to-do per line as `- [ ] text` or
 // `- [x] text`. Anything else (the header line, blank lines, notes) is ignored
 // on receive; the leading `- ` is optional there.
 
@@ -7,7 +7,7 @@
  * @param {{ text: string, done: boolean }[]} items
  * @returns {string}
  */
-export function toBeamText(name, items) {
+export function toMarkdown(name, items) {
   const lines = items.map((i) => (i.done ? "- [x] " : "- [ ] ") + i.text);
   return ["To Do List: " + (name || "Unfiled"), ...lines].join("\n") + "\n";
 }
@@ -16,7 +16,7 @@ export function toBeamText(name, items) {
  * @param {string} text
  * @returns {{ text: string, done: boolean }[]}
  */
-export function fromBeamText(text) {
+export function fromMarkdown(text) {
   /** @type {{ text: string, done: boolean }[]} */
   const items = [];
   for (const line of text.split(/\r?\n/)) {

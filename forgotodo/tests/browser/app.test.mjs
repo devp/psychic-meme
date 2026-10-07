@@ -125,7 +125,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("title tab opens the desktop", await page.locator("#desktop").isVisible());
   await ok("every command is an icon with its name",
     JSON.stringify(await page.locator("#desktop .desk-icons span").allInnerTexts()) ===
-      JSON.stringify(["Beam List", "Receive Beam…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Options…"]) &&
+      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Options…"]) &&
       (await page.locator("#desktop .desk-icons button svg.icon").count()) === 10);
   await ok("desktop groups by category",
     (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
@@ -138,30 +138,30 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click("#desktop h2 >> nth=0");
   await ok("tapping bare desktop closes it", await page.locator("#desktop").isHidden());
 
-  // --- beam: share sheet stubbed; clipboard fallback -----------------------
+  // --- send: share sheet stubbed; clipboard fallback -----------------------
   await page.evaluate(() => {
     /** @type {any} */ (navigator).share = async (/** @type {any} */ data) => {
-      /** @type {any} */ (window).__beamed = data.text;
+      /** @type {any} */ (window).__sent = data.text;
     };
   });
   await page.click("#title-btn");
-  await page.click('[data-cmd="beam"]');
+  await page.click('[data-cmd="send"]');
   await page.waitForTimeout(60);
-  const beamed = await page.evaluate(() => /** @type {any} */ (window).__beamed);
-  await ok("beam shares the list as plain text", /^- \[x\] HotSync before the trip!!$/m.test(beamed ?? "") && /^- \[ \] Buy AAA batteries!$/m.test(beamed ?? ""), beamed);
-  await ok("beam heads the text with the list name", (beamed ?? "").startsWith("To Do List: Unfiled\n"), beamed);
-  await ok("beam dialog closes after sharing", !(await page.locator("#beam-dialog").isVisible()));
+  const sent = await page.evaluate(() => /** @type {any} */ (window).__sent);
+  await ok("send shares the list as plain text", /^- \[x\] Back up before the trip!!$/m.test(sent ?? "") && /^- \[ \] Buy AAA batteries!$/m.test(sent ?? ""), sent);
+  await ok("send heads the text with the list name", (sent ?? "").startsWith("To Do List: Unfiled\n"), sent);
+  await ok("send dialog closes after sharing", !(await page.locator("#send-dialog").isVisible()));
 
   await page.evaluate(() => {
     /** @type {any} */ (navigator).share = undefined;
   });
   await page.click("#title-btn");
-  await page.click('[data-cmd="beam"]');
+  await page.click('[data-cmd="send"]');
   await page.waitForTimeout(60);
-  await ok("without a share sheet, beam shows the text", (await page.inputValue("#beam-text")).includes("- [ ] Buy AAA batteries"));
-  await page.click("#beam-close");
+  await ok("without a share sheet, send shows the text", (await page.inputValue("#send-text")).includes("- [ ] Buy AAA batteries"));
+  await page.click("#send-close");
 
-  // --- receive beam --------------------------------------------------------
+  // --- receive list --------------------------------------------------------
   await page.click("#title-btn");
   await page.click('[data-cmd="receive"]');
   await page.fill("#receive-text", "nonsense");
@@ -181,8 +181,12 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="prefs"]');
   await ok("Options… opens preferences and closes the desktop",
     (await page.locator("#settings-dialog").isVisible()) && (await page.locator("#desktop").isHidden()));
+  await page.click('[data-set-theme="cupertino"]');
+  await page.waitForTimeout(60);
+  await ok("choosing a theme picks its font", (await page.getAttribute("html", "data-font")) === "casual");
   await page.click('[data-set-theme="akihabara"]');
   await page.waitForTimeout(60);
+  await ok("and the next theme picks its own", (await page.getAttribute("html", "data-font")) === "pixel");
   await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "akihabara");
   await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="akihabara"]', "aria-checked")) === "true");
   await ok("other swatch unchecked", (await page.getAttribute('[data-set-theme="palo-alto"]', "aria-checked")) === "false");
@@ -216,7 +220,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click("#title-btn");
   await ok("icons off shows the desktop by name",
     (await page.locator("#desktop svg.icon").first().isHidden()) &&
-      (await page.locator('[data-cmd="beam"] span').isVisible()));
+      (await page.locator('[data-cmd="send"] span').isVisible()));
   await page.keyboard.press("Escape");
 
   // --- service worker ------------------------------------------------------

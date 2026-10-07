@@ -5,12 +5,12 @@ import { dayKey, priorityOf, isFaded, isForgotten } from "../lib/forget.js";
 
 /** Sample to-dos for a first run. */
 export const SETUP_STEPS = [
-  { text: "HotSync before the trip!!", done: false },
+  { text: "Back up before the trip!!", done: false },
   { text: "Buy AAA batteries!", done: false },
   { text: "Find the stylus (check the couch)", done: false },
-  { text: "Beam contact card to Sam", done: false },
+  { text: "Send contact card to Sam", done: false },
   { text: "Recalibrate the digitizer", done: false },
-  { text: "Learn Graffiti?", done: false },
+  { text: "Learn cursive?", done: false },
 ];
 
 export class Checklist extends LitElement {

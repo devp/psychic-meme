@@ -38,7 +38,7 @@ const ASSETS = [
   "app.css",
   "app.js",
   "state.js",
-  "lib/beam.js",
+  "lib/markdown.js",
   "lib/fit.js",
   "lib/forget.js",
   "lib/icons.js",

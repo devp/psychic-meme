@@ -58,13 +58,13 @@
 
   <!-- The desktop: every command as an icon, opened from the title tab and
        laid over the list. Tapping an icon runs it; tapping anywhere else
-       closes it. Groups are Palm launcher categories. -->
+       closes it. Icons are grouped by category. -->
   <nav id="desktop" class="desktop" aria-label="Desktop" hidden>
     <section>
       <h2>Record</h2>
       <div class="desk-icons">
-        <button type="button" data-cmd="beam" data-icon="beam"><span>Beam List</span></button>
-        <button type="button" data-cmd="receive" data-icon="receive"><span>Receive Beam…</span></button>
+        <button type="button" data-cmd="send" data-icon="send"><span>Send List</span></button>
+        <button type="button" data-cmd="receive" data-icon="receive"><span>Receive List…</span></button>
         <button type="button" data-cmd="edit" data-icon="edit"><span>Edit</span><small>tap a to-do</small></button>
       </div>
     </section>
@@ -141,17 +141,17 @@
   <div class="dialog-buttons"><button type="button" id="settings-close" class="primary">Done</button></div>
 </dialog>
 
-<dialog id="beam-dialog" class="dialog">
-  <h2>Beam</h2>
-  <p id="beam-status" class="dialog-msg" aria-live="polite"></p>
-  <textarea id="beam-text" rows="6" readonly hidden></textarea>
-  <div class="dialog-buttons"><button type="button" id="beam-close" class="primary">Done</button></div>
+<dialog id="send-dialog" class="dialog">
+  <h2>Send</h2>
+  <p id="send-status" class="dialog-msg" aria-live="polite"></p>
+  <textarea id="send-text" rows="6" readonly hidden></textarea>
+  <div class="dialog-buttons"><button type="button" id="send-close" class="primary">Done</button></div>
 </dialog>
 
 <dialog id="receive-dialog" class="dialog">
-  <h2>Receive Beam</h2>
+  <h2>Receive List</h2>
   <form id="receive-form" method="dialog">
-    <p class="dialog-msg">Paste a beamed list. Lines like <code>- [ ] task</code> or <code>- [x] task</code> are added to this list.</p>
+    <p class="dialog-msg">Paste a sent list. Lines like <code>- [ ] task</code> or <code>- [x] task</code> are added to this list.</p>
     <textarea id="receive-text" name="text" rows="6" autocomplete="off"></textarea>
     <p id="receive-status" class="dialog-msg" aria-live="polite"></p>
     <div class="dialog-buttons">

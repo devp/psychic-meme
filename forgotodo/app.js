@@ -5,7 +5,7 @@
 import { syncAppHeight } from "./lib/viewport.js";
 import { theme, mode, font, icons, fit, lists } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
-import { toBeamText, fromBeamText } from "./lib/beam.js";
+import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { dayKey, forgetChanges, fastForwardChanges, isForgotten } from "./lib/forget.js";
 import { sweepable, recyclable, forgetOne, rememberOne, shakeUp } from "./lib/organize.js";
 import { ICONS, bitmapSvg } from "./lib/icons.js";
@@ -176,7 +176,7 @@ checklist.addEventListener("edit-armed", (e) => {
 
 /** @type {Record<string, () => void>} */
 const COMMANDS = {
-  beam,
+  send,
   receive: () => receiveDialog.showModal(),
   prefs: () => settings.showModal(),
   sweep,
@@ -196,43 +196,43 @@ desktop.addEventListener("click", (e) => {
   if (cmd) COMMANDS[cmd]?.();
 });
 
-// ---- beam -----------------------------------------------------------------
+// ---- send ---------------------------------------------------------------------
 // Plain text out through the share sheet (or the clipboard), plain text back
 // in by pasting -- which makes it the backup too.
 
-const beamDialog = /** @type {HTMLDialogElement} */ (document.getElementById("beam-dialog"));
-const beamStatus = /** @type {HTMLElement} */ (document.getElementById("beam-status"));
-const beamText = /** @type {HTMLTextAreaElement} */ (document.getElementById("beam-text"));
-document.getElementById("beam-close")?.addEventListener("click", () => beamDialog.close());
+const sendDialog = /** @type {HTMLDialogElement} */ (document.getElementById("send-dialog"));
+const sendStatus = /** @type {HTMLElement} */ (document.getElementById("send-status"));
+const sendText = /** @type {HTMLTextAreaElement} */ (document.getElementById("send-text"));
+document.getElementById("send-close")?.addEventListener("click", () => sendDialog.close());
 
-async function beam() {
+async function send() {
   const rec = lists.ensureActive();
-  const text = toBeamText(rec.name, rec.items.map((i) => ({ text: i.text, done: !!i.done })));
-  beamText.hidden = true;
-  beamStatus.textContent = "Beaming…";
-  beamDialog.showModal();
+  const text = toMarkdown(rec.name, rec.items.map((i) => ({ text: i.text, done: !!i.done })));
+  sendText.hidden = true;
+  sendStatus.textContent = "Sending…";
+  sendDialog.showModal();
 
   // Called straight from the tap, before any await, so it keeps the user gesture.
   if (navigator.share) {
     try {
       await navigator.share({ title: "To Do List", text });
-      beamDialog.close();
+      sendDialog.close();
       return;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        beamDialog.close();
+        sendDialog.close();
         return;
       }
     }
   }
   try {
     await navigator.clipboard.writeText(text);
-    beamStatus.textContent = "Copied to the clipboard. Paste it anywhere to keep a copy.";
+    sendStatus.textContent = "Copied to the clipboard. Paste it anywhere to keep a copy.";
   } catch {
-    beamStatus.textContent = "Copy this text to keep a copy:";
+    sendStatus.textContent = "Copy this text to keep a copy:";
   }
-  beamText.value = text;
-  beamText.hidden = false;
+  sendText.value = text;
+  sendText.hidden = false;
 }
 
 const receiveDialog = /** @type {HTMLDialogElement} */ (document.getElementById("receive-dialog"));
@@ -248,7 +248,7 @@ document.getElementById("receive-cancel")?.addEventListener("click", () => recei
 
 receiveForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  const items = fromBeamText(receiveInput.value);
+  const items = fromMarkdown(receiveInput.value);
   if (items.length === 0) {
     receiveStatus.textContent = "Nothing to receive: no [ ] or [x] lines found.";
     return;
@@ -260,7 +260,7 @@ receiveForm.addEventListener("submit", (e) => {
 });
 
 // ---- organize -------------------------------------------------------------
-// Sweep, Recycle and Fast Forward ask first, Palm-alert style. Forget,
+// Sweep, Recycle and Fast Forward ask first in an alert box. Forget,
 // Remember and Shake Up are random, and show you their work with a blink (or,
 // for Forget, a poof).
 

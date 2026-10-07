@@ -5,7 +5,7 @@
 
 /** @type {Record<string, string[]>} */
 export const ICONS = {
-  beam: [
+  send: [
     "#####.....",
     "#...#...#.",
     "#...#.#..#",
