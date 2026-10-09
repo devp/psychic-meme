@@ -75,8 +75,7 @@ export function rememberOne(items, random = Math.random) {
  * @typedef {{ id: string, text: string, move: "up"|"down"|"forgotten"|"remembered" }} Shake
  */
 
-
-// Tresholds below are out of 1.0, defined independent.
+// Thresholds below are out of 1.0, defined independent.
 const SHAKE_THRESHOLD_UP = 0.25;
 const SHAKE_THRESHOLD_DOWN = 0.40;
 
@@ -91,8 +90,8 @@ function shakeRollToModifier(roll) {
 }
 
 /**
- * Shake Up: every open to-do, forgotten ones included. See, rolls 30% up a tier,
- * 30% down, 40% stays. Forgotten can't go lower; only the movers come back.
+ * Shake Up: every open to-do, forgotten ones included, rolls 40% down a tier,
+ * 25% up, 35% stays. Forgotten can't go lower; only the movers come back.
  * @param {OrganizeItem[]} items
  * @param {() => number} [random]
  * @returns {Shake[]}
@@ -105,6 +104,7 @@ export function shakeUp(items, random = Math.random) {
     const roll = random();
     const from = tierOf(item.text);
     const to = Math.max(FORGOTTEN, from + shakeRollToModifier(roll));
+    if (to === from) continue;
     const move = from === FORGOTTEN ? "remembered" : to === FORGOTTEN ? "forgotten" : to > from ? "up" : "down";
     moved.push({ id: item.id, text: withTier(item.text, to), move });
   }

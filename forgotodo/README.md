@@ -50,8 +50,8 @@ the tab again) to close it.
 - **Organize > Forget** forgets one random to-do from the lowest tier still
   showing. It puffs away and you're not told which.
 - **Organize > Remember** brings one random forgotten to-do back, at neutral.
-- **Organize > Shake Up** rolls for every open to-do, forgotten ones too: 30%
-  up a tier, 30% down, 40% stays. Movers blink; a note sums it up.
+- **Organize > Shake Up** rolls for every open to-do, forgotten ones too: 40%
+  down a tier, 25% up, 35% stays. Movers blink; a note sums it up.
 - **Organize > Fast Forward…** runs a day's rollover now ("tomorrow's list,
   today"), after saying what it'll do. It's an extra day: the real one still
   comes tonight.

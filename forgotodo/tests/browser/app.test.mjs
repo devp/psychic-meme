@@ -488,7 +488,7 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await ok("remember twice, both back", same((await texts()).sort(), ["keep", "maybe"]));
 
   // --- shake up: rig the dice ----------------------------------------------
-  await page.evaluate(() => (Math.random = () => 0.1));
+  await page.evaluate(() => (Math.random = () => 0.5));
   await run("shake");
   await ok("shake up moves each to-do (all up, on these dice)", same((await texts()).sort(), ["keep!", "maybe!"]));
   await ok("and sums it up", (await count()) === "2 up · 0 down");

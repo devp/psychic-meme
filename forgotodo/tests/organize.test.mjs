@@ -46,7 +46,7 @@ test("remember brings one forgotten back at neutral", () => {
   assert.equal(rememberOne([{ id: "c", text: "c?" }]), null);
 });
 
-test("shake up: 30% up, 30% down, 40% stays; forgotten can rise but not sink", () => {
+test("shake up: 40% down, 25% up, 35% stays; forgotten can rise but not sink", () => {
   const open = [
     { id: "a", text: "a" },
     { id: "b", text: "b" },
@@ -56,10 +56,10 @@ test("shake up: 30% up, 30% down, 40% stays; forgotten can rise but not sink", (
     { id: "h", text: "h??" },
     { id: "f", text: "f", done: true },
   ];
-  assert.deepEqual(shakeUp(open, rolls([0.29, 0.3, 0.6, 0.59, 0.1, 0.5])), [
+  assert.deepEqual(shakeUp(open, rolls([0.4, 0.39, 0.65, 0.39, 0.1, 0.64])), [
     { id: "a", text: "a!", move: "up" },
     { id: "b", text: "b?", move: "down" },
     { id: "d", text: "d??", move: "forgotten" },
-    { id: "g", text: "g?", move: "remembered" },
+    { id: "h", text: "h?", move: "remembered" },
   ]);
 });
