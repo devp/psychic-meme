@@ -77,8 +77,8 @@ export function rememberOne(items, random = Math.random) {
 
 
 // Tresholds below are out of 1.0, defined independent.
-const SHAKE_THRESHOLD_UP = 0.3;
-const SHAKE_THRESHOLD_DOWN = 0.3;
+const SHAKE_THRESHOLD_UP = 0.25;
+const SHAKE_THRESHOLD_DOWN = 0.40;
 
 /**
  * @param {number} roll (0..1)
