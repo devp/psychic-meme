@@ -614,19 +614,33 @@ test("erase all data, in a real browser", { skip: !chromium && "playwright not i
     localStorage.setItem("forgotodo:lists:activeId", "L");
   });
   await page.goto(URL, { waitUntil: "networkidle" });
-  const openErase = async () => {
+  // Hold Recycle until it fires, then let go: the release lands over the list.
+  const holdRecycle = async (/** @type {number} */ ms) => {
     await page.click("#title-btn");
-    await page.click('[data-cmd="prefs"]');
-    await page.click("#erase-all");
+    await page.hover('[data-cmd="recycle"]');
+    await page.mouse.down();
+    await page.waitForTimeout(ms);
+  };
+  const openErase = async () => {
+    await holdRecycle(2200);
+    await page.mouse.up();
   };
   const answer = (v) => page.click(`#alert-dialog button[value="${v}"]`);
 
+  await holdRecycle(1000);
+  await ok("holding shakes the icon", (await page.getAttribute('[data-cmd="recycle"]', "data-holding")) === "");
+  await page.mouse.up();
+  await page.waitForTimeout(60);
+  await ok("a short hold is just Recycle", (await page.locator("#alert-title").innerText()) === "Recycle");
+  await answer("ok");
+
   await openErase();
+  await ok("a full hold asks to erase, and the release ticks nothing",
+    (await page.locator("#alert-title").innerText()) === "Erase" && (await page.locator(".checklist li.done").count()) === 0);
   await answer("ok");
   await answer("cancel");
   await ok("cancelling any confirm keeps everything",
     (await page.locator(".checklist li").allInnerTexts()).join().includes("mine"));
-  await page.click("#settings-close");
 
   await openErase();
   await answer("ok");

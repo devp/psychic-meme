@@ -73,7 +73,7 @@
       <div class="desk-icons">
         <button type="button" data-cmd="sweep" data-icon="sweep"><span>Sweep…</span><small>forgotten</small></button>
         <button type="button" data-cmd="lookahead" data-icon="lookahead"><span>Look Ahead</span><small>snoozed</small></button>
-        <button type="button" data-cmd="recycle" data-icon="recycle"><span>Recycle…</span><small>done</small></button>
+        <button type="button" data-cmd="recycle" data-hold-cmd="erase" data-icon="recycle"><span>Recycle…</span><small>done</small></button>
         <button type="button" data-cmd="forget" data-icon="forget"><span>Forget</span><small>one, gone</small></button>
         <button type="button" data-cmd="remember" data-icon="remember"><span>Remember</span><small>one, back</small></button>
         <button type="button" data-cmd="shake" data-icon="shake"><span>Shake Up</span><small>roll for all</small></button>
@@ -133,10 +133,6 @@
   <section class="toggles">
     <label><input type="checkbox" data-toggle="icons"> Desktop icons</label>
     <label><input type="checkbox" data-toggle="fit"> Shrink to fit</label>
-  </section>
-
-  <section>
-    <button type="button" id="erase-all" class="primary">Erase all data…</button>
   </section>
 
   <div class="dialog-buttons"><button type="button" id="settings-close" class="primary">Done</button></div>

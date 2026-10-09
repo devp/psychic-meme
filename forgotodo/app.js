@@ -213,6 +213,44 @@ desktop.addEventListener("click", (e) => {
   if (cmd) COMMANDS[cmd]?.();
 });
 
+// Press and hold: an icon with data-hold-cmd runs that instead, once held for
+// HOLD_MS. The release's click is swallowed so it can't land on the list.
+const HOLD_MS = 2000;
+desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
+/** @type {Record<string, () => void>} */
+const HOLD_COMMANDS = { erase };
+let swallowClick = false;
+
+desktop.addEventListener("pointerdown", (e) => {
+  const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
+  const cmd = btn?.getAttribute("data-hold-cmd");
+  if (!btn || !cmd) return;
+  btn.dataset.holding = "";
+  const stop = () => {
+    clearTimeout(timer);
+    delete btn.dataset.holding;
+    for (const type of ["pointerup", "pointercancel", "pointerleave"]) btn.removeEventListener(type, stop);
+  };
+  const timer = setTimeout(() => {
+    stop();
+    swallowClick = true;
+    closeDesktop();
+    HOLD_COMMANDS[cmd]?.();
+  }, HOLD_MS);
+  for (const type of ["pointerup", "pointercancel", "pointerleave"]) btn.addEventListener(type, stop);
+});
+desktop.addEventListener("contextmenu", (e) => {
+  if (e.target instanceof Element && e.target.closest("[data-hold-cmd]")) e.preventDefault();
+});
+// A fresh press clears a swallow left over from a release that made no click.
+document.addEventListener("pointerdown", () => (swallowClick = false), true);
+document.addEventListener("click", (e) => {
+  if (!swallowClick) return;
+  swallowClick = false;
+  e.preventDefault();
+  e.stopPropagation();
+}, true);
+
 // ---- send ---------------------------------------------------------------------
 // Plain text out through the share sheet (or the clipboard), plain text back
 // in by pasting -- which makes it the backup too.
@@ -478,9 +516,9 @@ async function fastForward() {
 }
 
 // ---- erase ----------------------------------------------------------------
-// Options > Erase all data: asks three times, then reloads into a first run.
+// Hold Recycle: asks three times, then reloads into a first run.
 
-document.getElementById("erase-all")?.addEventListener("click", async () => {
+async function erase() {
   const steps = [
     { title: "Erase", message: "Erase every to-do and setting in this app, on this device?" },
     { title: "Erase", message: "Really? There's no undo. Send your list first if you want a copy." },
@@ -491,7 +529,7 @@ document.getElementById("erase-all")?.addEventListener("click", async () => {
   }
   eraseAll();
   location.reload();
-});
+}
 
 // ---- shrink to fit --------------------------------------------------------
 // Sets --list-size on the checklist: big for a short list, smaller per to-do,
