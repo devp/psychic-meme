@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sweepable, recyclable, raiseOnce, forgetOne, rememberOne, shakeUp } from "../lib/organize.js";
+import { sweepable, snoozed, recyclable, raiseOnce, forgetOne, rememberOne, shakeUp } from "../lib/organize.js";
 
 const items = [
   { id: "a", text: "a!!" },
@@ -62,4 +62,26 @@ test("shake up: 40% down, 25% up, 35% stays; forgotten can rise but not sink", (
     { id: "d", text: "d??", move: "forgotten" },
     { id: "h", text: "h?", move: "remembered" },
   ]);
+});
+
+test("snoozed to-dos sleep through Forget, Remember, Sweep and Shake Up", () => {
+  const items = [
+    { id: "z", text: "z?>" },
+    { id: "y", text: "y??>>" },
+    { id: "a", text: "a" },
+  ];
+  assert.deepEqual(forgetOne(items, () => 0), { id: "a", text: "a??" });
+  assert.equal(rememberOne(items), null);
+  assert.deepEqual(sweepable(items), []);
+  assert.deepEqual(shakeUp(items, () => 0), [{ id: "a", text: "a?", move: "down" }]);
+});
+
+test("look ahead: snoozed, soonest first, done ones left out", () => {
+  const items = [
+    { id: "a", text: "a>>>" },
+    { id: "b", text: "b!>" },
+    { id: "c", text: "c" },
+    { id: "d", text: "d>", done: true },
+  ];
+  assert.deepEqual(snoozed(items).map((i) => i.id), ["b", "a"]);
 });

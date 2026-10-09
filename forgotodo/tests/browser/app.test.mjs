@@ -128,8 +128,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("title tab opens the desktop", await page.locator("#desktop").isVisible());
   await ok("every command is an icon with its name",
     JSON.stringify(await page.locator("#desktop .desk-icons span").allInnerTexts()) ===
-      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Themes…", "Options…", "Help…", "About…"]) &&
-      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 13);
+      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Look Ahead", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Themes…", "Options…", "Help…", "About…"]) &&
+      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 14);
   await ok("desktop groups by category",
     (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
   const clock = await page.locator("#title-btn").innerText();
@@ -527,6 +527,22 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await page.press(".add-row input", "Enter");
   await page.waitForTimeout(60);
   await ok("?? files it away, with a word", same(await texts(), ["keep going!"]) && (await count()) === "Filed away, forgotten.");
+
+  // --- snooze: > hides it for a day each ---------------------------------
+  await page.fill(".add-row input", "later>>");
+  await page.press(".add-row input", "Enter");
+  await page.waitForTimeout(60);
+  await ok(">> snoozes it, with a word", same(await texts(), ["keep going!"]) && (await count()) === "Snoozed for 2 days.");
+  await run("lookahead");
+  await ok("look ahead lists the snoozed",
+    (await page.locator("#alert-list li").allInnerTexts()).join() === "later>>" && (await page.locator("#alert-cancel").isHidden()));
+  await okBtn();
+  await run("fastforward");
+  await ok("fast forward counts the snooze apart",
+    (await page.locator("#alert-msg").innerText()) === "Tomorrow's list, today: 1 to-do drop a tier, 1 snoozed a day closer. Go ahead?");
+  await okBtn();
+  await page.waitForTimeout(3100);
+  await ok("still asleep, still counted", same(await texts(), ["keep going"]) && (await count()) === "0 of 3 done · 1 forgotten · 1 snoozed");
 
   // --- shrink to fit -----------------------------------------------------
   const size = () => page.locator(".checklist").evaluate((el) => parseFloat(getComputedStyle(el).fontSize));

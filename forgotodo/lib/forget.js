@@ -4,6 +4,9 @@
 //   foo!! -> foo! -> foo -> foo? (faded) -> foo?? (forgotten)
 // Forgotten is the bottom: hidden from the list but still counted, until it's
 // swept or remembered. Done items are removed the day after they were checked.
+// Snooze sits on top: a trailing run of `>`s hides a to-do for that many days,
+// one `>` coming off each day instead of a tier. The tail wins: `foo!>` is
+// snoozed, and wakes as `foo!`; `foo>!` is just urgent.
 
 /**
  * Local calendar day, e.g. "2026-09-27".
@@ -71,11 +74,27 @@ export function withTier(text, tier) {
 }
 
 /**
- * One day's decay: down a tier, stopping at forgotten.
+ * Days left asleep: `foo>>` is 2, anything not ending in `>` is 0.
+ * @param {string} text
+ * @returns {number}
+ */
+export function snoozeOf(text) {
+  return text.trimEnd().match(/>+$/)?.[0].length ?? 0;
+}
+
+/** `foo>`: hidden, not decaying, back in a day. @param {string} text */
+export function isSnoozed(text) {
+  return snoozeOf(text) > 0;
+}
+
+/**
+ * One day's decay: one `>` off a snoozed to-do, else down a tier, stopping at
+ * forgotten.
  * @param {string} text
  * @returns {string}
  */
 export function decayOnce(text) {
+  if (isSnoozed(text)) return text.trimEnd().slice(0, -1).trimEnd();
   const tier = tierOf(text);
   return tier === FORGOTTEN ? text.trimEnd() : withTier(text, tier - 1);
 }

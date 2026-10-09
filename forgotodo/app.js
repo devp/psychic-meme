@@ -6,8 +6,8 @@ import { syncAppHeight } from "./lib/viewport.js";
 import { theme, mode, font, icons, fit, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
-import { dayKey, forgetChanges, fastForwardChanges, isForgotten } from "./lib/forget.js";
-import { sweepable, recyclable, forgetOne, rememberOne, shakeUp } from "./lib/organize.js";
+import { dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed } from "./lib/forget.js";
+import { sweepable, snoozed, recyclable, forgetOne, rememberOne, shakeUp } from "./lib/organize.js";
 import { ICONS, bitmapSvg } from "./lib/icons.js";
 import { preferredSize, largestFitting } from "./lib/fit.js";
 
@@ -196,6 +196,7 @@ const COMMANDS = {
   help: () => help.showModal(),
   about: () => about.showModal(),
   sweep,
+  lookahead,
   recycle,
   forget: forgetCmd,
   remember,
@@ -325,6 +326,18 @@ async function sweep() {
   if (ok) doomed.forEach((i) => lists.removeItem(rec.id, i.id));
 }
 
+// Look Ahead only shows: what's snoozed, soonest first.
+async function lookahead() {
+  const asleep = snoozed(/** @type {any} */ (lists.ensureActive().items));
+  await ask({
+    title: "Look Ahead",
+    icon: "lookahead",
+    message: asleep.length ? `${todos(asleep.length)} snoozed. Each day, one > comes off.` : "Nothing snoozed.",
+    items: asleep.map((i) => i.text),
+    cancel: false,
+  });
+}
+
 async function recycle() {
   const rec = lists.ensureActive();
   const done = recyclable(/** @type {any} */ (rec.items));
@@ -417,12 +430,15 @@ async function fastForward() {
     await ask({ title: "Fast Forward", icon: "fastforward", message: "Nothing would change.", cancel: false });
     return;
   }
-  const texts = changes.flatMap((c) => ("patch" in c && c.patch.text ? [c.patch.text] : []));
+  const asleep = new Set(rec.items.filter((i) => isSnoozed(i.text)).map((i) => i.id));
+  const texts = changes.flatMap((c) => ("patch" in c && c.patch.text && !asleep.has(c.id) ? [c.patch.text] : []));
+  const ticked = changes.filter((c) => "patch" in c && asleep.has(c.id)).length;
   const lost = texts.filter(isForgotten).length;
   const dropped = texts.length - lost;
-  const cleared = changes.length - texts.length;
+  const cleared = changes.length - texts.length - ticked;
   const parts = [];
   if (dropped) parts.push(`${todos(dropped)} drop a tier`);
+  if (ticked) parts.push(`${ticked} snoozed a day closer`);
   if (lost) parts.push(`${lost} forgotten`);
   if (cleared) parts.push(`${cleared} done cleared`);
   const ok = await ask({

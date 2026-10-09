@@ -1,7 +1,7 @@
 import { LitElement, html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
 import { lists } from "../state.js";
-import { dayKey, priorityOf, isFaded, isForgotten } from "../lib/forget.js";
+import { dayKey, priorityOf, isFaded, isForgotten, isSnoozed, snoozeOf } from "../lib/forget.js";
 
 /** Sample to-dos for a first run. */
 export const SETUP_STEPS = [
@@ -82,7 +82,7 @@ export class Checklist extends LitElement {
     if (!this.record || !t) return;
     // An edit counts as attention: the decay clock starts over.
     lists.updateItem(this.record.id, itemId, { text: t, seenDay: dayKey() });
-    if (isForgotten(t)) this.note("Filed away, forgotten.");
+    this._noteFiled(t);
   }
 
   updated() {
@@ -125,22 +125,31 @@ export class Checklist extends LitElement {
     if (!text || !this.record) return;
     lists.append(this.record.id, { text, done: false, seenDay: dayKey() });
     form.reset();
-    if (isForgotten(text)) this.note("Filed away, forgotten.");
+    this._noteFiled(text);
+  }
+
+  /** Say where a to-do went if it isn't on the list. @param {string} text */
+  _noteFiled(text) {
+    const days = snoozeOf(text);
+    if (days) this.note(days === 1 ? "Snoozed till tomorrow." : `Snoozed for ${days} days.`);
+    else if (isForgotten(text)) this.note("Filed away, forgotten.");
   }
 
   render() {
     const all = this.record ? this.record.items : [];
-    // Forgotten to-dos are hidden but still counted.
+    // Forgotten and snoozed to-dos are hidden but still counted.
     const hidden = all.filter((i) => !i.done && isForgotten(i.text)).length;
+    const asleep = all.filter((i) => !i.done && isSnoozed(i.text)).length;
     // Most to least urgent; ties keep their order (sort is stable).
     const items = all
-      .filter((i) => i.done || !isForgotten(i.text))
+      .filter((i) => i.done || !(isForgotten(i.text) || isSnoozed(i.text)))
       .sort((a, b) => priorityOf(b.text) - priorityOf(a.text));
     const done = all.filter((i) => i.done).length;
 
     return html`
       <p class="count">${this._note ||
-        html`${done} of ${all.length} done${hidden ? html`<span class="hidden-count"> · ${hidden} forgotten</span>` : ""}`}</p>
+        html`${done} of ${all.length} done${hidden ? html`<span class="hidden-count"> · ${hidden} forgotten</span>` : ""}${
+          asleep ? html`<span class="hidden-count"> · ${asleep} snoozed</span>` : ""}`}</p>
       <ul class=${this.editArmed ? "checklist edit-armed" : "checklist"}>
         ${repeat(
           items,

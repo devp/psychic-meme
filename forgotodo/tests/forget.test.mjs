@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dayKey, daysBetween, priorityOf, decayOnce, forgetChanges, fastForwardChanges, tierOf, withTier, isFaded, isForgotten } from "../lib/forget.js";
+import { dayKey, daysBetween, priorityOf, decayOnce, forgetChanges, fastForwardChanges, tierOf, withTier, isFaded, isForgotten, snoozeOf, isSnoozed } from "../lib/forget.js";
 
 test("priority comes from the trailing run", () => {
   assert.equal(priorityOf("foo!!"), 2);
@@ -77,4 +77,31 @@ test("fast forward: one more day, now, leaving the day stamps alone", () => {
     { id: "b", patch: { text: "b??" } },
     { id: "d", remove: true },
   ]);
+});
+
+test("snooze grammar: the trailing run decides", () => {
+  assert.deepEqual(["a>", "a>>>", "a >> ", "a!>", "a??>", "a>!", "a>?", "a>b", "a", ">"].map(snoozeOf), [1, 3, 2, 1, 1, 0, 0, 0, 0, 1]);
+  assert.ok(isSnoozed("a!>") && !isSnoozed("a>!"));
+  assert.equal(priorityOf("a!!>"), 0, "a snoozed to-do has no priority while asleep");
+  assert.equal(priorityOf("a>!"), 1, "> before the tail is just text");
+  assert.ok(!isForgotten("a??>") && !isFaded("a?>"), "snoozed is neither faded nor forgotten");
+});
+
+test("snooze: a > a day, then the tier underneath decays as usual", () => {
+  const walk = ["a!>>"];
+  for (let i = 0; i < 5; i++) walk.push(decayOnce(walk[walk.length - 1]));
+  assert.deepEqual(walk, ["a!>>", "a!>", "a!", "a", "a?", "a??"]);
+  assert.equal(decayOnce("a >> "), "a >");
+  assert.equal(decayOnce("a?>"), "a?", "wakes faded");
+});
+
+test("snooze: catch-up and fast forward take off a > per day", () => {
+  const today = "2026-09-27";
+  assert.deepEqual(forgetChanges([{ id: "a", text: "a>>>", seenDay: "2026-09-25" }], today), [
+    { id: "a", patch: { text: "a>", seenDay: today } },
+  ]);
+  assert.deepEqual(forgetChanges([{ id: "a", text: "a!>", seenDay: "2026-09-24" }], today), [
+    { id: "a", patch: { text: "a?", seenDay: today } },
+  ]);
+  assert.deepEqual(fastForwardChanges([{ id: "a", text: "a>" }]), [{ id: "a", patch: { text: "a" } }]);
 });

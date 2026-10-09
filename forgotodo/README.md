@@ -28,6 +28,10 @@ auto (follows the system). The old `backlight` theme is palo alto with it on.
 - **Forgotten** is the bottom. It's hidden from the list but still counted
   ("2 of 9 done · 3 forgotten") until you sweep it or it's remembered. Type
   `??` on the end of a new to-do to file it straight there.
+- **Snooze** is a trailing `>` per day: `foo>>` is hidden for two days, not
+  decaying, then wakes as `foo` and starts over. The tail wins: `foo!>` wakes
+  as `foo!`, and `foo>!` is just urgent. Snoozed to-dos are counted, skipped
+  by Forget and Shake Up, and Fast Forward takes a `>` off.
 - Done items disappear the day after you check them.
 - Catch-up happens when the app opens or comes back to the foreground, so days
   it sat unopened still count.
@@ -46,6 +50,7 @@ the tab again) to close it.
   (Enter saves; Escape, tapping away, or tapping the tab cancels). An edit
   resets that to-do's daily decay, and editing its `!`/`?` sets its priority.
 - **Organize > Sweep…** shows the forgotten to-dos and offers to delete them.
+- **Organize > Look Ahead** lists what's snoozed, soonest first. It changes nothing.
 - **Organize > Recycle…** deletes the done ones now instead of tomorrow.
 - **Organize > Forget** forgets one random to-do from the lowest tier still
   showing. It puffs away and you're not told which.

@@ -2,12 +2,12 @@
 // itself. Pure; the caller writes changes back. Priority is still just the
 // text's trailing `!`s and `?`s (see forget.js), so these only edit text.
 
-import { tierOf, withTier, isForgotten, FORGOTTEN } from "./forget.js";
+import { tierOf, withTier, isForgotten, isSnoozed, snoozeOf, FORGOTTEN } from "./forget.js";
 
 /** @typedef {{ id: string, text: string, done?: boolean }} OrganizeItem */
 
 /** Open and still on the list. @param {OrganizeItem} i */
-const visible = (i) => !i.done && !isForgotten(i.text);
+const visible = (i) => !i.done && !isForgotten(i.text) && !isSnoozed(i.text);
 /** Open but forgotten: hidden, still counted. @param {OrganizeItem} i */
 const forgotten = (i) => !i.done && isForgotten(i.text);
 
@@ -18,6 +18,15 @@ const forgotten = (i) => !i.done && isForgotten(i.text);
  */
 export function sweepable(items) {
   return items.filter(forgotten);
+}
+
+/**
+ * Look Ahead: everything snoozed, soonest first.
+ * @param {OrganizeItem[]} items
+ * @returns {OrganizeItem[]}
+ */
+export function snoozed(items) {
+  return items.filter((i) => !i.done && isSnoozed(i.text)).sort((a, b) => snoozeOf(a.text) - snoozeOf(b.text));
 }
 
 /**
@@ -91,7 +100,8 @@ function shakeRollToModifier(roll) {
 
 /**
  * Shake Up: every open to-do, forgotten ones included, rolls 40% down a tier,
- * 25% up, 35% stays. Forgotten can't go lower; only the movers come back.
+ * 25% up, 35% stays. Forgotten can't go lower; snoozed ones sleep through it;
+ * only the movers come back.
  * @param {OrganizeItem[]} items
  * @param {() => number} [random]
  * @returns {Shake[]}
@@ -100,7 +110,7 @@ export function shakeUp(items, random = Math.random) {
   /** @type {Shake[]} */
   const moved = [];
   for (const item of items) {
-    if (item.done) continue;
+    if (item.done || isSnoozed(item.text)) continue;
     const roll = random();
     const from = tierOf(item.text);
     const to = Math.max(FORGOTTEN, from + shakeRollToModifier(roll));
