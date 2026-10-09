@@ -214,12 +214,13 @@ desktop.addEventListener("click", (e) => {
 });
 
 // Press and hold: an icon with data-hold-cmd runs that instead, once held for
-// HOLD_MS. The release's click is swallowed so it can't land on the list.
+// HOLD_MS. Letting go over the list ticks nothing: the click goes to the
+// common ancestor of press and release (browser test "the release ticks
+// nothing").
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
 const HOLD_COMMANDS = { erase };
-let swallowClick = false;
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
@@ -233,7 +234,6 @@ desktop.addEventListener("pointerdown", (e) => {
   };
   const timer = setTimeout(() => {
     stop();
-    swallowClick = true;
     closeDesktop();
     HOLD_COMMANDS[cmd]?.();
   }, HOLD_MS);
@@ -242,14 +242,6 @@ desktop.addEventListener("pointerdown", (e) => {
 desktop.addEventListener("contextmenu", (e) => {
   if (e.target instanceof Element && e.target.closest("[data-hold-cmd]")) e.preventDefault();
 });
-// A fresh press clears a swallow left over from a release that made no click.
-document.addEventListener("pointerdown", () => (swallowClick = false), true);
-document.addEventListener("click", (e) => {
-  if (!swallowClick) return;
-  swallowClick = false;
-  e.preventDefault();
-  e.stopPropagation();
-}, true);
 
 // ---- send ---------------------------------------------------------------------
 // Plain text out through the share sheet (or the clipboard), plain text back
@@ -395,6 +387,9 @@ async function recycle() {
 /** @param {string} id */
 const rowOf = (id) => /** @type {HTMLElement|null} */ (checklist.querySelector(`li[data-id="${CSS.escape(id)}"]`));
 
+// app.css drops the poof under reduced motion; skip the wait for it too.
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
 /**
  * Run a one-shot CSS animation on a row; data-anim names the keyframes.
  * Resolves when it ends, or straight away if the row isn't there.
@@ -403,7 +398,7 @@ const rowOf = (id) => /** @type {HTMLElement|null} */ (checklist.querySelector(`
  * @returns {Promise<void>}
  */
 function animate(row, anim) {
-  if (!row) return Promise.resolve();
+  if (!row || (anim === "poof" && reducedMotion.matches)) return Promise.resolve();
   row.dataset.anim = anim;
   return new Promise((resolve) => {
     const done = () => {

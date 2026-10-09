@@ -439,6 +439,11 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
 
   const count = () => page.locator("forgo-checklist .count").innerText();
   const okBtn = () => page.click('#alert-dialog button[value="ok"]');
+  // Forget writes once its rows have puffed away; wait for that, not a clock.
+  const poofed = async () => {
+    await page.waitForFunction(() => !document.querySelector('[data-anim="poof"]'));
+    await page.waitForTimeout(60);
+  };
   // Forget and Remember ask how many, or what; Enter answers.
   const pick = async (/** @type {string} */ cmd, query = "") => {
     await run(cmd);
@@ -474,7 +479,7 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
 
   // --- forget / remember ---------------------------------------------------
   await pick("forget");
-  await page.waitForTimeout(700);
+  await poofed();
   await ok("forget poofs the lowest tier away", same(await texts(), ["keep!"]) && (await count()) === "0 of 2 done · 1 forgotten");
   await pick("remember");
   await ok("remember brings it back at neutral", same(await texts(), ["keep!", "maybe"]));
@@ -483,9 +488,9 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await ok("nothing forgotten to remember says so", (await page.locator("#alert-msg").innerText()) === "Nothing's forgotten.");
   await okBtn();
   await pick("forget");
-  await page.waitForTimeout(700);
+  await poofed();
   await pick("forget");
-  await page.waitForTimeout(700);
+  await poofed();
   await ok("forget works up the tiers", same(await texts(), []) && (await count()) === "0 of 2 done · 2 forgotten");
   await pick("forget");
   await ok("nothing left to forget says so", (await page.locator("#alert-msg").innerText()) === "Nothing left to forget.");
@@ -500,7 +505,7 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await ok("no match says so", (await page.locator("#alert-msg").innerText()) === "Nothing matches “nope”.");
   await okBtn();
   await pick("forget", "2");
-  await page.waitForTimeout(700);
+  await poofed();
   await ok("forget a number", same(await texts(), []));
   await pick("remember", "2");
   await ok("remember a number, both back", same((await texts()).sort(), ["keep", "maybe"]));
@@ -588,6 +593,12 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   const fits = await page.locator('[data-panel="list"]').evaluate((el) => el.scrollHeight <= el.clientHeight);
   await ok("shrinks further to fit", many < 15 && (fits || many === 10), `${many}px, fits: ${fits}`);
 
+  // --- reduced motion: Forget doesn't wait on a poof -------------------------
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const before = await page.locator(".checklist li").count();
+  await pick("forget");
+  await ok("reduced motion: forget is immediate", (await page.locator(".checklist li").count()) === before - 1);
+
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });
 
@@ -608,8 +619,10 @@ test("erase all data, in a real browser", { skip: !chromium && "playwright not i
     sessionStorage.setItem("seeded", "1");
     localStorage.setItem("other-app:keep", "1");
     localStorage.setItem("forgotodo:theme", "akihabara");
+    // Enough rows that the list lies under every desktop icon.
+    const filler = Array.from({ length: 30 }, (_, i) => ({ id: "f" + i, text: "filler " + i, done: false }));
     localStorage.setItem("forgotodo:lists:records", JSON.stringify([
-      { id: "L", name: "Unfiled", createdAt: 0, updatedAt: 0, items: [{ id: "a", text: "mine", done: false }] },
+      { id: "L", name: "Unfiled", createdAt: 0, updatedAt: 0, items: [{ id: "a", text: "mine", done: false }, ...filler] },
     ]));
     localStorage.setItem("forgotodo:lists:activeId", "L");
   });
@@ -627,8 +640,36 @@ test("erase all data, in a real browser", { skip: !chromium && "playwright not i
   };
   const answer = (v) => page.click(`#alert-dialog button[value="${v}"]`);
 
+  // A hold command that opens no dialog: the release lands right on the list.
+  await page.evaluate(() => (/** @type {HTMLElement} */ (document.querySelector('[data-cmd="sweep"]')).dataset.holdCmd = "none"));
+  await page.click("#title-btn");
+  const box = await page.locator('[data-cmd="sweep"]').boundingBox();
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.waitForTimeout(2200);
+  await ok("a fired hold closes the desktop over a row",
+    (await page.locator("#desktop").isHidden()) && (await page.evaluate(([x, y]) => !!document.elementFromPoint(x, y)?.closest(".checklist li"), [x, y])));
+  await page.mouse.up();
+  await page.waitForTimeout(60);
+  await ok("and the release ticks nothing", (await page.locator(".checklist li.done").count()) === 0);
+  await page.click(".checklist li span");
+  await page.waitForTimeout(60);
+  await ok("the next tap ticks as usual", (await page.locator(".checklist li.done").count()) === 1);
+  await page.click(".checklist li.done span");
+  await page.waitForTimeout(60);
+
   await holdRecycle(1000);
-  await ok("holding shakes the icon", (await page.getAttribute('[data-cmd="recycle"]', "data-holding")) === "");
+  await ok("holding shakes the icon", (await page.getAttribute('[data-cmd="recycle"]', "data-holding")) === "" &&
+    (await page.locator('[data-cmd="recycle"] .icon').evaluate((el) => getComputedStyle(el).animationName)) === "anxious");
+  await page.mouse.up();
+  await page.waitForTimeout(60);
+  await page.click('#alert-dialog button[value="ok"]');
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await holdRecycle(1000);
+  await ok("reduced motion: held, but no shake",
+    (await page.getAttribute('[data-cmd="recycle"]', "data-holding")) === "" &&
+    (await page.locator('[data-cmd="recycle"] .icon').evaluate((el) => getComputedStyle(el).animationName)) === "none");
   await page.mouse.up();
   await page.waitForTimeout(60);
   await ok("a short hold is just Recycle", (await page.locator("#alert-title").innerText()) === "Recycle");

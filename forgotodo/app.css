@@ -66,6 +66,14 @@
 [data-hold-cmd][data-holding] .icon,
 [data-hold-cmd][data-holding] span { animation: anxious var(--hold-ms) steps(1, end); }
 
+/* Reduced motion: no poof, no shake. Blink stays; it doesn't move, and it's
+   how you see what Remember and Shake Up touched. */
+@media (prefers-reduced-motion: reduce) {
+  .checklist li[data-anim="poof"],
+  [data-hold-cmd][data-holding] .icon,
+  [data-hold-cmd][data-holding] span { animation: none; }
+}
+
 /* Edit armed: rows wait for a tap, marked with a dashed outline. */
 .checklist.edit-armed li { cursor: text; outline: 1px dashed var(--ink-dim); outline-offset: -1px; }
 .checklist.edit-armed label,
