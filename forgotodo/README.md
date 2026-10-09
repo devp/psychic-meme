@@ -52,9 +52,12 @@ the tab again) to close it.
 - **Organize > Sweep…** shows the forgotten to-dos and offers to delete them.
 - **Organize > Look Ahead** lists what's snoozed, soonest first. It changes nothing.
 - **Organize > Recycle…** deletes the done ones now instead of tomorrow.
-- **Organize > Forget** forgets one random to-do from the lowest tier still
-  showing. It puffs away and you're not told which.
-- **Organize > Remember** brings one random forgotten to-do back, at neutral.
+- **Organize > Forget** asks "how many, or what?". Blank forgets one random
+  to-do from the lowest tier still showing; a number does that many, lowest
+  tiers first. They puff away and you're not told which. Anything else
+  forgets every to-do on the list containing it.
+- **Organize > Remember** asks the same, and brings forgotten to-dos back at
+  neutral: one at random, that many, or every one containing the phrase.
 - **Organize > Shake Up** rolls for every open to-do, forgotten ones too: 40%
   down a tier, 25% up, 35% stays. Movers blink; a note sums it up.
 - **Organize > Fast Forward…** runs a day's rollover now ("tomorrow's list,

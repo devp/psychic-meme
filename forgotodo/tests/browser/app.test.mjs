@@ -439,6 +439,13 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
 
   const count = () => page.locator("forgo-checklist .count").innerText();
   const okBtn = () => page.click('#alert-dialog button[value="ok"]');
+  // Forget and Remember ask how many, or what; Enter answers.
+  const pick = async (/** @type {string} */ cmd, query = "") => {
+    await run(cmd);
+    await page.fill("#pick-text", query);
+    await page.press("#pick-text", "Enter");
+    await page.waitForTimeout(60);
+  };
   const same = (/** @type {string[]} */ a, /** @type {string[]} */ b) => JSON.stringify(a) === JSON.stringify(b);
 
   await ok("forgotten to-dos are hidden but counted",
@@ -466,26 +473,37 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   await ok("recycle deletes done items", same(await texts(), ["keep!", "maybe?"]));
 
   // --- forget / remember ---------------------------------------------------
-  await run("forget");
+  await pick("forget");
   await page.waitForTimeout(700);
   await ok("forget poofs the lowest tier away", same(await texts(), ["keep!"]) && (await count()) === "0 of 2 done · 1 forgotten");
-  await run("remember");
+  await pick("remember");
   await ok("remember brings it back at neutral", same(await texts(), ["keep!", "maybe"]));
   await ok("and it blinks", (await page.locator('li[data-anim="blink"]').count()) === 1);
-  await run("remember");
+  await pick("remember");
   await ok("nothing forgotten to remember says so", (await page.locator("#alert-msg").innerText()) === "Nothing's forgotten.");
   await okBtn();
-  await run("forget");
+  await pick("forget");
   await page.waitForTimeout(700);
-  await run("forget");
+  await pick("forget");
   await page.waitForTimeout(700);
   await ok("forget works up the tiers", same(await texts(), []) && (await count()) === "0 of 2 done · 2 forgotten");
-  await run("forget");
+  await pick("forget");
   await ok("nothing left to forget says so", (await page.locator("#alert-msg").innerText()) === "Nothing left to forget.");
   await okBtn();
-  await run("remember");
-  await run("remember");
-  await ok("remember twice, both back", same((await texts()).sort(), ["keep", "maybe"]));
+  await run("forget");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(60);
+  await ok("escape on the prompt does nothing", (await count()) === "0 of 2 done · 2 forgotten" && (await page.locator("#alert-dialog").isHidden()));
+  await pick("remember", "MAY");
+  await ok("remember by phrase, any case", same(await texts(), ["maybe"]));
+  await pick("remember", "nope");
+  await ok("no match says so", (await page.locator("#alert-msg").innerText()) === "Nothing matches “nope”.");
+  await okBtn();
+  await pick("forget", "2");
+  await page.waitForTimeout(700);
+  await ok("forget a number", same(await texts(), []));
+  await pick("remember", "2");
+  await ok("remember a number, both back", same((await texts()).sort(), ["keep", "maybe"]));
 
   // --- shake up: rig the dice ----------------------------------------------
   await page.evaluate(() => (Math.random = () => 0.5));

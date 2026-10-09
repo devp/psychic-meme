@@ -196,6 +196,18 @@
   </form>
 </dialog>
 
+<dialog id="pick-dialog" class="dialog">
+  <h2 id="pick-title"></h2>
+  <form id="pick-form" method="dialog">
+    <p class="dialog-msg">How many, or what? Blank is one; a word takes every to-do with it in.</p>
+    <input id="pick-text" name="text" type="text" autocomplete="off" autocapitalize="off" enterkeyhint="go">
+    <div class="dialog-buttons">
+      <button type="submit" value="ok" class="primary">OK</button>
+      <button type="submit" value="cancel" formnovalidate class="primary">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="alert-dialog" class="dialog alert">
   <h2 id="alert-title"></h2>
   <form method="dialog">

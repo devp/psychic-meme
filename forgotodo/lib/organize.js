@@ -81,6 +81,67 @@ export function rememberOne(items, random = Math.random) {
 }
 
 /**
+ * Run a one-at-a-time pick `n` times, each on the list as the last left it.
+ * @param {OrganizeItem[]} items
+ * @param {number} n
+ * @param {(items: OrganizeItem[]) => { id: string, text: string }|null} pickOne
+ */
+function pickRepeatedly(items, n, pickOne) {
+  /** @type {{ id: string, text: string }[]} */
+  const picks = [];
+  let pool = items;
+  for (let k = 0; k < n; k++) {
+    const pick = pickOne(pool);
+    if (!pick) break;
+    picks.push(pick);
+    pool = pool.map((i) => (i.id === pick.id ? { ...i, text: pick.text } : i));
+  }
+  return picks;
+}
+
+/**
+ * What Forget or Remember was asked for: blank is one, digits are that many,
+ * anything else is every to-do containing it (any case).
+ * @param {string} query
+ * @returns {{ count: number }|{ phrase: string }}
+ */
+function parseQuery(query) {
+  const q = query.trim();
+  if (!q) return { count: 1 };
+  if (/^\d+$/.test(q)) return { count: Number(q) };
+  return { phrase: q.toLowerCase() };
+}
+
+/** @param {string} phrase @param {OrganizeItem} i */
+const matches = (phrase, i) => i.text.toLowerCase().includes(phrase);
+
+/**
+ * Forget, asked: some number of forgetOne picks, or every visible match.
+ * @param {OrganizeItem[]} items
+ * @param {string} query
+ * @param {() => number} [random]
+ * @returns {{ id: string, text: string }[]}
+ */
+export function forgetSome(items, query, random = Math.random) {
+  const q = parseQuery(query);
+  if ("count" in q) return pickRepeatedly(items, q.count, (pool) => forgetOne(pool, random));
+  return items.filter((i) => visible(i) && matches(q.phrase, i)).map((i) => ({ id: i.id, text: withTier(i.text, FORGOTTEN) }));
+}
+
+/**
+ * Remember, asked: some number of rememberOne picks, or every forgotten match.
+ * @param {OrganizeItem[]} items
+ * @param {string} query
+ * @param {() => number} [random]
+ * @returns {{ id: string, text: string }[]}
+ */
+export function rememberSome(items, query, random = Math.random) {
+  const q = parseQuery(query);
+  if ("count" in q) return pickRepeatedly(items, q.count, (pool) => rememberOne(pool, random));
+  return items.filter((i) => forgotten(i) && matches(q.phrase, i)).map((i) => ({ id: i.id, text: withTier(i.text, 0) }));
+}
+
+/**
  * @typedef {{ id: string, text: string, move: "up"|"down"|"forgotten"|"remembered" }} Shake
  */
 

@@ -187,7 +187,8 @@
 .dialog-msg:empty { display: none; }
 .dialog-msg code { font-family: var(--font-mono); }
 
-.dialog textarea {
+.dialog textarea,
+.dialog input[type="text"] {
   display: block;
   width: 100%;
   margin: 0 0 12px;
@@ -198,8 +199,8 @@
   background: transparent;
   border: 1px solid var(--ink);
   border-radius: 0;
-  resize: vertical;
 }
+.dialog textarea { resize: vertical; }
 .dialog textarea[hidden] { display: none; }
 
 .dialog-buttons { display: flex; gap: 8px; }

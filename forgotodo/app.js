@@ -7,7 +7,7 @@ import { theme, mode, font, icons, fit, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed } from "./lib/forget.js";
-import { sweepable, snoozed, recyclable, forgetOne, rememberOne, shakeUp } from "./lib/organize.js";
+import { sweepable, snoozed, recyclable, forgetSome, rememberSome, shakeUp } from "./lib/organize.js";
 import { ICONS, bitmapSvg } from "./lib/icons.js";
 import { preferredSize, largestFitting } from "./lib/fit.js";
 
@@ -385,27 +385,55 @@ async function blink(ids) {
   rows.forEach((r) => animate(r, "blink"));
 }
 
-// Forget is silent on purpose: a row puffs away and you aren't told which.
+const pickDialog = /** @type {HTMLDialogElement} */ (document.getElementById("pick-dialog"));
+const pickTitle = /** @type {HTMLElement} */ (document.getElementById("pick-title"));
+const pickInput = /** @type {HTMLInputElement} */ (document.getElementById("pick-text"));
+
+/**
+ * Ask Forget or Remember how many, or what. Resolves null unless OK (or
+ * Enter) closed it, so Escape cancels.
+ * @param {string} title
+ * @returns {Promise<string|null>}
+ */
+function askPick(title) {
+  pickTitle.textContent = title;
+  pickInput.value = "";
+  pickDialog.returnValue = "";
+  pickDialog.showModal();
+  return new Promise((resolve) => {
+    pickDialog.addEventListener("close", () => resolve(pickDialog.returnValue === "ok" ? pickInput.value : null), { once: true });
+  });
+}
+
+/** @param {string} query @param {string} none */
+const nothingFor = (query, none) => (/\D/.test(query.trim()) ? `Nothing matches “${query.trim()}”.` : none);
+
+// Forget is silent on purpose: rows puff away and, unless you named them,
+// you aren't told which.
 async function forgetCmd() {
+  const query = await askPick("Forget");
+  if (query === null) return;
   const rec = lists.ensureActive();
-  const change = forgetOne(/** @type {any} */ (rec.items));
-  if (!change) {
-    await ask({ title: "Forget", icon: "forget", message: "Nothing left to forget.", cancel: false });
+  const changes = forgetSome(/** @type {any} */ (rec.items), query);
+  if (changes.length === 0) {
+    await ask({ title: "Forget", icon: "forget", message: nothingFor(query, "Nothing left to forget."), cancel: false });
     return;
   }
-  await animate(rowOf(change.id), "poof");
-  lists.updateItem(rec.id, change.id, { text: change.text });
+  await Promise.all(changes.map((c) => animate(rowOf(c.id), "poof")));
+  changes.forEach((c) => lists.updateItem(rec.id, c.id, { text: c.text }));
 }
 
 async function remember() {
+  const query = await askPick("Remember");
+  if (query === null) return;
   const rec = lists.ensureActive();
-  const change = rememberOne(/** @type {any} */ (rec.items));
-  if (!change) {
-    await ask({ title: "Remember", icon: "remember", message: "Nothing's forgotten.", cancel: false });
+  const changes = rememberSome(/** @type {any} */ (rec.items), query);
+  if (changes.length === 0) {
+    await ask({ title: "Remember", icon: "remember", message: nothingFor(query, "Nothing's forgotten."), cancel: false });
     return;
   }
-  lists.updateItem(rec.id, change.id, { text: change.text });
-  blink([change.id]);
+  changes.forEach((c) => lists.updateItem(rec.id, c.id, { text: c.text }));
+  blink(changes.map((c) => c.id));
 }
 
 function shake() {
