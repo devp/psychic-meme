@@ -89,15 +89,18 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   // --- seeding -------------------------------------------------------------
   await ok("About opens on first run", await page.locator("#about-dialog").isVisible());
   await page.click("#about-close");
-  const items = await page.locator(".checklist li").count();
-  await ok("checklist seeds on first run", items === 6, `${items} items`);
-  await ok("count line renders", (await page.locator("forgo-checklist .count").innerText()) === "0 of 6 done");
+  // The seed list is the tutorial, and changes with it; assert only relative to it.
+  const seed = await page.locator(".checklist li").count();
+  const tally = async () => (await page.locator("forgo-checklist .count").innerText()).match(/^\d+ of \d+ done/)?.[0];
+  await ok("checklist seeds on first run", seed > 0, `${seed} items`);
+  const total = Number((await tally())?.match(/of (\d+)/)?.[1]);
+  await ok("count line renders", (await tally()) === `0 of ${total} done`);
 
   // --- reactivity: no manual re-render call anywhere ------------------------
   await page.locator(".checklist input[type=checkbox]").first().check();
   await page.waitForTimeout(60);
-  const afterToggle = await page.locator("forgo-checklist .count").innerText();
-  await ok("toggling re-renders via subscriber", afterToggle === "1 of 6 done", afterToggle);
+  const afterToggle = await tally();
+  await ok("toggling re-renders via subscriber", afterToggle === `1 of ${total} done`, afterToggle);
   await ok("done style applied", await page.locator(".checklist li").first().evaluate((el) => el.classList.contains("done")));
 
   // --- add item (delegated submit survives innerHTML rebuild) ---------------
@@ -105,22 +108,22 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click(".add-row button");
   await page.waitForTimeout(60);
   const afterAdd = await page.locator(".checklist li").count();
-  await ok("add item works after re-render", afterAdd === 7, `${afterAdd} items`);
+  await ok("add item works after re-render", afterAdd === seed + 1, `${afterAdd} items`);
   await ok("input clears after add", (await page.inputValue(".add-row input")) === "");
   await ok("tapping New keeps focus in the input, so the keyboard stays up",
     await page.locator(".add-row input").evaluate((el) => document.activeElement === el));
-  await ok("count updates on add", (await page.locator("forgo-checklist .count").innerText()) === "1 of 7 done");
+  await ok("count updates on add", (await tally()) === `1 of ${total + 1} done`);
 
   // --- delete --------------------------------------------------------------
   const delRow = (text) => page.locator(".checklist li", { hasText: text }).locator('button[aria-label="Delete"]').click();
   await delRow("buy more batteries");
   await page.waitForTimeout(60);
-  await ok("delete works", (await page.locator(".checklist li").count()) === 6);
+  await ok("delete works", (await page.locator(".checklist li").count()) === seed);
 
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(120);
-  await ok("state persists across reload", (await page.locator("forgo-checklist .count").innerText()) === "1 of 6 done");
+  await ok("state persists across reload", (await tally()) === `1 of ${total} done`);
   await ok("About doesn't open again", await page.locator("#about-dialog").isHidden());
 
   // --- desktop + clock -----------------------------------------------------
@@ -133,7 +136,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("desktop groups by category",
     (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
   const clock = await page.locator("#title-btn").innerText();
-  await ok("title tab shows the time while open", /\d:\d\d/.test(clock), clock);
+  await ok("title tab shows the brand while open (clock is off by default)", clock === "forgotodo", clock);
   await page.keyboard.press("Escape");
   await ok("escape closes the desktop", await page.locator("#desktop").isHidden());
   await ok("title comes back", (await page.locator("#title-btn").innerText()) === "To Do List");
@@ -151,7 +154,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="send"]');
   await page.waitForTimeout(60);
   const sent = await page.evaluate(() => /** @type {any} */ (window).__sent);
-  await ok("send shares the list as plain text", /^- \[x\] Back up before the trip!!$/m.test(sent ?? "") && /^- \[ \] Buy AAA batteries!$/m.test(sent ?? ""), sent);
+  await ok("send shares the list as plain text", /^- \[x\] \S/m.test(sent ?? "") && /^- \[ \] \S/m.test(sent ?? ""), sent);
   await ok("send heads the text with the list name", (sent ?? "").startsWith("To Do List: Unfiled\n"), sent);
   await ok("send dialog closes after sharing", !(await page.locator("#send-dialog").isVisible()));
 
@@ -161,7 +164,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click("#title-btn");
   await page.click('[data-cmd="send"]');
   await page.waitForTimeout(60);
-  await ok("without a share sheet, send shows the text", (await page.inputValue("#send-text")).includes("- [ ] Buy AAA batteries"));
+  await ok("without a share sheet, send shows the text", (await page.inputValue("#send-text")).includes("- [ ] "));
   await page.click("#send-close");
 
   // --- receive list --------------------------------------------------------
@@ -173,7 +176,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.fill("#receive-text", "To Do List: x\n[ ] charge the cradle\n[x] find the cable\n");
   await page.click('#receive-form button[type="submit"]');
   await page.waitForTimeout(60);
-  await ok("receive appends items", (await page.locator("forgo-checklist .count").innerText()) === "2 of 8 done");
+  await ok("receive appends items", (await tally()) === `2 of ${total + 2} done`);
   await ok("receive dialog closes", !(await page.locator("#receive-dialog").isVisible()));
   await delRow("charge the cradle");
   await delRow("find the cable");
@@ -309,7 +312,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(400);
   const offlineItems = await page.locator(".checklist li").count();
-  await ok("works offline after reload", offlineItems === 6, `${offlineItems} items`);
+  await ok("works offline after reload", offlineItems === seed, `${offlineItems} items`);
   const offlineMissing = await page.evaluate(async () => {
     const urls = ["fonts/DepartureMono-Regular.woff2", "fonts/ComicNeue-Regular.woff2", "fonts/ComicNeue-Bold.woff2", "icons/forgotodo.svg", "manifest.webmanifest"];
     const missing = [];
@@ -325,7 +328,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   // query string must not miss the cache
   await page.goto(URL + "?utm_source=subway", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(400);
-  await ok("offline with query string (ignoreSearch)", (await page.locator(".checklist li").count()) === 6);
+  await ok("offline with query string (ignoreSearch)", (await page.locator(".checklist li").count()) === seed);
   await ctx.setOffline(false);
 
 
@@ -703,7 +706,7 @@ test("erase all data, in a real browser", { skip: !chromium && "playwright not i
   await Promise.all([page.waitForEvent("load"), answer("ok")]);
   await page.waitForTimeout(120);
   await ok("three OKs erase and start a first run",
-    (await page.locator("#about-dialog").isVisible()) && (await page.locator(".checklist li").count()) === 6 &&
+    (await page.locator("#about-dialog").isVisible()) && (await page.locator(".checklist li").count()) > 0 &&
       (await page.getAttribute("html", "data-theme")) === "palo-alto");
   await ok("other apps' keys survive", (await page.evaluate(() => localStorage.getItem("other-app:keep"))) === "1");
 });
