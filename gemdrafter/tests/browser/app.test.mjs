@@ -571,6 +571,7 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await resume();
   await ok("update: a changed file is announced", (await heard) === "updated");
   await ok("update: the new bytes are cached", (await cachedCss()).includes(MARK));
+  await ok("update: the toast shows right away", await page.locator("update-toast").isVisible());
   await ok("update: no reload while in use", await sameDocument());
   // Typed but not yet saved (no settleSave): going to the background has to
   // flush it before the resume reloads the page.
@@ -583,6 +584,21 @@ test("gemdrafter in a real browser", { skip: !chromium && "playwright not instal
   await settle();
   await ok("update: an unsaved draft survives the resume reload",
     (await body.inputValue()) === "typed just before switching apps", await body.inputValue());
+  await ok("update: no toast after reloading", !(await page.locator("update-toast").isVisible()));
+
+  overrides.set("/app.css", css + MARK + MARK);
+  await page.evaluate(() => (/** @type {any} */ (window).__sameDocument = true));
+  // Right after a reload, the launch check may still be running; a resume
+  // then shares it and misses this deploy. Resume until it's heard.
+  let next = "none";
+  for (let i = 0; i < 5 && next !== "updated"; i++) {
+    heard = nextUpdate(2000);
+    await resume();
+    next = await heard;
+  }
+  await ok("update: the next one is announced", next === "updated");
+  await Promise.all([page.waitForEvent("load"), page.locator("update-toast").getByRole("button", { name: "Reload" }).click()]);
+  await ok("update: the toast's Reload reloads", !(await sameDocument()));
   overrides.clear();
 
   await ctx.setOffline(true);
