@@ -150,6 +150,28 @@ if (firstRun) about.showModal();
 const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
 if (shareLink) shareLink.search = new URLSearchParams({ q: new URL(".", location.href).href }).toString();
 
+// Install: Chromium fires beforeinstallprompt when the app is installable; until then the
+// hint is plain text (no href). Safari and Firefox never fire it.
+const installLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("install-link"));
+/** @type {any} */ let installPrompt = null;
+addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  installLink?.setAttribute("href", "#");
+});
+addEventListener("appinstalled", () => {
+  installPrompt = null;
+  installLink?.removeAttribute("href");
+});
+installLink?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  if (!installPrompt) return;
+  const p = installPrompt;
+  installPrompt = null;
+  installLink.removeAttribute("href");
+  await p.prompt();
+});
+
 // ---- desktop --------------------------------------------------------------
 // Tapping the title tab lays a desktop of command icons over the list, and the
 // tab shows the time while it's open.

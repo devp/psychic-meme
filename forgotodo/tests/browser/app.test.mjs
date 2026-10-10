@@ -161,6 +161,16 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('[data-cmd="about"]');
   await ok("About… has about and share",
     (await page.locator("#about-dialog .about").isVisible()) && (await page.locator("#about-dialog #share-link").isVisible()));
+  await ok("install hint is plain text until installable", (await page.getAttribute("#install-link", "href")) === null);
+  await page.evaluate(() => {
+    const e = /** @type {any} */ (new Event("beforeinstallprompt", { cancelable: true }));
+    e.prompt = async () => { /** @type {any} */ (window).prompted = true; };
+    dispatchEvent(e);
+  });
+  await ok("install hint becomes a link", (await page.getAttribute("#install-link", "href")) === "#");
+  await page.click("#install-link");
+  await ok("clicking the hint prompts to install, once",
+    (await page.evaluate(() => /** @type {any} */ (window).prompted)) === true && (await page.getAttribute("#install-link", "href")) === null);
   await page.click("#about-close");
   await page.click("#title-btn");
   await page.click('[data-cmd="help"]');
