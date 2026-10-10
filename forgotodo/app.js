@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, mode, font, icons, fit, lists, eraseAll } from "./state.js";
+import { theme, mode, font, icons, fit, deskclock, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed } from "./lib/forget.js";
@@ -92,7 +92,7 @@ font.subscribe((v) => {
 });
 
 // On/off options: a checkbox each in Options, a data- attribute on <html>.
-for (const [name, value] of Object.entries({ icons, fit })) {
+for (const [name, value] of Object.entries({ icons, fit, deskclock })) {
   const box = /** @type {HTMLInputElement|null} */ (document.querySelector(`[data-toggle="${name}"]`));
   box?.addEventListener("change", () => value.set(box.checked ? "on" : "off"));
   value.subscribe((v) => {
@@ -159,7 +159,9 @@ const TITLE = titleBtn.textContent ?? "";
 function openDesktop() {
   desktop.hidden = false;
   titleBtn.setAttribute("aria-expanded", "true");
-  titleBtn.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  titleBtn.textContent = deskclock.get() === "on" ?
+    new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) :
+    "forgotodo";
   /** @type {HTMLElement|null} */ (desktop.querySelector("[data-cmd]"))?.focus();
 }
 
