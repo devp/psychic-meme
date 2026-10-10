@@ -74,6 +74,21 @@
   [data-hold-cmd][data-holding] span { animation: none; }
 }
 
+/* Dialogs and the menu draw in top to bottom in hard steps, and close
+   instantly, as on the old screens. --wipe and --wipe-steps set the pace. */
+@media (prefers-reduced-motion: no-preference) {
+  .dialog { clip-path: inset(0); transition: clip-path var(--wipe, 160ms) steps(var(--wipe-steps, 4), end); }
+  .dialog::backdrop { transition: opacity var(--wipe, 160ms) steps(2, end); }
+  /* The menu isn't modal, so mask rather than clip: a clip would let taps
+     fall through to the list while it draws. */
+  .desktop { mask: linear-gradient(#000 0 0) top / 100% 100% no-repeat; transition: mask-size var(--wipe, 160ms) steps(var(--wipe-steps, 4), end); }
+  @starting-style {
+    .dialog[open] { clip-path: inset(0 0 100% 0); }
+    .desktop:not([hidden]) { mask-size: 100% 0%; }
+    .dialog[open]::backdrop { opacity: 0; }
+  }
+}
+
 /* Edit armed: rows wait for a tap, marked with a dashed outline. */
 .checklist.edit-armed li { cursor: text; outline: 1px dashed var(--ink-dim); outline-offset: -1px; }
 .checklist.edit-armed label,
@@ -175,7 +190,10 @@
   font-family: var(--font-body);
   overflow: hidden auto; /* scroll only when taller than the screen */
 }
-.dialog::backdrop { background: rgb(0 0 0 / 0.25); }
+/* A 50% checkerboard, like a 1-bit screen's grey. */
+.dialog::backdrop {
+  background: repeating-conic-gradient(rgb(0 0 0 / 0.35) 0 25%, transparent 0 50%) 0 0 / 2px 2px;
+}
 .dialog h2 {
   margin: 0 -12px 12px;
   padding: 2px 8px;
@@ -249,6 +267,8 @@
 
 /* ---- alexandria: a scroll, rolled at top and bottom ---- */
 :root[data-theme="alexandria"] {
+  --wipe: 640ms;
+  --wipe-steps: 12;
   /* Reed fibres both ways, fine grain, then a darkened edge. */
   --paper:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.24 0 0 0 0 0.15 0 0 0 0 0.05 0.7 0 0 0 -0.22'/%3E%3C/filter%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003 0.4' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.22 0 0 0 0 0.08 0.9 0 0 0 -0.38'/%3E%3C/filter%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.35 0.004' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.22 0 0 0 0 0.08 0.6 0 0 0 -0.27'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3Crect width='100%25' height='100%25' filter='url(%23v)'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
