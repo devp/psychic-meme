@@ -289,3 +289,21 @@
 }
 :root[data-theme="alexandria"] body::before { margin-top: env(safe-area-inset-top); }
 :root[data-theme="alexandria"] .title-tab { border-radius: 3px 3px 0 0; }
+
+/* ---- update toast (components/update-toast.js) ---- */
+/* In flow at the foot of the body column instead of floating, so it never
+   covers the add field; the panels shrink to make room. */
+update-toast {
+  position: static;
+  transform: none;
+  max-width: none;
+  margin: 0 10px 8px;
+  --toast-bg: var(--bg);
+  --toast-fg: var(--ink);
+  --toast-border: var(--ink);
+  --toast-accent: var(--ink);
+  --toast-accent-ink: var(--bg);
+  border-radius: var(--dialog-radius);
+  box-shadow: var(--btn-shadow);
+}
+update-toast::part(reload) { border-radius: var(--btn-radius); }
