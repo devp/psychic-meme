@@ -204,9 +204,15 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
 
   overrides.set("/app.css", css + MARK + MARK);
   await page.evaluate(() => (/** @type {any} */ (window).__sameDocument = true));
-  heard = nextUpdate(5000);
-  await resume();
-  await ok("update: the next one is announced", (await heard) === "updated");
+  // Right after a reload, the launch check may still be running; a resume
+  // then shares it and misses this deploy. Resume until it's heard.
+  let next = "none";
+  for (let i = 0; i < 5 && next !== "updated"; i++) {
+    heard = nextUpdate(2000);
+    await resume();
+    next = await heard;
+  }
+  await ok("update: the next one is announced", next === "updated");
   await Promise.all([page.waitForEvent("load"), page.locator("update-toast").getByRole("button", { name: "Reload" }).click()]);
   await ok("update: the toast's Reload reloads", !(await sameDocument()));
   overrides.clear();
