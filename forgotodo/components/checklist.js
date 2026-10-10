@@ -21,9 +21,9 @@ export const SETUP_STEPS = [
   { text: "learn cursive??", done: false },
   { text: "If you're seeing this, a day went by (or you hit Fast Foward). Good morning!>", done: false },
   { text: "What happens when you end an item with ?? - find out>", done: false },
-  { text: "Remember those retro tasks... Literally, try the Remember command with the keyword 'retro'", done: false},
-  { text: "Experiment with the Forget task and other options from the menu.", done: false},
-  { text: "You're done with the tutorial! Power on!>>", done: false },
+  { text: "Remember those retro tasks... Literally, try the Remember command with the keyword 'retro'>", done: false},
+  { text: "Experiment with the Forget task and other options from the menu>", done: false},
+  { text: "You're done with the tutorial! POWER ON!>>", done: false },
 ];
 
 export class Checklist extends LitElement {
