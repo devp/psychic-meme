@@ -3,14 +3,27 @@ import { repeat } from "lit/directives/repeat.js";
 import { lists } from "../state.js";
 import { dayKey, priorityOf, isFaded, isForgotten, isSnoozed, snoozeOf } from "../lib/forget.js";
 
-/** Sample to-dos for a first run. */
+/**
+ * A first run's list is its own tutorial.
+ * Walked through in tests/browser/app.test.mjs ("first-run tutorial").
+ */
 export const SETUP_STEPS = [
-  { text: "Back up before the trip!!", done: false },
-  { text: "Buy AAA batteries!", done: false },
-  { text: "Find the stylus (check the couch)", done: false },
-  { text: "Send contact card to Sam", done: false },
-  { text: "Recalibrate the digitizer", done: false },
-  { text: "Learn cursive?", done: false },
+  { text: "Welcome to forgotodo... Mark this done!!!", done: false },
+  { text: "First make it yours: tap the title bar, and choose from Themes…", done: false },
+  { text: "Add a to-do. End it with ! and it goes above me", done: false },
+  { text: "Add a to-do. End it with ? and see where it goes", done: false },
+  { text: "Add a to-do for tomorrow and end it with a >. It may disappear...", done: false },
+  { text: "Now tap Fast Forward: tomorrow, today", done: false },
+  { text: "Did you notice that items ending with '?' are starting to fade away?", done: false },
+  { text: "upload to your retro clickwheel MP3 player?", done: false },
+  { text: "find AA batteries for retro pocket gaming console?", done: false },
+  { text: "order some blank minidiscs from the retro shop?", done: false },
+  { text: "learn cursive??", done: false },
+  { text: "If you're seeing this, a day went by (or you hit Fast Foward). Good morning!>", done: false },
+  { text: "What happens when you end an item with ?? - find out>", done: false },
+  { text: "Remember those retro tasks... Literally, try the Remember command with the keyword 'retro'", done: false},
+  { text: "Experiment with the Forget task and other options from the menu.", done: false},
+  { text: "You're done with the tutorial! Power on!>>", done: false },
 ];
 
 export class Checklist extends LitElement {
