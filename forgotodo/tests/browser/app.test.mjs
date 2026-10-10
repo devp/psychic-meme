@@ -598,6 +598,20 @@ test("organize and shrink to fit, in a real browser", { skip: !chromium && "play
   const before = await page.locator(".checklist li").count();
   await pick("forget");
   await ok("reduced motion: forget is immediate", (await page.locator(".checklist li").count()) === before - 1);
+  await pick("remember");
+  await ok("reduced motion: remember doesn't blink", (await page.locator('li[data-anim="blink"]').count()) === 0);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+
+  // --- Blink changes off: Remember doesn't blink ------------------------------
+  await page.click("#title-btn");
+  await page.click('[data-cmd="prefs"]');
+  await page.click('[data-toggle="flash"]');
+  await page.click("#settings-close");
+  await ok("blink toggle off", (await page.getAttribute("html", "data-flash")) === "off");
+  await pick("forget");
+  await poofed();
+  await pick("remember");
+  await ok("blink off: remember doesn't blink", (await page.locator('li[data-anim="blink"]').count()) === 0);
 
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });

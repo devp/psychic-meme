@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, mode, font, icons, fit, deskclock, lists, eraseAll } from "./state.js";
+import { theme, mode, font, icons, fit, deskclock, flash, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed } from "./lib/forget.js";
@@ -92,7 +92,7 @@ font.subscribe((v) => {
 });
 
 // On/off options: a checkbox each in Options, a data- attribute on <html>.
-for (const [name, value] of Object.entries({ icons, fit, deskclock })) {
+for (const [name, value] of Object.entries({ icons, fit, deskclock, flash })) {
   const box = /** @type {HTMLInputElement|null} */ (document.querySelector(`[data-toggle="${name}"]`));
   box?.addEventListener("change", () => value.set(box.checked ? "on" : "off"));
   value.subscribe((v) => {
@@ -389,7 +389,7 @@ async function recycle() {
 /** @param {string} id */
 const rowOf = (id) => /** @type {HTMLElement|null} */ (checklist.querySelector(`li[data-id="${CSS.escape(id)}"]`));
 
-// app.css drops the poof under reduced motion; skip the wait for it too.
+// app.css drops the poof and blink under reduced motion; skip the wait too.
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 /**
@@ -400,7 +400,7 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
  * @returns {Promise<void>}
  */
 function animate(row, anim) {
-  if (!row || (anim === "poof" && reducedMotion.matches)) return Promise.resolve();
+  if (!row || reducedMotion.matches || (anim === "blink" && flash.get() === "off")) return Promise.resolve();
   row.dataset.anim = anim;
   return new Promise((resolve) => {
     const done = () => {

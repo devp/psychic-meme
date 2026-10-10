@@ -66,10 +66,10 @@
 [data-hold-cmd][data-holding] .icon,
 [data-hold-cmd][data-holding] span { animation: anxious var(--hold-ms) steps(1, end); }
 
-/* Reduced motion: no poof, no shake. Blink stays; it doesn't move, and it's
-   how you see what Remember and Shake Up touched. */
+/* Reduced motion: no poof, no shake, no blink. (Options can turn blink off too.) */
 @media (prefers-reduced-motion: reduce) {
   .checklist li[data-anim="poof"],
+  .checklist li[data-anim="blink"],
   [data-hold-cmd][data-holding] .icon,
   [data-hold-cmd][data-holding] span { animation: none; }
 }
