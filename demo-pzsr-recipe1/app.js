@@ -18,6 +18,7 @@ import { WeekPlan } from "./components/week-plan.js";
 import { PantryGrid } from "./components/pantry-grid.js";
 import { ShoppingList } from "./components/shopping-list.js";
 import { AppendLog } from "./components/append-log.js";
+import { UpdateToast } from "./components/update-toast.js";
 
 // Components read their own state from state.js, so defining them is the whole
 // of it -- nothing to inject, nothing to sequence.
@@ -27,6 +28,7 @@ customElements.define("week-plan", WeekPlan);
 customElements.define("pantry-grid", PantryGrid);
 customElements.define("shopping-list", ShoppingList);
 customElements.define("append-log", AppendLog);
+customElements.define("update-toast", UpdateToast);
 
 // ---- first run ------------------------------------------------------------
 // The pantry gets a plausible mid-week kitchen (see lib/seed.js); everything
@@ -167,22 +169,6 @@ if ("serviceWorker" in navigator) {
   if (document.readyState === "complete") register();
   else window.addEventListener("load", register, { once: true });
 
-  // Updates. sw.js answers "updated" once new files are in its cache; this page
-  // is still running the old ones. Reload the next time the app comes back to
-  // the foreground -- never while it's in use, so nobody loses half-typed text.
-  // A new sw.js taking over counts too (it re-downloaded everything on
-  // install), but not the very first one, which replaced no worker.
-  const sw = navigator.serviceWorker;
-  let updated = false;
-  const hadWorker = !!sw.controller;
-  sw.addEventListener("message", (e) => (updated ||= e.data === "updated"));
-  sw.addEventListener("controllerchange", () => (updated ||= hadWorker));
-
-  const check = () => sw.ready.then((reg) => reg.active?.postMessage("check"));
-  check();
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible") return;
-    if (updated) location.reload();
-    else check();
-  });
+  // Updates: the toast checks for them on every launch and resume.
+  document.body.append(new UpdateToast());
 }

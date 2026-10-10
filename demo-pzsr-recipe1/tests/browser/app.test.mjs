@@ -495,12 +495,28 @@ test("supper-deck in a real browser", { skip: !chromium && "playwright not insta
   await resume();
   await ok("update: a changed file is announced", (await heard) === "updated");
   await ok("update: the new bytes are cached", (await cachedCss()).includes(MARK));
+  await ok("update: the toast shows right away", await page.locator("update-toast").isVisible());
   await ok("update: no reload while in use", await sameDocument());
   await Promise.all([page.waitForEvent("load"), resume()]);
   await ok("update: reloads on the next resume", !(await sameDocument()));
   const served = await page.evaluate(async () => (await fetch("app.css")).text());
   await ok("update: the reloaded page gets the new file", served.includes(MARK));
   await ok("update: the plan survives the reload", (await badge("week")) === "2", await badge("week"));
+  await ok("update: no toast after reloading", !(await page.locator("update-toast").isVisible()));
+
+  overrides.set("/app.css", css + MARK + MARK);
+  await page.evaluate(() => (/** @type {any} */ (window).__sameDocument = true));
+  // Right after a reload, the launch check may still be running; a resume
+  // then shares it and misses this deploy. Resume until it's heard.
+  let next = "none";
+  for (let i = 0; i < 5 && next !== "updated"; i++) {
+    heard = nextUpdate(2000);
+    await resume();
+    next = await heard;
+  }
+  await ok("update: the next one is announced", next === "updated");
+  await Promise.all([page.waitForEvent("load"), page.locator("update-toast").getByRole("button", { name: "Reload" }).click()]);
+  await ok("update: the toast's Reload reloads", !(await sameDocument()));
   overrides.clear();
 
   await ctx.setOffline(true);
