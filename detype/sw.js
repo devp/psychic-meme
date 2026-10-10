@@ -9,11 +9,11 @@
 // sw.js, so that path isn't how edits arrive; `check` below is.
 //
 // Strategy: cache-first, plus an update check. `fetch` answers from the cache
-// only. On every launch and every resume, app.js posts "check": this worker
-// refetches all of ASSETS, stores them if every fetch succeeded, and tells the
-// page "updated" if any bytes changed. app.js reloads on the next resume. So
-// an edit shows up one reload late while developing, and an installed app
-// picks it up the next time you come back to it. Offline, the check just fails
+// only. On every launch and every resume, <update-toast> posts "check": this
+// worker refetches all of ASSETS, stores them if every fetch succeeded, and
+// tells the page "updated" if any bytes changed; the toast offers a reload.
+// So an edit shows up one reload late while developing, and an installed app
+// shows the toast moments after launch. Offline, the check just fails
 // quietly and nothing changes.
 
 const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
@@ -44,6 +44,7 @@ const ASSETS = [
   "components/ghost-lines.js",
   "components/pages-list.js",
   "components/tabs.js",
+  "components/update-toast.js",
   "vendor/lit.js",
   "icons/detype.svg",
 ];

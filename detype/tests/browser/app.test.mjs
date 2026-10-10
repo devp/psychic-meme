@@ -322,6 +322,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await resume();
   await ok("update: a changed file is announced", (await heard) === "updated");
   await ok("update: the new bytes are cached", (await cachedCss()).includes(MARK));
+  await ok("update: the toast shows right away", await page.locator("update-toast").isVisible());
   await ok("update: no reload while in use", await sameDocument());
 
   // The line in the box isn't saved until Enter, so a pending reload waits.
@@ -338,6 +339,21 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("update: the reloaded page gets the new file", served.includes(MARK));
   const saved = JSON.parse((await ls("detype:pages:records")) ?? "[]").flatMap((p) => p.items.map((i) => i.text));
   await ok("update: the line finished before the reload was saved", saved.includes("half a thought"));
+  await ok("update: no toast after reloading", !(await page.locator("update-toast").isVisible()));
+
+  overrides.set("/app.css", appCss + MARK + MARK);
+  await page.evaluate(() => (/** @type {any} */ (window).__sameDocument = true));
+  // Right after a reload, the launch check may still be running; a resume
+  // then shares it and misses this deploy. Resume until it's heard.
+  let next = "none";
+  for (let i = 0; i < 5 && next !== "updated"; i++) {
+    heard = nextUpdate(2000);
+    await resume();
+    next = await heard;
+  }
+  await ok("update: the next one is announced", next === "updated");
+  await Promise.all([page.waitForEvent("load"), page.locator("update-toast").getByRole("button", { name: "Reload" }).click()]);
+  await ok("update: the toast's Reload reloads", !(await sameDocument()));
   overrides.clear();
 
   await ctx.setOffline(true);
