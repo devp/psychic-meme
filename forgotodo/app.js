@@ -404,7 +404,8 @@ function animate(row, anim) {
   row.dataset.anim = anim;
   return new Promise((resolve) => {
     const done = () => {
-      delete row.dataset.anim;
+      // A newer animation may have replaced this one; leave it running.
+      if (row.dataset.anim === anim) delete row.dataset.anim;
       resolve();
     };
     row.addEventListener("animationend", done, { once: true });
