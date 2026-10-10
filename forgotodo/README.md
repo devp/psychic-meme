@@ -92,3 +92,17 @@ Fonts, vendored so they work offline:
 The same as pizza-starter: `just serve`, `just dev-init`, `just dev-check`,
 `just warnings`. Adding, renaming or deleting an app file (fonts included)
 means updating `ASSETS` in `sw.js`; `just warnings` flags any mismatch.
+
+Browser tests are one file per block in `tests/browser/` (shared setup in
+`harness.mjs`), so `node --test` runs them in parallel.
+
+TODO, to speed up the browser tests further:
+
+- Fake time with `page.clock` instead of sleeping through the 2.2s Recycle
+  holds and the 3s note: ~10s of waiting. Fake timers also fake `Date`, rAF and
+  `animate()`'s fallback timer.
+- Navigate with `load` and wait for the list, not `networkidle`: ~0.5s per
+  navigation, 12 of them.
+- Wait for the expected state instead of the 60ms settle sleeps (mostly in the
+  `run()`, `pick()` and `poofed()` helpers): ~4s, and the likeliest flake on a
+  slow machine.
