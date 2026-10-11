@@ -20,9 +20,14 @@ const out = file.replace(/(\.tinker)?\.md$/, "") + ".html";
 writeFileSync(out, render(doc, a));
 
 for (const w of a.warnings) console.log(`${file}:${w.line}:warn: ${w.msg}`);
-for (const q of a.questions) console.log(`${file}:${q.line}:info: ? ${q.text}`);
+for (const q of marks(a)) console.log(`${file}:${q.line}:info: ${q.sigil} ${q.text}`);
 const passed = a.checks.filter((c) => c.ok).length;
-console.error(`tinker: ready ${passed}/${a.checks.length} · next: ${a.next.text}`);
+console.error(`tinker: ready ${passed}/${a.checks.length}${a.open.length ? ` · ${a.open.length} blocking` : ""} · next: ${a.next.text}`);
+
+// open flags, blockers, questions, in "next" order
+function marks(a) {
+  return [...a.flags.map((q) => ({ ...q, sigil: "!" })), ...a.open.map((q) => ({ ...q, sigil: "?!" })), ...a.questions.map((q) => ({ ...q, sigil: "?" }))];
+}
 
 function esc(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -68,7 +73,7 @@ function decorate(src, doc) {
       .replace(kindRe, '$1<span class="kind k-$2" id="$3">$2 $3</span>')
       .replace(anonRe, '$1<span class="kind k-$2">$2</span>:')
       .replace(keyRe, '$1<span class="field">$2:</span>')
-      .replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\?\s(.*)$/, '$1<span class="q">? $2</span>')
+      .replace(/^(\s*(?:[-*+]|\d+[.)])\s+)(\?!?|!)\s(.*)$/, '$1<span class="q">$2 $3</span>')
       .replace(/\[\[([\w-]+)\]\]/g, (_, id) => (known.has(id) ? `[${id}](#${id})` : `<span class="bad">${id}</span>`))
       .replace(/(^|\s)#([\w-]+)/g, '$1<span class="tag">#$2</span>')
       .replace(/(^|\s)@([\w-]+)/g, '$1<span class="who">@$2</span>'));
@@ -89,7 +94,7 @@ function range(a, b) {
 function render(doc, a) {
   const byId = new Map(doc.nodes.map((n) => [n.id, n]));
   const passed = a.checks.filter((c) => c.ok).length;
-  const qsFor = (id) => doc.questions.filter((q) => q.node === id);
+  const qsFor = (id) => marks(a).filter((q) => q.node === id);
 
   const steps = (list) => {
     // steps carry depth relative to their node; rebuild nesting
@@ -116,7 +121,7 @@ function render(doc, a) {
     return `<li>${head}
       ${meta ? `<div class="meta">${meta}</div>` : ""}
       ${steps(r.steps)}
-      ${qsFor(id).map((q) => `<div class="q">? ${inline(q.text)}</div>`).join("")}</li>`;
+      ${qsFor(id).map((q) => `<div class="q">${q.sigil} ${inline(q.text)}</div>`).join("")}</li>`;
   };
 
   const teach = a.teach
@@ -144,7 +149,7 @@ function render(doc, a) {
   .next{background:#fff6d6;border:1px solid #e0c870;padding:.6rem .8rem;border-radius:6px}
   .meta,.grp{color:#777;font-size:.88em} .q{color:#a05a00} .warn{color:#b03030}
   .plus{color:#2a7a2a} .minus{color:#b03030} .tag{color:#5a5aa0;font-size:.9em} .who{color:#1a7a7a;font-weight:600;font-size:.9em} .bad{color:#b03030;text-decoration:wavy underline}
-  .kind{font-weight:600} .k-rule{color:#2a4a8a} .k-goal{color:#3a6a2a} .k-stub,.k-table{color:#8a6a2a} .k-effect{color:#7a4a8a} .field{color:#777}
+  .kind{font-weight:600} .k-rule{color:#2a4a8a} .k-goal{color:#3a6a2a} .k-given{color:#3a5a8a} .k-stub,.k-table{color:#8a6a2a} .k-effect{color:#7a4a8a} .field{color:#777}
   .cycle{border-left:3px solid #b03030;padding-left:.6rem;list-style:none}
   .checks{padding:0} .checks li{list-style:none} .scroll{overflow-x:auto}
   .grid{border-collapse:collapse} .grid td,.grid th{border:1px solid #ddd;padding:.2rem .5rem;text-align:center} .grid th:first-child{text-align:left}
@@ -159,7 +164,7 @@ function render(doc, a) {
   <p class="next"><b>Next${a.next.line ? ` (line ${a.next.line})` : ""}:</b> ${inline(a.next.text)} · ready <b>${passed}/${a.checks.length}</b></p>
   <ul class="checks">${a.checks.map((c) => `<li>${c.ok ? "✓" : "✗"} ${c.label}</li>`).join("")}</ul>
   ${a.warnings.length ? `<h2 class="sec">Warnings</h2><ul>${a.warnings.map((w) => `<li class="warn">L${w.line}: ${esc(w.msg)}</li>`).join("")}</ul>` : ""}
-  ${a.questions.length ? `<h2 class="sec">Open questions</h2><ul>${a.questions.map((q) => `<li class="q">L${q.line}${q.node ? ` (${q.node})` : ""}: ${inline(q.text)}</li>`).join("")}</ul>` : ""}
+  ${marks(a).length ? `<h2 class="sec">Open questions</h2><ul>${marks(a).map((q) => `<li class="q">L${q.line}${q.node ? ` (${q.node})` : ""}: ${q.sigil} ${inline(q.text)}</li>`).join("")}</ul>` : ""}
   ${a.effects.length ? `<h2 class="sec">Effects</h2><ul>${a.effects.map((e) => `<li><b>${esc(e.label)}</b>${e.anon ? "" : ` — ${inline(e.text)}`}
     <span class="meta">${e.seen ? "seen" : "hypothesis"}</span>
     <div class="meta">${[
@@ -169,6 +174,8 @@ function render(doc, a) {
     ].filter(Boolean).join(" · ")}</div></li>`).join("")}</ul>` : ""}
   <h2 class="sec">Goals, ranked</h2>
   <ol>${a.goals.map((g) => `<li><b>${esc(g.label)}</b>${g.anon ? "" : `: ${inline(g.text)}`}${g.tags.includes("void") ? ' <span class="meta">(void: circled, not served)</span>' : ""}</li>`).join("")}</ol>
+  ${a.givens.length ? `<h2 class="sec">Givens</h2><ul>${a.givens.map((g) => `<li><b>${esc(g.label)}</b>${g.anon ? "" : `: ${inline(g.text)}`}${g.resolves.length ? ` <span class="meta">resolves ${g.resolves.map((r) => esc(r.id)).join(", ")}</span>` : ""}</li>`).join("")}</ul>` : ""}
+  ${a.blockers.some((q) => q.resolved) ? `<h2 class="sec">Resolved blockers</h2><ul>${a.blockers.filter((q) => q.resolved).map((q) => `<li class="meta"><s>?! ${esc(q.id)}: ${inline(q.text)}</s></li>`).join("")}</ul>` : ""}
   ${a.tension.length ? `<div class="warn">tensions: ${a.tension.map((t) => `${t.rule} (+${t.serves.join(",")} −${t.hurts.join(",")})`).join("; ")}</div>` : ""}
   ${grid}
   ${a.attic.length ? `<h2 class="sec">Attic</h2><p class="meta">${a.attic.map((n) => `${n.kind} ${esc(n.label)}`).join(" · ")}</p>` : ""}

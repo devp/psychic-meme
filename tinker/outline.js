@@ -6,12 +6,12 @@
 //     - needs: a, b          fields are reserved keys, as child items
 //     - serves: x  hurts: y
 //     - prose step, [[ref]] counts as needs, #tag
-//     - ? open question
+//     - ? open question   ?! id: blocker   ! flag
 //     - rule sub: nested node; parent recorded
 // Fenced blocks are skipped; ```tinker graph [scope]``` is recorded for the renderer.
 
-export const KINDS = ["goal", "rule", "effect", "stub", "table"];
-export const KEYS = ["needs", "serves", "hurts", "slot"];
+export const KINDS = ["goal", "given", "rule", "effect", "stub", "table"];
+export const KEYS = ["needs", "serves", "hurts", "slot", "resolves"];
 const LIST_KEYS = ["needs", "serves", "hurts"];
 // "rule id: text", "rule id", or anonymous "rule: text"; "#tags" and "@roles" may follow the id
 const KIND_RE = new RegExp(`^(${KINDS.join("|")})(?:\\s+([\\w-]+))?((?:\\s+[#@][\\w-]+)*)\\s*(?::\\s*(.*))?$`);
@@ -19,9 +19,18 @@ const KIND_RE = new RegExp(`^(${KINDS.join("|")})(?:\\s+([\\w-]+))?((?:\\s+[#@][
 export const ATTIC_HEAD = /^attic\b|(^|\s)#attic\b/i;
 const ATTIC_TAG = /(^|\s)#attic\b/;
 const BULLET_RE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+// "! flag", "?! id: blocker" (id optional), "? question"
+function mark(doc, t, line, node, group) {
+  let m;
+  if ((m = t.match(/^\?!\s*(?:([\w-]+):\s+)?(.*)$/))) doc.blockers.push({ id: m[1] ?? null, text: m[2], line, node, group });
+  else if ((m = t.match(/^\?\s*(.*)$/))) doc.questions.push({ text: m[1], line, node, group });
+  else if ((m = t.match(/^!\s+(.*)$/))) doc.flags.push({ text: m[1], line, node, group });
+  else return false;
+  return true;
+}
 
 export function parse(src) {
-  const doc = { pitch: "", title: "", nodes: [], logs: [], questions: [], fences: [], loose: [], lints: [], arrows: [], parked: new Set() };
+  const doc = { pitch: "", title: "", nodes: [], logs: [], questions: [], blockers: [], flags: [], fences: [], loose: [], lints: [], arrows: [], parked: new Set() };
   const groups = [];
   let items = []; // open list items: { indent, node }
   let fence = null;
@@ -66,7 +75,7 @@ export function parse(src) {
       const t = raw.trim();
       const { node } = /^\s/.test(raw) ? owner() : { node: null };
       if (atticGroup() || node?.attic) doc.parked.add(at);
-      if (t.startsWith("? ")) doc.questions.push({ text: t.slice(2), line: at, node: node?.id ?? null, group: path() });
+      if (/^(\?!?|!)\s/.test(t)) mark(doc, t, at, node?.id ?? null, path());
       else if (node) scan(node, t, at);
       else scanLoose(doc, t, at);
       return;
@@ -81,7 +90,7 @@ export function parse(src) {
     if ((m = text.match(KIND_RE))) {
       const n = {
         kind: m[1], id: m[2] ?? `@${at}`, anon: !m[2], text: m[4] ?? "", line: at, group: path(), parent: parent?.id ?? null,
-        needs: [], serves: [], hurts: [], refs: [], goalRefs: [], tags: [], who: [], steps: [], fields: {}, items: [],
+        needs: [], serves: [], hurts: [], resolves: [], refs: [], goalRefs: [], tags: [], who: [], steps: [], fields: {}, items: [],
       };
       // numbered siblings form a sequence, in document order
       if (/\d/.test(li[2])) n.seq = `${parent?.id ?? path().join("/")}|${indent}`;
@@ -108,7 +117,7 @@ export function parse(src) {
       doc.logs.push({ text: m[1], line: at, refs: [...m[1].matchAll(/\[\[([\w-]+)\]\]/g)].map(([, id]) => id) });
       return;
     }
-    if ((m = text.match(/^\?\s*(.*)$/))) { doc.questions.push({ text: m[1], line: at, node: parent?.id ?? null, group: path() }); return; }
+    if (mark(doc, text, at, parent?.id ?? null, path())) return;
     if (!parent) { scanLoose(doc, text, at); return; }
     if (parent.kind === "table" && depth === 0) { parent.items.push(text); return; }
 
@@ -123,6 +132,7 @@ export function parse(src) {
         const vals = v.split(/[,\s]+/).map((x) => x.replace(/^\[\[|\]\]$/g, "")).filter(Boolean);
         if (k === "needs") vals.forEach((id) => parent.refs.push({ id, line: at }));
         else if (k === "slot") parent.fields.slot = { text: v.trim(), line: at };
+        else if (k === "resolves") vals.forEach((id) => parent.resolves.push({ id, line: at }));
         else vals.forEach((id) => parent.goalRefs.push({ id, line: at, kind: k }));
       }
       return;
@@ -259,6 +269,8 @@ export function analyze(full) {
     ...full,
     nodes: full.nodes.filter((n) => !n.attic),
     questions: full.questions.filter(live),
+    blockers: full.blockers.filter(live),
+    flags: full.flags.filter(live),
     loose: full.loose.filter(live),
     lints: full.lints.filter(live),
   };
@@ -278,6 +290,9 @@ export function analyze(full) {
   for (const e of effects) e.seen = e.tags.includes("seen") || logged.has(e.id);
   const goals = doc.nodes.filter((n) => n.kind === "goal" && byId.get(n.id) === n);
   const goalIds = goals.map((g) => g.id);
+  const givens = doc.nodes.filter((n) => n.kind === "given" && byId.get(n.id) === n);
+  const isGoal = (id) => byId.get(id)?.kind === "goal";
+  const isGiven = (id) => byId.get(id)?.kind === "given";
   const stubs = doc.nodes.filter((n) => n.kind === "stub");
   const tables = new Set(doc.nodes.filter((n) => n.kind === "table").map((n) => n.id));
 
@@ -289,9 +304,9 @@ export function analyze(full) {
     warnings.push({ line: r.line, msg: parkedIds.has(r.id) ? `[[${r.id}]] is in the attic` : `unknown [[${r.id}]]${hint(r.id, ids)}` });
   for (const n of doc.nodes)
     for (const g of n.goalRefs)
-      if (byId.get(g.id)?.kind !== "goal") {
+      if (!isGoal(g.id) && !isGiven(g.id)) {
         missing.push(g);
-        warnings.push({ line: g.line, msg: `${g.kind} "${g.id}" isn't a goal${hint(g.id, goalIds)}` });
+        warnings.push({ line: g.line, msg: `${g.kind} "${g.id}" isn't a goal or given${hint(g.id, [...goalIds, ...givens.map((n) => n.id)])}` });
       }
 
   const edges = new Map(rules.map((r) => [r.id, r.needs.filter((d) => byId.get(d)?.kind === "rule")]));
@@ -301,7 +316,8 @@ export function analyze(full) {
 
   // A rule traces to a goal if it serves one, or something that does needs it,
   // contains it, or shares a sequence with it.
-  const traced = new Set([...rules, ...effects].filter((r) => r.serves.length).map((r) => r.id));
+  // serving a given is a "shaped by" line, not a reason to exist
+  const traced = new Set([...rules, ...effects].filter((r) => r.serves.some(isGoal)).map((r) => r.id));
   for (let grew = true; grew; ) {
     grew = false;
     for (const r of rules) {
@@ -324,17 +340,33 @@ export function analyze(full) {
 
   for (const e of effects) {
     if (!e.needs.length) warnings.push({ line: e.line, msg: `effect "${e.label}" has no needs: (which rules produce it?)` });
-    if (!e.serves.length && !e.hurts.length) warnings.push({ line: e.line, msg: `effect "${e.label}" doesn't serve or hurt a goal` });
+    if (!e.serves.some(isGoal) && !e.hurts.some(isGoal)) warnings.push({ line: e.line, msg: `effect "${e.label}" doesn't serve or hurt a goal` });
   }
   const served = new Set([...rules, ...effects].flatMap((n) => n.serves));
   // #void: a goal the rules circle but deliberately don't serve (Baker's fruitful void)
   const unserved = goals.filter((g) => !served.has(g.id) && !g.tags.includes("void"));
   for (const g of unserved) warnings.push({ line: g.line, msg: `goal "${g.label}" has nothing serving it` });
 
+  const breaks = [...rules, ...effects].flatMap((r) => r.hurts.filter(isGiven).map((g) => ({ node: r, given: g })));
+  for (const b of breaks) warnings.push({ line: b.node.line, msg: `${b.node.kind} "${b.node.label}" breaks given "${label(b.given)}"` });
+
+  const blockerIds = doc.blockers.filter((q) => q.id).map((q) => q.id);
+  const resolved = new Set();
+  for (const n of doc.nodes)
+    for (const r of n.resolves) {
+      if (n.kind !== "given") warnings.push({ line: r.line, msg: `resolves: belongs on a given, not a ${n.kind}` });
+      else if (!blockerIds.includes(r.id)) warnings.push({ line: r.line, msg: `no ?! "${r.id}" to resolve${hint(r.id, blockerIds)}` });
+      else resolved.add(r.id);
+    }
+  const blockers = doc.blockers.map((q) => ({ ...q, resolved: resolved.has(q.id) }));
+  const open = blockers.filter((q) => !q.resolved);
+
   const authority = new Map();
   for (const r of rules) for (const w of r.who.length ? r.who : [""]) authority.set(w, [...(authority.get(w) || []), r]);
 
-  const tension = [...rules, ...effects].filter((r) => r.serves.length && r.hurts.length).map((r) => ({ rule: r.label, serves: r.serves, hurts: r.hurts }));
+  const tension = [...rules, ...effects]
+    .map((r) => ({ rule: r.label, serves: r.serves.filter(isGoal), hurts: r.hurts.filter(isGoal) }))
+    .filter((t) => t.serves.length && t.hurts.length);
 
   const checks = [
     { label: "has a pitch", ok: !!doc.pitch },
@@ -344,13 +376,16 @@ export function analyze(full) {
     { label: "no rule cycles", ok: !cycles.length },
     { label: "every rule traces to a goal", ok: !goalless.length },
     { label: "every goal is served", ok: !unserved.length },
-    { label: "effects are grounded", ok: effects.every((e) => e.needs.length && (e.serves.length || e.hurts.length)) },
+    { label: "effects are grounded", ok: effects.every((e) => e.needs.length && (e.serves.some(isGoal) || e.hurts.some(isGoal))) },
     { label: "stubs have slots", ok: !slotless.length && !badSlots.length },
-    { label: "no open questions", ok: !doc.questions.length },
+    { label: "no rule breaks a given", ok: !breaks.length },
+    { label: "no open questions", ok: !doc.questions.length && !open.length && !doc.flags.length },
   ];
 
   warnings.sort((a, b) => a.line - b.line);
   const next =
+    (doc.flags[0] && { line: doc.flags[0].line, text: `! ${doc.flags[0].text}` }) ||
+    (open[0] && { line: open[0].line, text: `?! ${open[0].text}` }) ||
     (!doc.pitch && { line: 1, text: "Write a one-line pitch as a > quote under the title." }) ||
     (!goals.length && { line: 1, text: "Add a goal: what should this feel like at the table? (- goal id: text)" }) ||
     (!rules.length && { line: 1, text: "Add a rule: what does a player do on their turn? (- rule id: text)" }) ||
@@ -358,7 +393,7 @@ export function analyze(full) {
     (warnings[0] && { line: warnings[0].line, text: warnings[0].msg }) ||
     { line: null, text: "Ready. Try a paper playthrough." };
 
-  return { authority, goals, rules, effects, teach, cycles, tension, missing, checks, warnings, next, attic, questions: doc.questions };
+  return { authority, goals, givens, rules, effects, teach, cycles, tension, missing, checks, warnings, next, attic, questions: doc.questions, blockers, open, flags: doc.flags };
 }
 
 const mid = (id) => "n_" + id.replace(/\W/g, "_");
@@ -371,6 +406,7 @@ export function mermaid(full, scope = "") {
   const core = new Set(doc.nodes.filter(inScope).map((n) => n.id));
   const shown = new Set(core);
   const edges = [];
+  const given = new Set(doc.nodes.filter((n) => n.kind === "given").map((n) => n.id));
   for (const n of doc.nodes) {
     const add = (from, to, kind) => {
       if (!core.has(from) && !core.has(to)) return;
@@ -378,8 +414,8 @@ export function mermaid(full, scope = "") {
       shown.add(from); shown.add(to);
       edges.push(kind === "needs" ? `  ${mid(from)} --> ${mid(to)}`
         : kind === "then" ? `  ${mid(from)} ==> ${mid(to)}`
-        : kind === "serves" ? `  ${mid(from)} -. serves .-> ${mid(to)}`
-        : `  ${mid(from)} -. hurts .-x ${mid(to)}`);
+        : kind === "serves" ? `  ${mid(from)} -. ${given.has(to) ? "per" : "serves"} .-> ${mid(to)}`
+        : `  ${mid(from)} -. ${given.has(to) ? "breaks" : "hurts"} .-x ${mid(to)}`);
     };
     for (const d of n.needs) add(d, n.id, "needs");
     if (n.next) add(n.id, n.next, "then");
@@ -388,7 +424,7 @@ export function mermaid(full, scope = "") {
   }
 
   const lines = ["flowchart BT"];
-  const shape = { goal: ["([", "])"], rule: ["[", "]"], effect: ["{{", "}}"], stub: ["[/", "/]"], table: ["[(", ")]"] };
+  const shape = { goal: ["([", "])"], given: ["[[", "]]"], rule: ["[", "]"], effect: ["{{", "}}"], stub: ["[/", "/]"], table: ["[(", ")]"] };
   const nodeLine = (n, pad) => `${pad}${mid(n.id)}${shape[n.kind][0]}"${(n.label + (n.who.length && !n.anon ? " @" + n.who.join(" @") : "")).replace(/"/g, "'")}"${shape[n.kind][1]}:::${core.has(n.id) ? n.kind : "ext"}`;
   // nest by heading path, below the title level
   const tree = { kids: new Map(), nodes: [] };
@@ -412,6 +448,7 @@ export function mermaid(full, scope = "") {
   emit(tree, "  ");
   lines.push(...new Set(edges));
   lines.push("  classDef goal fill:#e8f0e0,stroke:#5a7a3a");
+  lines.push("  classDef given fill:#e4ecf6,stroke:#3a5a8a");
   lines.push("  classDef rule fill:#fff,stroke:#555");
   lines.push("  classDef effect fill:#f3e8f6,stroke:#7a4a8a");
   lines.push("  classDef stub fill:#f4ecd8,stroke:#9a7a3a");

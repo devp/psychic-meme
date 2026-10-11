@@ -200,3 +200,73 @@ test("@roles: on the head line or in steps, inherited by nested rules; #void goa
   assert.ok(!a.warnings.some((w) => w.msg.includes("mystery")));
   assert.match(mermaid(doc), /"frame @gm"/);
 });
+
+test("givens: serves draws a per line but doesn't trace; hurts breaks; no tension, no unserved warning", () => {
+  const doc = parse(`> p
+- goal g: x
+- given no-dice: perfect information
+- given lonely: nothing serves this
+- rule move
+  - serves: g no-dice
+- rule shaped
+  - serves: no-dice
+- rule roll
+  - serves: g  hurts: no-dice
+- rule typo
+  - serves: g no-dic
+`);
+  const a = analyze(doc);
+  const msgs = a.warnings.map((w) => w.msg);
+  assert.deepEqual(a.givens.map((n) => n.id), ["no-dice", "lonely"]);
+  assert.ok(msgs.some((m) => m.startsWith('rule "shaped" doesn\'t trace to a goal')));
+  assert.ok(msgs.includes('rule "roll" breaks given "no-dice"'));
+  assert.ok(msgs.includes('serves "no-dic" isn\'t a goal or given; did you mean "no-dice"?'));
+  assert.ok(!msgs.some((m) => m.includes("lonely")));
+  assert.deepEqual(a.tension, []);
+  assert.equal(a.checks.find((c) => c.label === "no rule breaks a given").ok, false);
+  const g = mermaid(doc);
+  assert.match(g, /n_move -\. per \.-> n_no_dice/);
+  assert.match(g, /n_roll -\. breaks \.-x n_no_dice/);
+  assert.match(g, /n_no_dice\[\["no-dice"\]\]:::given/);
+});
+
+test("?! blockers and ! flags: parsed at top level and under nodes; resolves closes a blocker", () => {
+  const doc = parse(`- goal g: x
+- ! playtest first
+- ?! grid: hex or square
+- ?! no id here
+- given square: square grid
+  - resolves: grid
+- given stray
+  - resolves: gird
+- rule r
+  - serves: g
+  - resolves: grid
+  - ?! kick: can a kick fail
+  - ! fiddly
+  - ? plain question
+? loose question
+`);
+  assert.deepEqual(doc.flags.map((f) => [f.text, f.node]), [["playtest first", null], ["fiddly", "r"]]);
+  assert.deepEqual(doc.blockers.map((b) => [b.id, b.text, b.node]), [["grid", "hex or square", null], [null, "no id here", null], ["kick", "can a kick fail", "r"]]);
+  assert.deepEqual(doc.questions.map((q) => q.text), ["plain question", "loose question"]);
+  const a = analyze(doc);
+  assert.deepEqual(a.open.map((b) => b.id), [null, "kick"]);
+  assert.equal(a.blockers.find((b) => b.id === "grid").resolved, true);
+  const msgs = a.warnings.map((w) => w.msg);
+  assert.ok(msgs.includes('no ?! "gird" to resolve; did you mean "grid"?'));
+  assert.ok(msgs.includes("resolves: belongs on a given, not a rule"));
+});
+
+test("next: ! first, then open ?!, then basics, then ?; readiness counts all three", () => {
+  const base = "# x\n> p\n- goal g: x\n- rule r\n  - serves: g\n";
+  const next = (s) => analyze(parse(s)).next.text;
+  const ready = (s) => analyze(parse(s)).checks.find((c) => c.label === "no open questions").ok;
+  assert.equal(next("# x\n- ? q\n- ?! b: blocker\n- ! flag\n"), "! flag");
+  assert.equal(next("# x\n- ? q\n- ?! b: blocker\n"), "?! blocker");
+  assert.match(next("# x\n- ? q\n- ?! b: blocker\n- given s\n  - resolves: b\n"), /pitch/);
+  assert.equal(next(base + "- ? q\n"), "? q");
+  assert.equal(ready(base), true);
+  for (const extra of ["- ? q\n", "- ?! b\n", "- ! f\n"]) assert.equal(ready(base + extra), false, extra);
+  assert.equal(ready(base + "- ?! b: x\n- given s\n  - resolves: b\n"), true);
+});
