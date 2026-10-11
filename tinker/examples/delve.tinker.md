@@ -8,6 +8,14 @@
 - goal choice: every turn has a real tradeoff
 - goal dread: the table should feel the walls closing in
 - goal escape #void: what it means to get out; no rule says
+- ! playtest at 3 players before adding torches
+- ?! deck: do rooms come from dice or a deck
+
+## Givens
+
+- given solo-ok: plays with one player; nobody runs the dungeon
+- given no-dice: every room is drawn, never rolled
+  - resolves: deck
 
 escalating risk --> endgame
 fatigue --> forced rest --> the deck advances --> escalating risk
@@ -29,7 +37,7 @@ fatigue --> forced rest --> the deck advances --> escalating risk
   2. rule: pass the lantern @left
 - rule delve: enter the next room
   - needs: room, fatigue
-  - serves: choice dread
+  - serves: choice dread no-dice
   - flip a [[room]], resolve it
   - gain 1 [[fatigue]] #core
   - ? does a cleared room stay cleared
@@ -54,7 +62,8 @@ fatigue --> forced rest --> the deck advances --> escalating risk
 ### Rooms
 
 - rule room @gm: draw from the room deck
-  - serves: dread
+  - serves: dread no-dice
+  - hurts: solo-ok
   - reveal; if it shows a [[monster]], fight it
 - stub monster: 3HP, hits for 1
   - slot: {creature} that {verb}s when bloodied

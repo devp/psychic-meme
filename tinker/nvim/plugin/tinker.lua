@@ -18,20 +18,24 @@ for name, link in pairs({
   TinkerTag = "Special",
   TinkerWho = "Constant",
   TinkerQuestion = "Todo",
+  TinkerBlocker = "Error",
+  TinkerFlag = "WarningMsg",
   TinkerArrow = "Operator",
 }) do
   vim.api.nvim_set_hl(0, name, { link = link, default = true })
 end
 
 local patterns = {
-  { "TinkerKind", [[\v^\s*([-*+]|\d+[.)])\s+\zs(goal|rule|effect|stub|table)>]] },
-  { "TinkerId", [[\v^\s*([-*+]|\d+[.)])\s+(goal|rule|effect|stub|table)\s+\zs[a-zA-Z0-9_-]+]] },
-  { "TinkerField", [[\v^\s*([-*+]|\d+[.)])\s+\zs(needs|serves|hurts|slot|log):]] },
+  { "TinkerKind", [[\v^\s*([-*+]|\d+[.)])\s+\zs(goal|given|rule|effect|stub|table)>]] },
+  { "TinkerId", [[\v^\s*([-*+]|\d+[.)])\s+(goal|given|rule|effect|stub|table)\s+\zs[a-zA-Z0-9_-]+]] },
+  { "TinkerField", [[\v^\s*([-*+]|\d+[.)])\s+\zs(needs|serves|hurts|slot|resolves|log):]] },
   { "TinkerField", [[\v\s\zs(serves|hurts):]] },
   { "TinkerRef", [=[\v\[\[[a-zA-Z0-9_-]+\]\]]=] },
   { "TinkerTag", [[\v(^|\s)\zs#[a-zA-Z0-9_-]+]] },
   { "TinkerWho", [[\v(^|\s)\zs\@[a-zA-Z0-9_-]+]] },
   { "TinkerQuestion", [[\v^\s*(([-*+]|\d+[.)])\s+)?\zs\?\s.*]] },
+  { "TinkerBlocker", [[\v^\s*(([-*+]|\d+[.)])\s+)?\zs\?!\s.*]] },
+  { "TinkerFlag", [[\v^\s*(([-*+]|\d+[.)])\s+)?\zs!\s.*]] },
   { "TinkerArrow", [[\v\s\zs--\>\ze\s]] },
 }
 
