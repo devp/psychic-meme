@@ -26,11 +26,17 @@ Headings are groups (acts, scenes, subsystems), at any depth. Nodes are list ite
 
 ## Goals
 - goal fast: a turn takes under 30 seconds     ← list order = rank
+- ! playtest with 3 before adding more         ← flag: an issue or your next task
+- ?! grid: hex or square                       ← blocker; id optional
+
+## Givens
+- given no-dice: perfect information, no chance  ← unranked; refer back to these
+  - resolves: grid
 
 ## Core loop
 - rule delve: enter the next room
   - needs: room, fatigue        ← also inferred from [[room]] anywhere in the rule
-  - serves: choice  hurts: fast
+  - serves: choice  hurts: fast no-dice
   - flip a [[room]], gain 1 [[fatigue]] #core
   - ? does a cleared room stay cleared
   - rule collapse: nested rules are fine
@@ -48,17 +54,23 @@ escalating risk --> endgame     ← your own graph; consecutive arrow lines draw
 
 | Syntax | Meaning |
 |---|---|
-| `goal` `rule` `effect` `stub` `table` | node kinds: `- kind id: text`, or `- kind: text` with no id (it can't be referenced) |
+| `goal` `given` `rule` `effect` `stub` `table` | node kinds: `- kind id: text`, or `- kind: text` with no id (it can't be referenced) |
 | `needs:` `serves:` `hurts:` `slot:` | fields, as child items |
 | `[[id]]` | reference; inside a node it counts as `needs` |
 | `1.` `2.` `3.` rules | a sequence, in document order; drawn as `==>`, and justified by their parent |
 | goal check | a rule passes if it serves a goal, or if something that does needs it, contains it, or is in its sequence |
 | `effect` | a dynamic (MDA's middle layer): `needs:` the rules that produce it, `serves:`/`hurts:` goals. It's a hypothesis until tagged `#seen` or referenced from a `log:` |
 | goal served | every goal needs some rule or effect serving it |
+| `given` | a commitment you hold yourself to: a decision, constraint, or antigoal. Unranked, and it needs nothing serving it. Goals say what the game reaches for; givens say what you've settled |
+| `serves:`/`hurts:` a given | `serves:` draws a dotted "shaped by" line (it doesn't count as tracing to a goal). `hurts:` is a violation: a warning, not a tension. Phrase an antigoal so breaking it is what hurts it (`given no-sim`) |
+| `resolves:` | on a given: the id of a `?!` it closes. The blocker stays in the file as history |
 | `#tag` | free tag (per-game vocabulary) |
 | `@role` | who decides (`@gm`, `@player`, `@dice`, `@left`…), on the node line or in steps. Nested rules inherit it. Shown as a "who decides" table |
 | `#void` on a goal | deliberately unserved (Baker's fruitful void): no warning |
-| `? text` | open question; the first one is "next" |
+| `? text` | open question |
+| `?! id: text` | blocking question: it stops forward progress until a given `resolves:` it. Id optional (needed to resolve it) |
+| `! text` | flag: an issue or next task you've marked for yourself |
+| next | first `!`, else first open `?!`, else a missing basic, else first `?`, else first warning |
 | `## Attic` or `#attic` | parked: stays in the file, ignored by analysis, folded in the HTML. A core rule that needs it gets a warning |
 | `a --> b --> c` | your own sketch, drawn inline |
 
