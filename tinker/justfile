@@ -1,0 +1,18 @@
+default:
+    @just --list
+
+# Start a new game from the template: just new ~/games/heist  → ~/games/heist.tinker.md
+new path:
+    test ! -e {{path}}.tinker.md && cp template.tinker.md {{path}}.tinker.md && echo {{path}}.tinker.md
+
+# Build <game>.html beside <game>.tinker.md; findings on stdout.
+build file:
+    node build.js {{file}}
+
+# Rebuild on save; open the .html once, it refreshes itself. Needs fswatch. (The nvim plugin also builds on save.)
+watch file:
+    node build.js {{file}} --live && open {{replace_regex(file, '(\.tinker)?\.md$', '')}}.html
+    fswatch -o {{file}} | xargs -n1 -I{} node build.js {{file}} --live
+
+test:
+    node --test

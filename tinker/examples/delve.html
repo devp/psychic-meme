@@ -1,0 +1,85 @@
+<!doctype html><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delve</title>
+<style>
+  body{font:15px/1.45 system-ui,sans-serif;margin:0;color:#222;background:#fdfcf8}
+  .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2rem;padding:1rem 1.2rem;max-width:90rem;margin:0 auto}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+  h1{font-size:1.3rem;margin:.2rem 0} h2.sec{font-size:.85rem;margin:1.4rem 0 .4rem;text-transform:uppercase;letter-spacing:.06em;color:#777}
+  .next{background:#fff6d6;border:1px solid #e0c870;padding:.6rem .8rem;border-radius:6px}
+  .meta,.grp{color:#777;font-size:.88em} .q{color:#a05a00} .warn{color:#b03030}
+  .plus{color:#2a7a2a} .minus{color:#b03030} .tag{color:#5a5aa0;font-size:.9em} .bad{color:#b03030;text-decoration:wavy underline}
+  .kind{font-weight:600} .k-rule{color:#2a4a8a} .k-goal{color:#3a6a2a} .k-stub,.k-table{color:#8a6a2a} .k-effect{color:#7a4a8a} .field{color:#777}
+  .cycle{border-left:3px solid #b03030;padding-left:.6rem;list-style:none}
+  .checks{padding:0} .checks li{list-style:none} .scroll{overflow-x:auto}
+  .grid{border-collapse:collapse} .grid td,.grid th{border:1px solid #ddd;padding:.2rem .5rem;text-align:center} .grid th:first-child{text-align:left}
+  #doc pre:not(.mermaid){background:#f3f1ea;padding:.5rem;overflow-x:auto} .mermaid{background:none;overflow-x:auto}
+  .attic{opacity:.7;border-left:3px solid #ccc;padding-left:.6rem} .attic summary{cursor:pointer;color:#777}
+  a{color:inherit}
+</style>
+<div class="wrap">
+<section>
+  <h1>Delve</h1>
+  <div class="meta">push-your-luck delve; every room costs you, the exit is always one more room away</div>
+  <p class="next"><b>Next (line 34):</b> ? does a cleared room stay cleared · ready <b>8/10</b></p>
+  <ul class="checks"><li>✓ has a pitch</li><li>✓ has goals</li><li>✓ has rules</li><li>✓ references resolve</li><li>✗ no rule cycles</li><li>✓ every rule traces to a goal</li><li>✓ every goal is served</li><li>✓ effects are grounded</li><li>✓ stubs have slots</li><li>✗ no open questions</li></ul>
+  <h2 class="sec">Warnings</h2><ul><li class="warn">L35: cycle: rest ↔ fatigue ↔ collapse can only be taught together</li><li class="warn">L37: &quot;serve:&quot; reads as prose; did you mean &quot;serves:&quot;?</li></ul>
+  <h2 class="sec">Open questions</h2><ul><li class="q">L34 (delve): does a cleared room stay cleared</li><li class="q">L68: how does the game end for everyone</li></ul>
+  <h2 class="sec">Effects</h2><ul><li><b>pressure</b> — the deck advancing makes every rest feel expensive
+    <span class="meta">seen</span>
+    <div class="meta">from <a href="#rest">rest</a>, <a href="#room">room</a> · <span class="plus">+dread</span> · <span class="minus">−fast</span></div></li><li><b>hoarding</b> — players sit near 4 fatigue to squeeze one more room <span class="tag">#hunch</span>
+    <span class="meta">hypothesis</span>
+    <div class="meta">from <a href="#fatigue">fatigue</a>, <a href="#delve">delve</a> · <span class="plus">+choice</span></div></li></ul>
+  <h2 class="sec">Goals, ranked</h2>
+  <ol><li><b>fast</b>: a turn takes under 30 seconds</li><li><b>choice</b>: every turn has a real tradeoff</li><li><b>dread</b>: the table should feel the walls closing in</li></ol>
+  <div class="warn">tensions: pressure (+dread −fast)</div>
+  
+    <div class="scroll"><table class="grid"><tr><th></th><th title="a turn takes under 30 seconds">1. fast</th><th title="every turn has a real tradeoff">2. choice</th><th title="the table should feel the walls closing in">3. dread</th></tr>
+    <tr><th><i>pressure</i></th><td><span class="minus">−</span></td><td></td><td><span class="plus">+</span></td></tr><tr><th><i>hoarding</i></th><td></td><td><span class="plus">+</span></td><td></td></tr><tr><th>turn</th><td><span class="plus">+</span></td><td></td><td></td></tr><tr><th>choose to delve or rest</th><td></td><td></td><td></td></tr><tr><th>pass the lantern left</th><td></td><td></td><td></td></tr><tr><th>delve</th><td></td><td><span class="plus">+</span></td><td><span class="plus">+</span></td></tr><tr><th>rest</th><td><span class="minus">−</span></td><td></td><td></td></tr><tr><th>fatigue</th><td></td><td></td><td><span class="plus">+</span></td></tr><tr><th>collapse</th><td></td><td></td><td></td></tr><tr><th>room</th><td></td><td></td><td><span class="plus">+</span></td></tr>
+    </table></div>
+  <h2 class="sec">Attic</h2><p class="meta">rule torches · table omens</p>
+  <h2 class="sec">Run sheet (teach order)</h2>
+  <ol><li><b>turn</b> — one player at a time
+      <div class="meta"><span class="grp">Core loop</span> · <span class="plus">+fast</span></div>
+      
+      </li><li><b>pass the lantern left</b>
+      <div class="meta"><span class="grp">Core loop</span></div>
+      
+      </li><li class="cycle"><div class="warn">cycle: teach together (rest ↔ fatigue ↔ collapse)</div><ol><li><b>rest</b> — recover, but the dungeon moves
+      <div class="meta"><span class="grp">Core loop</span> · needs <a href="#fatigue">fatigue</a> · <span class="minus">−fast</span></div>
+      <ul><li>serve: choice</li><li>lose 2 <a href="#fatigue">fatigue</a>, the deck advances 1 <span class="tag">#core</span></li></ul>
+      </li><li><b>fatigue</b> — a counter; at 5 you <a href="#collapse">collapse</a>
+      <div class="meta"><span class="grp">The dungeon › Fatigue</span> · needs <a href="#collapse">collapse</a> · <span class="plus">+dread</span></div>
+      
+      </li><li><b>collapse</b> — what 5 fatigue does
+      <div class="meta"><span class="grp">The dungeon › Fatigue</span> · needs <a href="#rest">rest</a></div>
+      <ul><li>you must <a href="#rest">rest</a> or drop your loot</li></ul>
+      </li></ol></li><li><b>room</b> — draw from the room deck
+      <div class="meta"><span class="grp">The dungeon › Rooms</span> · needs <a href="#monster">monster</a> · <span class="plus">+dread</span></div>
+      <ul><li>reveal; if it shows a <a href="#monster">monster</a>, fight it</li></ul>
+      </li><li><b>delve</b> — enter the next room
+      <div class="meta"><span class="grp">Core loop</span> · needs <a href="#room">room</a>, <a href="#fatigue">fatigue</a> · <span class="plus">+choice +dread</span></div>
+      <ul><li>flip a <a href="#room">room</a>, resolve it</li><li>gain 1 <a href="#fatigue">fatigue</a> <span class="tag">#core</span></li></ul>
+      <div class="q">? does a cleared room stay cleared</div></li><li><b>choose to <a href="#delve">delve</a> or <a href="#rest">rest</a></b>
+      <div class="meta"><span class="grp">Core loop</span> · needs <a href="#delve">delve</a>, <a href="#rest">rest</a> · then pass the lantern left</div>
+      
+      </li></ol>
+  <h2 class="sec">Play log</h2><ul><li>improvised &quot;debt collector bargains&quot;: took your loot instead of HP; keep it</li><li>someone rested at 2 fatigue just to dodge a room; <a href="#pressure">pressure</a> is real</li></ul>
+  
+</section>
+<section id="doc"></section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  const el = document.getElementById("doc");
+  el.innerHTML = marked.parse("# Delve\n\n> push-your-luck delve; every room costs you, the exit is always one more room away\n\n## Goals\n\n- \u003cspan class=\"kind k-goal\" id=\"fast\">goal fast\u003c/span>: a turn takes under 30 seconds\n- \u003cspan class=\"kind k-goal\" id=\"choice\">goal choice\u003c/span>: every turn has a real tradeoff\n- \u003cspan class=\"kind k-goal\" id=\"dread\">goal dread\u003c/span>: the table should feel the walls closing in\n\nescalating risk --> endgame\nfatigue --> forced rest --> the deck advances --> escalating risk\n\n```mermaid\nflowchart LR\n  s0[\"escalating risk\"] --> s1[\"endgame\"]\n  s2[\"fatigue\"]:::node --> s3[\"forced rest\"] --> s4[\"the deck advances\"] --> s0[\"escalating risk\"]\n  classDef node fill:#e8eef8,stroke:#4a6a9a\n```\n\n\n## Effects\n\n- \u003cspan class=\"kind k-effect\" id=\"pressure\">effect pressure\u003c/span>: the deck advancing makes every rest feel expensive\n  - \u003cspan class=\"field\">needs:\u003c/span> rest, room\n  - \u003cspan class=\"field\">serves:\u003c/span> dread  hurts: fast\n- \u003cspan class=\"kind k-effect\" id=\"hoarding\">effect hoarding\u003c/span>: players sit near 4 fatigue to squeeze one more room \u003cspan class=\"tag\">#hunch\u003c/span>\n  - \u003cspan class=\"field\">needs:\u003c/span> fatigue, delve\n  - \u003cspan class=\"field\">serves:\u003c/span> choice\n\n## Core loop\n\n- \u003cspan class=\"kind k-rule\" id=\"turn\">rule turn\u003c/span>: one player at a time\n  - \u003cspan class=\"field\">serves:\u003c/span> fast\n  1. \u003cspan class=\"kind k-rule\">rule\u003c/span>: choose to [delve](#delve) or [rest](#rest)\n  2. \u003cspan class=\"kind k-rule\">rule\u003c/span>: pass the lantern left\n- \u003cspan class=\"kind k-rule\" id=\"delve\">rule delve\u003c/span>: enter the next room\n  - \u003cspan class=\"field\">needs:\u003c/span> room, fatigue\n  - \u003cspan class=\"field\">serves:\u003c/span> choice dread\n  - flip a [room](#room), resolve it\n  - gain 1 [fatigue](#fatigue) \u003cspan class=\"tag\">#core\u003c/span>\n  - \u003cspan class=\"q\">? does a cleared room stay cleared\u003c/span>\n- \u003cspan class=\"kind k-rule\" id=\"rest\">rule rest\u003c/span>: recover, but the dungeon moves\n  - \u003cspan class=\"field\">needs:\u003c/span> fatigue\n  - serve: choice\n  - \u003cspan class=\"field\">hurts:\u003c/span> fast\n  - lose 2 [fatigue](#fatigue), the deck advances 1 \u003cspan class=\"tag\">#core\u003c/span>\n\n## The dungeon\n\n### Fatigue\n\n- \u003cspan class=\"kind k-rule\" id=\"fatigue\">rule fatigue\u003c/span>: a counter; at 5 you [collapse](#collapse)\n  - \u003cspan class=\"field\">serves:\u003c/span> dread\n  - \u003cspan class=\"kind k-rule\" id=\"collapse\">rule collapse\u003c/span>: what 5 fatigue does\n    - you must [rest](#rest) or drop your loot\n\n```mermaid\nflowchart BT\n  subgraph g0[\"Goals\"]\n    n_dread([\"dread\"]):::ext\n  end\n  subgraph g1[\"Effects\"]\n    n_hoarding{{\"hoarding\"}}:::ext\n  end\n  subgraph g2[\"Core loop\"]\n    n_delve[\"delve\"]:::ext\n    n_rest[\"rest\"]:::ext\n  end\n  subgraph g3[\"The dungeon\"]\n    subgraph g4[\"Fatigue\"]\n      n_fatigue[\"fatigue\"]:::rule\n      n_collapse[\"collapse\"]:::rule\n    end\n  end\n  n_fatigue --> n_hoarding\n  n_fatigue --> n_delve\n  n_fatigue --> n_rest\n  n_collapse --> n_fatigue\n  n_fatigue -. serves .-> n_dread\n  n_rest --> n_collapse\n  classDef goal fill:#e8f0e0,stroke:#5a7a3a\n  classDef rule fill:#fff,stroke:#555\n  classDef effect fill:#f3e8f6,stroke:#7a4a8a\n  classDef stub fill:#f4ecd8,stroke:#9a7a3a\n  classDef table fill:#eee,stroke:#888\n  classDef ext fill:#fff,stroke:#bbb,color:#999,stroke-dasharray:3 3\n```\n\n### Rooms\n\n- \u003cspan class=\"kind k-rule\" id=\"room\">rule room\u003c/span>: draw from the room deck\n  - \u003cspan class=\"field\">serves:\u003c/span> dread\n  - reveal; if it shows a [monster](#monster), fight it\n- \u003cspan class=\"kind k-stub\" id=\"monster\">stub monster\u003c/span>: 3HP, hits for 1\n  - \u003cspan class=\"field\">slot:\u003c/span> {creature} that {verb}s when bloodied\n- \u003cspan class=\"kind k-table\" id=\"creature\">table creature\u003c/span>: rat-king | glass hound | debt collector\n- \u003cspan class=\"kind k-table\" id=\"verb\">table verb\u003c/span>\n  - splits\n  - screams\n  - bargains\n\n## Endgame\n\n- \u003cspan class=\"q\">? how does the game end for everyone\u003c/span>\n- \u003cspan class=\"field\">log:\u003c/span> improvised \"debt collector bargains\": took your loot instead of HP; keep it\n- \u003cspan class=\"field\">log:\u003c/span> someone rested at 2 fatigue just to dodge a room; [pressure](#pressure) is real\n\n```mermaid\nflowchart BT\n  subgraph g0[\"Goals\"]\n    n_fast([\"fast\"]):::goal\n    n_choice([\"choice\"]):::goal\n    n_dread([\"dread\"]):::goal\n  end\n  subgraph g1[\"Effects\"]\n    n_pressure{{\"pressure\"}}:::effect\n    n_hoarding{{\"hoarding\"}}:::effect\n  end\n  subgraph g2[\"Core loop\"]\n    n_turn[\"turn\"]:::rule\n    n__27[\"choose to delve or rest\"]:::rule\n    n__28[\"pass the lantern left\"]:::rule\n    n_delve[\"delve\"]:::rule\n    n_rest[\"rest\"]:::rule\n  end\n  subgraph g3[\"The dungeon\"]\n    subgraph g4[\"Fatigue\"]\n      n_fatigue[\"fatigue\"]:::rule\n      n_collapse[\"collapse\"]:::rule\n    end\n    subgraph g5[\"Rooms\"]\n      n_room[\"room\"]:::rule\n      n_monster[/\"monster\"/]:::stub\n      n_creature[(\"creature\")]:::table\n      n_verb[(\"verb\")]:::table\n    end\n  end\n  n_rest --> n_pressure\n  n_room --> n_pressure\n  n_pressure -. serves .-> n_dread\n  n_pressure -. hurts .-x n_fast\n  n_fatigue --> n_hoarding\n  n_delve --> n_hoarding\n  n_hoarding -. serves .-> n_choice\n  n_turn -. serves .-> n_fast\n  n_delve --> n__27\n  n_rest --> n__27\n  n__27 ==> n__28\n  n_room --> n_delve\n  n_fatigue --> n_delve\n  n_delve -. serves .-> n_choice\n  n_delve -. serves .-> n_dread\n  n_fatigue --> n_rest\n  n_rest -. hurts .-x n_fast\n  n_collapse --> n_fatigue\n  n_fatigue -. serves .-> n_dread\n  n_rest --> n_collapse\n  n_monster --> n_room\n  n_room -. serves .-> n_dread\n  classDef goal fill:#e8f0e0,stroke:#5a7a3a\n  classDef rule fill:#fff,stroke:#555\n  classDef effect fill:#f3e8f6,stroke:#7a4a8a\n  classDef stub fill:#f4ecd8,stroke:#9a7a3a\n  classDef table fill:#eee,stroke:#888\n  classDef ext fill:#fff,stroke:#bbb,color:#999,stroke-dasharray:3 3\n```\n\n\u003cdetails class=\"attic\">\u003csummary>Attic (parked)\u003c/summary>\n\n\n- \u003cspan class=\"kind k-rule\" id=\"torches\">rule torches\u003c/span>: light as a second resource?\n  - \u003cspan class=\"q\">? does this fight fatigue for the same job\u003c/span>\n- \u003cspan class=\"kind k-table\" id=\"omens\">table omens\u003c/span>: a crow | cold draft | the lantern gutters\n\n\n\u003c/details>");
+  for (const c of el.querySelectorAll("code.language-mermaid")) {
+    const pre = document.createElement("pre");
+    pre.className = "mermaid";
+    pre.textContent = c.textContent;
+    c.parentElement.replaceWith(pre);
+  }
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+  await mermaid.run();
+</script>
