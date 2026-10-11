@@ -127,7 +127,7 @@
         <li><b>Top left:</b> kind letter, then id. No id on an unnamed rule: its text is its name.</li>
         <li><b>Top right:</b> <code>@role</code>, or a goal's rank.</li>
         <li><b>Middle:</b> text and steps.</li>
-        <li><b>Bottom band</b>, and nothing else there: <code>needs:</code>, <code>+goal</code>, <code>−goal</code>, <code>≡given</code>, <code>✗given</code>; on a given, <code>resolves:</code>. One place = quick to scan.</li>
+        <li><b>Bottom band</b>, and nothing else there: <code>needs:</code>, <code>+goal</code>, <code>−goal</code>, <code>per given</code>, <code>✗given</code>; on a given, <code>resolves:</code>. One place = quick to scan.</li>
         <li>Questions go on stickies, never on the card.</li>
       </ul>
     </div>
@@ -142,7 +142,7 @@
         <table>
           <tr><td>+goal</td><td>serves it</td></tr>
           <tr><td>−goal</td><td>hurts it (tension)</td></tr>
-          <tr><td>≡given</td><td>shaped by it</td></tr>
+          <tr><td>per given</td><td>shaped by it</td></tr>
           <tr><td>✗given</td><td>breaks it (violation)</td></tr>
           <tr><td>needs:</td><td>names it depends on</td></tr>
           <tr><td>resolves:</td><td>on a given: the <b>?!</b> id it settles</td></tr>
@@ -158,7 +158,7 @@
         <h3 style="margin-top:0">Stickies</h3>
         <table>
           <tr><td>?</td><td>question. Peel it off to close it.</td></tr>
-          <tr><td>?! id</td><td>blocker. Not peeled: when a given settles it, move it to that given's back.</td></tr>
+          <tr><td>?! (id)</td><td>blocker; id only if a given might settle it. Not peeled: when a given settles it, move it to that given's back.</td></tr>
           <tr><td>!</td><td>flag: an issue or task for yourself. On a card, or on top of the stack.</td></tr>
         </table>
         <h3>Sequences</h3>
@@ -234,7 +234,7 @@
     <ol>
       <li>Goal cards across the top, in rank order.</li>
       <li>Under each goal, stack the rule and effect cards marked <code>+</code> for it.</li>
-      <li>Givens in a second row, under the goals, above the stacks. Not columns: nothing has to stack under them, and a rule marked <code>≡</code> still needs a goal.</li>
+      <li>Givens in a second row, under the goals, above the stacks. Not columns: nothing has to stack under them, and a rule marked <code>per</code> a given still needs a goal.</li>
       <li>Pull in any card a stacked card <code>needs</code>, any card clipped behind one (sequences), and any card nested under one.</li>
       <li>Left on the table = <b>doesn't trace to a goal</b>. Give it a goal, connect it to something that has one, or attic it.</li>
       <li>A goal with an empty column <b>has nothing serving it</b>, unless it's ○ void.</li>
@@ -316,7 +316,7 @@
       <tr><td>divider</td><td>heading; ATTIC → <code>## Attic</code></td></tr>
       <tr><td>clipped sequence</td><td>numbered list</td></tr>
       <tr><td>given card</td><td><code>- given id: text</code> under <code>## Givens</code></td></tr>
-      <tr><td>≡x · ✗x</td><td><code>serves: x</code> · <code>hurts: x</code></td></tr>
+      <tr><td>per x · ✗x</td><td><code>serves: x</code> · <code>hurts: x</code></td></tr>
       <tr><td>stickies</td><td><code>- ?</code> · <code>- ?! id:</code> · <code>- !</code></td></tr>
     </table>
     <div class="foot"><span></span><span>12</span></div>
@@ -342,14 +342,14 @@
   <div class="card rule tpl">
     <div class="head"><span class="glyph">R</span><span class="field">id</span><span class="field role">@</span></div>
     <div class="lines"></div>
-    <div class="band"><div>needs:</div><div><span>+</span><span>−</span><span>≡ / ✗</span></div></div>
+    <div class="band"><div>needs:</div><div><span>+</span><span>−</span><span>per / ✗</span></div></div>
     <span class="kind">rule</span>
   </div>
 
   <div class="card effect tpl">
     <div class="head"><span class="glyph">E</span><span class="field">id</span><span class="hyp"></span></div>
     <div class="lines"></div>
-    <div class="band"><div>needs:</div><div><span>+</span><span>−</span></div></div>
+    <div class="band"><div>needs:</div><div><span>+</span><span>−</span><span>per / ✗</span></div></div>
     <span class="kind">effect · ☐ hypothesis → ☑ seen</span>
   </div>
   <i class="cut v" style="left:0.5in;top:0.85in"></i><i class="cut v" style="left:0.5in;top:7.4in"></i><i class="cut v" style="left:5.5in;top:0.85in"></i><i class="cut v" style="left:5.5in;top:7.4in"></i><i class="cut v" style="left:10.5in;top:0.85in"></i><i class="cut v" style="left:10.5in;top:7.4in"></i><i class="cut h" style="top:1.25in;left:0.1in"></i><i class="cut h" style="top:1.25in;left:10.6in"></i><i class="cut h" style="top:4.25in;left:0.1in"></i><i class="cut h" style="top:4.25in;left:10.6in"></i><i class="cut h" style="top:7.25in;left:0.1in"></i><i class="cut h" style="top:7.25in;left:10.6in"></i>
@@ -375,7 +375,7 @@
   <div class="card rule tpl">
     <div class="head"><span class="glyph">R</span><span class="field">id</span><span class="field role">@</span></div>
     <div class="lines"></div>
-    <div class="band"><div>needs:</div><div><span>+</span><span>−</span><span>≡ / ✗</span></div></div>
+    <div class="band"><div>needs:</div><div><span>+</span><span>−</span><span>per / ✗</span></div></div>
     <span class="kind">rule</span>
   </div>
 

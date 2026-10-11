@@ -35,16 +35,16 @@ The idea that carries over: tinker's checks are all sorting and tracing, and you
 
 - **Kind letter** top left: `G` `R` `E` `S` `T`, and `≡` for a given. Leave the id off for an unnamed rule; then the text is its name.
 - **`@role`** top right: who decides.
-- **Bottom band** is reserved for `needs:`, `+goal`, `−goal`. Keeping it in one place is what makes the rituals quick to scan.
+- **Bottom band** is reserved for the analysis fields: `needs:`, `+goal`, `−goal`, and the given marks below; on a given card, `resolves:`. Goal cards have no bottom band. Keeping it in one place is what makes the rituals quick to scan.
 - **Goal cards** carry their rank in a circle, top right (①②③). Re-ranking means renumbering, never recopying.
 - **`#void` goal:** draw a hollow circle ○ in place of the rank.
 - **Given cards** have no rank: they're commitments you refer back to (a decision, a constraint, an antigoal like "not a sim"). If a given settles a blocker, write `resolves: <id>` in the bottom band.
-- **Bottom band, given marks:** `≡no-dice` for "shaped by this given"; `✗no-dice` for "breaks it" (a violation, not a tension).
+- **Bottom band, given marks:** `per no-dice` for "shaped by this given"; `✗no-dice` for "breaks it" (a violation, not a tension).
 - **Effect cards** have a box: ☐ while it's a hypothesis, ☑ once you've seen it at the table.
 - **Stub cards** carry the slot template (`{creature} that {verb}s when bloodied`). **Table cards** are numbered lists you can roll on.
 - **Sequences:** the parent rule card goes in front, and its numbered child cards are clipped behind it in order (`turn.1`, `turn.2`).
 - **Questions** go on stickies, never on the card itself. Peeling a sticky off is how you close a question, and it should feel good.
-- **Blockers** (`?!`) are stickies too, with an id (`?! grid: hex or square`). They don't get peeled: when a given settles one, move the sticky onto the back of that given card.
+- **Blockers** (`?!`) are stickies too, with an id if a given might settle it (`?! grid: hex or square`). They don't get peeled: when a given settles one, move the sticky onto the back of that given card.
 - **Flags** (`!`) are stickies for an issue or task you've marked for yourself. They go on a card, or on top of the stack.
 
 ## Notebook: bullet-journal signifiers
@@ -80,12 +80,12 @@ Take the rubber band off. **Next** is the first `!` sticky, else the first `?!`,
 1. Shuffle the rule cards out face up.
 2. Repeat: put down any card whose `needs:` are all already in the row, preferring the one that comes earliest in play.
 3. If no card can be placed, the leftover cards that need each other form a **cycle**. Clip them together and put them in the row as one unit. Write `cycle: a ↔ b` in the log.
-4. The row is your run sheet: goal cards first (in rank order), then givens, then the row. Photograph it.
+4. Lead the row with the goal cards (in rank order), then the givens. That's your run sheet. Photograph it.
 
 ### Goal trace (5 min): what each rule is for
 1. Put the goal cards across the top, in rank order.
 2. Under each goal, stack the rule and effect cards marked `+` for it.
-3. Lay the given cards in a second row, under the goals and above the stacks. Givens aren't columns: nothing has to stack under them, and a rule marked `≡` for a given still needs a goal to trace to.
+3. Lay the given cards in a second row, under the goals and above the stacks. Givens aren't columns: nothing has to stack under them, and a rule marked `per` a given still needs a goal to trace to.
 4. Pull in any card that a stacked card `needs`, any card clipped behind a stacked card (sequences), and any card nested under one.
 5. Whatever is left on the table **doesn't trace to a goal**. Give it a goal, connect it to something that has one, or move it to the attic.
 6. A goal with an empty column **has nothing serving it**, unless it's ○ void.
@@ -159,4 +159,4 @@ A card is one list item, so transcription is mechanical:
   - ? does a cleared room stay cleared
 ```
 
-Dividers become headings. Clipped sequences become numbered lists. The attic becomes `## Attic`. Given cards become `- given id: text` under `## Givens`; `≡x` and `✗x` become `serves: x` and `hurts: x`; stickies become `- ? `, `- ?! id: `, and `- ! ` lines.
+Dividers become headings. Clipped sequences become numbered lists. The attic becomes `## Attic`. Given cards become `- given id: text` under `## Givens`; `per x` and `✗x` become `serves: x` and `hurts: x`; stickies become `- ? `, `- ?! id: ` (or `- ?! ` with no id), and `- ! ` lines.
