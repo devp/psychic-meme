@@ -13,8 +13,8 @@
 export const KINDS = ["goal", "rule", "effect", "stub", "table"];
 export const KEYS = ["needs", "serves", "hurts", "slot"];
 const LIST_KEYS = ["needs", "serves", "hurts"];
-// "rule id: text", "rule id", or anonymous "rule: text"; "#tags" may follow the id
-const KIND_RE = new RegExp(`^(${KINDS.join("|")})(?:\\s+([\\w-]+))?((?:\\s+#[\\w-]+)*)\\s*(?::\\s*(.*))?$`);
+// "rule id: text", "rule id", or anonymous "rule: text"; "#tags" and "@roles" may follow the id
+const KIND_RE = new RegExp(`^(${KINDS.join("|")})(?:\\s+([\\w-]+))?((?:\\s+[#@][\\w-]+)*)\\s*(?::\\s*(.*))?$`);
 // "## Attic", "## Ideas #attic", or "#attic" on a node parks it: kept in the file, ignored by analysis.
 export const ATTIC_HEAD = /^attic\b|(^|\s)#attic\b/i;
 const ATTIC_TAG = /(^|\s)#attic\b/;
@@ -81,7 +81,7 @@ export function parse(src) {
     if ((m = text.match(KIND_RE))) {
       const n = {
         kind: m[1], id: m[2] ?? `@${at}`, anon: !m[2], text: m[4] ?? "", line: at, group: path(), parent: parent?.id ?? null,
-        needs: [], serves: [], hurts: [], refs: [], goalRefs: [], tags: [], steps: [], fields: {}, items: [],
+        needs: [], serves: [], hurts: [], refs: [], goalRefs: [], tags: [], who: [], steps: [], fields: {}, items: [],
       };
       // numbered siblings form a sequence, in document order
       if (/\d/.test(li[2])) n.seq = `${parent?.id ?? path().join("/")}|${indent}`;
@@ -143,6 +143,9 @@ export function parse(src) {
     n.needs = [...new Set(n.refs.map((r) => r.id))];
     for (const k of ["serves", "hurts"]) n[k] = [...new Set(n.goalRefs.filter((r) => r.kind === k).map((r) => r.id))];
     n.tags = [...new Set(n.tags)];
+    // roles: own, else inherited from the enclosing node (parents come first in doc order)
+    n.who = [...new Set(n.who)];
+    if (!n.who.length && n.parent) n.who = doc.nodes.find((p) => p.id === n.parent)?.who ?? [];
   }
   return doc;
 }
@@ -155,6 +158,7 @@ function shorten(s) {
 function scan(node, s, line) {
   for (const [, id] of s.matchAll(/\[\[([\w-]+)\]\]/g)) node.refs.push({ id, line });
   for (const [, t] of s.matchAll(/(?:^|\s)#([\w-]+)/g)) node.tags.push(t);
+  for (const [, w] of s.matchAll(/(?:^|\s)@([\w-]+)/g)) node.who.push(w);
 }
 
 function scanLoose(doc, s, line) {
@@ -323,8 +327,12 @@ export function analyze(full) {
     if (!e.serves.length && !e.hurts.length) warnings.push({ line: e.line, msg: `effect "${e.label}" doesn't serve or hurt a goal` });
   }
   const served = new Set([...rules, ...effects].flatMap((n) => n.serves));
-  const unserved = goals.filter((g) => !served.has(g.id));
+  // #void: a goal the rules circle but deliberately don't serve (Baker's fruitful void)
+  const unserved = goals.filter((g) => !served.has(g.id) && !g.tags.includes("void"));
   for (const g of unserved) warnings.push({ line: g.line, msg: `goal "${g.label}" has nothing serving it` });
+
+  const authority = new Map();
+  for (const r of rules) for (const w of r.who.length ? r.who : [""]) authority.set(w, [...(authority.get(w) || []), r]);
 
   const tension = [...rules, ...effects].filter((r) => r.serves.length && r.hurts.length).map((r) => ({ rule: r.label, serves: r.serves, hurts: r.hurts }));
 
@@ -350,7 +358,7 @@ export function analyze(full) {
     (warnings[0] && { line: warnings[0].line, text: warnings[0].msg }) ||
     { line: null, text: "Ready. Try a paper playthrough." };
 
-  return { goals, rules, effects, teach, cycles, tension, missing, checks, warnings, next, attic, questions: doc.questions };
+  return { authority, goals, rules, effects, teach, cycles, tension, missing, checks, warnings, next, attic, questions: doc.questions };
 }
 
 const mid = (id) => "n_" + id.replace(/\W/g, "_");
@@ -381,7 +389,7 @@ export function mermaid(full, scope = "") {
 
   const lines = ["flowchart BT"];
   const shape = { goal: ["([", "])"], rule: ["[", "]"], effect: ["{{", "}}"], stub: ["[/", "/]"], table: ["[(", ")]"] };
-  const nodeLine = (n, pad) => `${pad}${mid(n.id)}${shape[n.kind][0]}"${n.label.replace(/"/g, "'")}"${shape[n.kind][1]}:::${core.has(n.id) ? n.kind : "ext"}`;
+  const nodeLine = (n, pad) => `${pad}${mid(n.id)}${shape[n.kind][0]}"${(n.label + (n.who.length && !n.anon ? " @" + n.who.join(" @") : "")).replace(/"/g, "'")}"${shape[n.kind][1]}:::${core.has(n.id) ? n.kind : "ext"}`;
   // nest by heading path, below the title level
   const tree = { kids: new Map(), nodes: [] };
   for (const n of doc.nodes.filter((n) => shown.has(n.id))) {

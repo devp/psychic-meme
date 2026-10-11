@@ -56,6 +56,8 @@ escalating risk --> endgame     ← your own graph; consecutive arrow lines draw
 | `effect` | a dynamic (MDA's middle layer): `needs:` the rules that produce it, `serves:`/`hurts:` goals. It's a hypothesis until tagged `#seen` or referenced from a `log:` |
 | goal served | every goal needs some rule or effect serving it |
 | `#tag` | free tag (per-game vocabulary) |
+| `@role` | who decides (`@gm`, `@player`, `@dice`, `@left`…), on the node line or in steps. Nested rules inherit it. Shown as a "who decides" table |
+| `#void` on a goal | deliberately unserved (Baker's fruitful void): no warning |
 | `? text` | open question; the first one is "next" |
 | `## Attic` or `#attic` | parked: stays in the file, ignored by analysis, folded in the HTML. A core rule that needs it gets a warning |
 | `a --> b --> c` | your own sketch, drawn inline |
@@ -99,7 +101,7 @@ Practices and prior work this draws on, credited generously. "Direct" means an i
 - **Design structure matrix** (Donald Steward): dependency graphs, plus finding cycles that have to be resolved together. That's the `needs:` graph and its strongly connected components.
 - **Skill atoms and loops** (Daniel Cook, *The Chemistry of Game Design*): a game as nested loops of action → feedback. Numbered sequences inside rules are loops written as outlines.
 - **Game structures** (Justin Alexander, *The Alexandrian*): explicit procedures (hexcrawls, dungeon turns) as the backbone of play. Rules as procedures, sequences as structure.
-- **Fruitful void** (D. Vincent Baker): the thing a game's rules circle but never address directly. A goal that nothing serves can be a gap, or it can be a void on purpose.
+- **Fruitful void** (D. Vincent Baker): the thing a game's rules circle but never address directly. `#void` on a goal marks it as deliberate, as opposed to a gap.
 - **Clouds and boxes** (D. Vincent Baker, lumpley.com): fiction (clouds) and mechanics (boxes), joined by arrows. The `-->` sketches are the same move.
 - **Parking lot** (meeting and agile practice): a visible place for things that matter but aren't on the agenda yet. That's the attic.
 - **Hypothesis-driven design / build-measure-learn** (Eric Ries): an effect is a claim, and a play log confirms it.
@@ -113,7 +115,7 @@ Practices and prior work this draws on, credited generously. "Direct" means an i
 - **Kickers, Bangs, Flags** (Ron Edwards, *Sorcerer*): situation as content. Kickers are written by players; bangs are dilemmas the GM throws. Candidates for stub types.
 - **IIEE** (intent, initiation, execution, effect; Forge vocabulary): a checklist for resolution rules.
 - **The Czege Principle** (Paul Czege): if one person authors both the adversity and its resolution, there's little to play for. A check, once rules say who decides.
-- **Lumpley–Care Principle** (D. Vincent Baker, extended by Emily Care Boss): authority and credibility in play, meaning who gets to say what. The missing `who:` dimension.
+- **Lumpley–Care Principle** (D. Vincent Baker, extended by Emily Care Boss): authority and credibility in play, meaning who gets to say what. `@role` is a first step; a Czege check would be next.
 - **Emily Care Boss**'s Romance trilogy (*Breaking the Ice*, *Shooting the Moon*, *Under My Skin*): small, procedure-dense designs. Good test cases for the format.
 - **Agenda, principles, moves** (*Apocalypse World*): the structure for a GM procedure. Goals are close to agenda; rules are close to moves; principles have no slot yet.
 - **"Say yes or roll the dice"** (D. Vincent Baker, *Dogs in the Vineyard*): a meta-rule about when the system engages. An example of a rule *about* rules.

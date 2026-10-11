@@ -31,7 +31,8 @@ function esc(s) {
 function inline(s) {
   return esc(s)
     .replace(/\[\[([\w-]+)\]\]/g, '<a href="#$1">$1</a>')
-    .replace(/(^|\s)#([\w-]+)/g, '$1<span class="tag">#$2</span>');
+    .replace(/(^|\s)#([\w-]+)/g, '$1<span class="tag">#$2</span>')
+    .replace(/(^|\s)@([\w-]+)/g, '$1<span class="who">@$2</span>');
 }
 
 // Markdown source for the document view: decorate nodes/fields/refs, expand graph fences.
@@ -41,7 +42,7 @@ function decorate(src, doc) {
   const graphFences = new Map(doc.fences.filter((f) => /^tinker\s+graph\b/.test(f.info)).map((f) => [f.line, f]));
   const otherFence = new Set(doc.fences.filter((f) => !graphFences.has(f.line)).flatMap((f) => range(f.line, f.end ?? lines.length)));
   const after = new Map(sketches(doc).map((s) => [s.end, s]));
-  const kindRe = new RegExp(`^(\\s*(?:[-*+]|\\d+[.)])\\s+)(${KINDS.join("|")})\\s+([\\w-]+)(?=(?:\\s+#[\\w-]+)*\\s*(?::|$))`);
+  const kindRe = new RegExp(`^(\\s*(?:[-*+]|\\d+[.)])\\s+)(${KINDS.join("|")})\\s+([\\w-]+)(?=(?:\\s+[#@][\\w-]+)*\\s*(?::|$))`);
   const anonRe = new RegExp(`^(\\s*(?:[-*+]|\\d+[.)])\\s+)(${KINDS.join("|")}):`);
   const keyRe = new RegExp(`^(\\s*(?:[-*+]|\\d+[.)])\\s+)(${[...KEYS, "log"].join("|")}):`);
   const res = [];
@@ -69,7 +70,8 @@ function decorate(src, doc) {
       .replace(keyRe, '$1<span class="field">$2:</span>')
       .replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\?\s(.*)$/, '$1<span class="q">? $2</span>')
       .replace(/\[\[([\w-]+)\]\]/g, (_, id) => (known.has(id) ? `[${id}](#${id})` : `<span class="bad">${id}</span>`))
-      .replace(/(^|\s)#([\w-]+)/g, '$1<span class="tag">#$2</span>'));
+      .replace(/(^|\s)#([\w-]+)/g, '$1<span class="tag">#$2</span>')
+      .replace(/(^|\s)@([\w-]+)/g, '$1<span class="who">@$2</span>'));
     const sk = after.get(at);
     if (sk) {
       const pad = " ".repeat(sk.indent);
@@ -141,7 +143,7 @@ function render(doc, a) {
   h1{font-size:1.3rem;margin:.2rem 0} h2.sec{font-size:.85rem;margin:1.4rem 0 .4rem;text-transform:uppercase;letter-spacing:.06em;color:#777}
   .next{background:#fff6d6;border:1px solid #e0c870;padding:.6rem .8rem;border-radius:6px}
   .meta,.grp{color:#777;font-size:.88em} .q{color:#a05a00} .warn{color:#b03030}
-  .plus{color:#2a7a2a} .minus{color:#b03030} .tag{color:#5a5aa0;font-size:.9em} .bad{color:#b03030;text-decoration:wavy underline}
+  .plus{color:#2a7a2a} .minus{color:#b03030} .tag{color:#5a5aa0;font-size:.9em} .who{color:#1a7a7a;font-weight:600;font-size:.9em} .bad{color:#b03030;text-decoration:wavy underline}
   .kind{font-weight:600} .k-rule{color:#2a4a8a} .k-goal{color:#3a6a2a} .k-stub,.k-table{color:#8a6a2a} .k-effect{color:#7a4a8a} .field{color:#777}
   .cycle{border-left:3px solid #b03030;padding-left:.6rem;list-style:none}
   .checks{padding:0} .checks li{list-style:none} .scroll{overflow-x:auto}
@@ -166,10 +168,12 @@ function render(doc, a) {
       e.hurts.length && `<span class="minus">−${e.hurts.join(" −")}</span>`,
     ].filter(Boolean).join(" · ")}</div></li>`).join("")}</ul>` : ""}
   <h2 class="sec">Goals, ranked</h2>
-  <ol>${a.goals.map((g) => `<li><b>${esc(g.label)}</b>${g.anon ? "" : `: ${inline(g.text)}`}</li>`).join("")}</ol>
+  <ol>${a.goals.map((g) => `<li><b>${esc(g.label)}</b>${g.anon ? "" : `: ${inline(g.text)}`}${g.tags.includes("void") ? ' <span class="meta">(void: circled, not served)</span>' : ""}</li>`).join("")}</ol>
   ${a.tension.length ? `<div class="warn">tensions: ${a.tension.map((t) => `${t.rule} (+${t.serves.join(",")} −${t.hurts.join(",")})`).join("; ")}</div>` : ""}
   ${grid}
   ${a.attic.length ? `<h2 class="sec">Attic</h2><p class="meta">${a.attic.map((n) => `${n.kind} ${esc(n.label)}`).join(" · ")}</p>` : ""}
+  ${a.authority.size > 1 || (a.authority.size === 1 && !a.authority.has("")) ? `<h2 class="sec">Who decides</h2><table class="grid">${[...a.authority].sort(([x], [y]) => (x === "") - (y === "") || x.localeCompare(y)).map(([w, rs]) =>
+    `<tr><th>${w ? `<span class="who">@${esc(w)}</span>` : '<span class="meta">unassigned</span>'}</th><td style="text-align:left">${rs.map((r) => esc(r.label)).join(" · ")}</td></tr>`).join("")}</table>` : ""}
   <h2 class="sec">Run sheet (teach order)</h2>
   <ol>${teach}</ol>
   ${doc.logs.length ? `<h2 class="sec">Play log</h2><ul>${doc.logs.map((l) => `<li>${inline(l.text)}</li>`).join("")}</ul>` : ""}

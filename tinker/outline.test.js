@@ -174,3 +174,29 @@ test("effects: trace rules to goals, need grounding, seen via tag or log; goals 
   assert.deepEqual(a.effects.map((e) => e.seen), [false, true, true]);
   assert.match(mermaid(doc), /n_pressure\{\{"pressure"\}\}:::effect/);
 });
+
+test("@roles: on the head line or in steps, inherited by nested rules; #void goals need no server", () => {
+  const doc = parse(`- goal g: x
+- goal mystery #void: what is faith
+- rule frame @gm: set the scene
+  - serves: g
+  - rule bang: a dilemma
+- rule act @player
+  - serves: g
+  - @dice decide the outcome
+- rule: @left narrates the cost
+  - serves: g
+- rule loose
+  - needs: frame
+  - serves: g
+`);
+  const who = Object.fromEntries(doc.nodes.filter((n) => n.kind === "rule").map((n) => [n.label, n.who]));
+  assert.deepEqual(who.frame, ["gm"]);
+  assert.deepEqual(who.bang, ["gm"]);
+  assert.deepEqual(who.act, ["player", "dice"]);
+  assert.deepEqual(who["@left narrates the cost"], ["left"]);
+  const a = analyze(doc);
+  assert.deepEqual(a.authority.get("").map((r) => r.id), ["loose"]);
+  assert.ok(!a.warnings.some((w) => w.msg.includes("mystery")));
+  assert.match(mermaid(doc), /"frame @gm"/);
+});

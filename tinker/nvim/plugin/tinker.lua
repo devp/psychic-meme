@@ -16,6 +16,7 @@ for name, link in pairs({
   TinkerField = "Label",
   TinkerRef = "Underlined",
   TinkerTag = "Special",
+  TinkerWho = "Constant",
   TinkerQuestion = "Todo",
   TinkerArrow = "Operator",
 }) do
@@ -29,6 +30,7 @@ local patterns = {
   { "TinkerField", [[\v\s\zs(serves|hurts):]] },
   { "TinkerRef", [=[\v\[\[[a-zA-Z0-9_-]+\]\]]=] },
   { "TinkerTag", [[\v(^|\s)\zs#[a-zA-Z0-9_-]+]] },
+  { "TinkerWho", [[\v(^|\s)\zs\@[a-zA-Z0-9_-]+]] },
   { "TinkerQuestion", [[\v^\s*(([-*+]|\d+[.)])\s+)?\zs\?\s.*]] },
   { "TinkerArrow", [[\v\s\zs--\>\ze\s]] },
 }

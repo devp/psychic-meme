@@ -7,6 +7,7 @@
 - goal fast: a turn takes under 30 seconds
 - goal choice: every turn has a real tradeoff
 - goal dread: the table should feel the walls closing in
+- goal escape #void: what it means to get out; no rule says
 
 escalating risk --> endgame
 fatigue --> forced rest --> the deck advances --> escalating risk
@@ -22,10 +23,10 @@ fatigue --> forced rest --> the deck advances --> escalating risk
 
 ## Core loop
 
-- rule turn: one player at a time
+- rule turn @player: one player at a time
   - serves: fast
   1. rule: choose to [[delve]] or [[rest]]
-  2. rule: pass the lantern left
+  2. rule: pass the lantern @left
 - rule delve: enter the next room
   - needs: room, fatigue
   - serves: choice dread
@@ -52,7 +53,7 @@ fatigue --> forced rest --> the deck advances --> escalating risk
 
 ### Rooms
 
-- rule room: draw from the room deck
+- rule room @gm: draw from the room deck
   - serves: dread
   - reveal; if it shows a [[monster]], fight it
 - stub monster: 3HP, hits for 1

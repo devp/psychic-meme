@@ -20,6 +20,7 @@ A plain-text outline per game. A build step derives the rule graph, teaching ord
 - Fields are child items: `needs:`, `serves:`, `hurts:`, `slot:`. `[[ref]]` inside a node counts as `needs`.
 - `effect` is a dynamic (MDA): it `needs:` rules and serves/hurts goals, and it's a hypothesis until `#seen` or logged.
 - `## Attic` / `#attic` parks material: it stays in the file and the analysis ignores it.
+- `@role` on a node says who decides (inherited by nested rules). `#void` marks a goal that is deliberately unserved.
 - `? q` is an open question. `log:` is an improvised result. `#tag` is a free tag.
 - `a --> b` is a sketch written by hand, drawn inline; it doesn't feed the analysis.
 - `` ```tinker graph [heading] `` is a derived graph, scoped to a heading.
