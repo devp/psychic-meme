@@ -68,6 +68,7 @@ escalating risk --> endgame     ← your own graph; consecutive arrow lines draw
 - `build.js`: `.tinker.md` → `.html`, plus `file:line:sev: msg` lines on stdout
 - `nvim/plugin/tinker.lua`: highlights (matchadd, layered over treesitter) and build-on-save diagnostics
 - `examples/delve.tinker.md`: a toy game with deliberate problems
+- `ANALOG.md`: the same method with index cards, a notebook, and a whiteboard
 
 ## Lineage
 
@@ -103,6 +104,8 @@ Practices and prior work this draws on, credited generously. "Direct" means an i
 - **Game structures** (Justin Alexander, *The Alexandrian*): explicit procedures (hexcrawls, dungeon turns) as the backbone of play. Rules as procedures, sequences as structure.
 - **Fruitful void** (D. Vincent Baker): the thing a game's rules circle but never address directly. `#void` on a goal marks it as deliberate, as opposed to a gap.
 - **Clouds and boxes** (D. Vincent Baker, lumpley.com): fiction (clouds) and mechanics (boxes), joined by arrows. The `-->` sketches are the same move.
+- **Bullet Journal** (Ryder Carroll): rapid logging, signifiers, and migration. ANALOG.md borrows all three.
+- **Index-card design** (paper prototyping, card sorting, and the screenwriter's corkboard): one idea per card, meaning carried by where it sits.
 - **Parking lot** (meeting and agile practice): a visible place for things that matter but aren't on the agenda yet. That's the attic.
 - **Hypothesis-driven design / build-measure-learn** (Eric Ries): an effect is a claim, and a play log confirms it.
 - **Outliners and linked notes** (Dave Winer's outliners, Workflowy, Logseq, Obsidian, Niklas Luhmann's Zettelkasten): nesting as structure, `[[links]]` and `#tags` as a loose folksonomy.
