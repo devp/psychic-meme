@@ -81,6 +81,7 @@ escalating risk --> endgame     ← your own graph; consecutive arrow lines draw
 - `nvim/plugin/tinker.lua`: highlights (matchadd, layered over treesitter) and build-on-save diagnostics
 - `examples/delve.tinker.md`: a toy game with deliberate problems
 - `ANALOG.md`: the same method with index cards, a notebook, and a whiteboard
+- `cards.html`: ANALOG.md as a printable 3×5 deck (reference cards + blank templates), black ink only
 
 ## Lineage
 

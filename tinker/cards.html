@@ -1,0 +1,393 @@
+<!doctype html>
+<!--
+  tinker · analog deck. 3×5 cards, black ink only. Source: ANALOG.md.
+
+  Print: open in a browser, print, margins "None", scale 100%, background graphics off.
+  Default: US Letter landscape, 4 cards per sheet, cut along the marks.
+  Straight onto 5×3 index cards: change <body> to <body class="single">.
+-->
+<meta charset="utf-8">
+<title>tinker · analog deck</title>
+<style>
+  @page { size: letter landscape; margin: 0; }
+  @page card { size: 5in 3in; margin: 0; }
+
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; background: #ccc; color: #000;
+    font: 8.5pt/1.3 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  code, .mono { font-family: Menlo, "DejaVu Sans Mono", monospace; font-size: 0.95em; }
+
+  /* sheet: 2×2 cards centred on letter landscape, cut marks outside the grid */
+  .sheet { position: relative; width: 11in; height: 8.5in; margin: 0.3in auto; background: #fff;
+    display: grid; grid-template: repeat(2, 3in) / repeat(2, 5in); align-content: center; justify-content: center;
+    break-after: page; overflow: hidden; }
+  .sheet:last-child { break-after: auto; }
+  .cut { position: absolute; background: #000; }
+  .cut.v { width: 0.4pt; height: 0.3in; }
+  .cut.h { height: 0.4pt; width: 0.3in; }
+
+  .card { position: relative; width: 5in; height: 3in; padding: 0.2in 0.24in; overflow: hidden; }
+  .card::before { content: ""; position: absolute; inset: 0.08in; border: 0.6pt solid #000; pointer-events: none; }
+  .card.goal::before { border: 2.2pt double #000; }
+  .card.given::before { border: 2pt solid #000; }
+  .card.effect::before { border: 1pt dashed #000; }
+  .card.stub::before, .card.table::before { border: 1.2pt dotted #000; }
+  .card.ref::before { border: 0.4pt solid #000; }
+
+  /* reference cards */
+  .ref h2 { margin: 0 0 0.05in; font-size: 10.5pt; display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 0.6pt solid #000; padding-bottom: 0.03in; }
+  .ref h2 small { font-weight: normal; font-size: 8pt; }
+  .ref h3 { margin: 0.06in 0 0.02in; font-size: 8.5pt; }
+  .ref p { margin: 0 0 0.04in; }
+  .ref ol, .ref ul { margin: 0; padding-left: 1.2em; }
+  .ref li { margin: 0 0 0.02in; }
+  .ref ul.plain { list-style: none; padding: 0; }
+  .ref table { border-collapse: collapse; width: 100%; }
+  .ref td { padding: 0.01in 0.05in 0.01in 0; vertical-align: top; }
+  .ref td:first-child { white-space: nowrap; font-weight: bold; width: 1%; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.2in; }
+  .foot { position: absolute; left: 0.24in; right: 0.24in; bottom: 0.14in; font-size: 7pt; display: flex; justify-content: space-between; }
+  .k { display: inline-block; min-width: 1.1em; font-weight: bold; text-align: center; }
+  pre.anatomy { margin: 0; font: 7.4pt/1.25 Menlo, monospace; }
+  .box { display: inline-block; width: 0.75em; height: 0.75em; border: 0.8pt solid #000; vertical-align: -0.05em; margin-right: 0.3em; }
+
+  /* blank templates */
+  .tpl { display: flex; flex-direction: column; }
+  .tpl .head { display: flex; align-items: flex-end; gap: 0.1in; height: 0.36in; }
+  .tpl .glyph { font: bold 18pt/1 "Helvetica Neue", Helvetica, sans-serif; width: 0.32in; text-align: center; }
+  .tpl .field { flex: 1; border-bottom: 0.6pt solid #000; font-size: 7pt; padding-bottom: 0.02in; height: 0.26in; display: flex; align-items: flex-end; }
+  .tpl .field.role { flex: 0 0 1.25in; }
+  .tpl .rank { width: 0.32in; height: 0.32in; border: 0.8pt solid #000; border-radius: 50%; font-size: 6pt; display: grid; place-items: center; }
+  .tpl .hyp { width: 0.24in; height: 0.24in; border: 1pt solid #000; }
+  .tpl .lines { flex: 1; margin-top: 0.06in;
+    background: linear-gradient(to top, #888 0.5pt, transparent 0.5pt) 0 0 / 100% 0.25in; }
+  .tpl .band { border-top: 1pt solid #000; padding-top: 0.03in; font-size: 7pt; display: grid; gap: 0.02in; }
+  .tpl .band div { height: 0.22in; border-bottom: 0.4pt solid #888; display: flex; align-items: flex-end; gap: 0.6in; padding-bottom: 0.02in; }
+  .tpl .kind { position: absolute; right: 0.16in; bottom: 0.11in; font-size: 6pt; letter-spacing: 0.05em; text-transform: uppercase; }
+  .tpl .rolls { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(6, 1fr); gap: 0 0.2in; margin-top: 0.06in; }
+  .tpl .rolls div { border-bottom: 0.4pt solid #888; display: flex; align-items: flex-end; font-size: 7pt; padding-bottom: 0.02in; }
+
+  /* sticky slips: 3×2 per card, dashed cut lines */
+  .card.slips { padding: 0; display: grid; grid-template: repeat(2, 1fr) / repeat(3, 1fr); }
+  .card.slips::before { display: none; }
+  .slip { border: 0.6pt dashed #000; margin: -0.3pt; padding: 0.1in 0.12in; display: flex; flex-direction: column; }
+  .slip b { font-size: 16pt; line-height: 1; }
+  .slip .field { border-bottom: 0.6pt solid #000; height: 0.22in; font-size: 7pt; display: flex; align-items: flex-end; }
+  .slip .ln { flex: 1; background: linear-gradient(to top, #888 0.5pt, transparent 0.5pt) 0 0 / 100% 0.22in; margin-top: 0.04in; }
+
+  /* single mode: one card per 5×3 page */
+  body.single .sheet { display: contents; }
+  body.single .cut { display: none; }
+  body.single .card { page: card; break-after: page; margin: 0.2in auto; background: #fff; }
+  body.single .sheet:last-child .card:last-child { break-after: auto; }
+
+  @media print {
+    body { background: none; }
+    .sheet { margin: 0; }
+    body.single .card { margin: 0; }
+  }
+</style>
+
+<body>
+
+<!-- ───────────── reference ───────────── -->
+<div class="sheet">
+  <div class="card ref">
+    <h2>Kinds &amp; kit <small>tinker · analog</small></h2>
+    <table>
+      <tr><td><span class="k">G</span> goal</td><td>double border · rank ①②③ top right, ○ = <code>#void</code></td></tr>
+      <tr><td><span class="k">≡</span> given</td><td>heavy border · no rank: a commitment you refer back to (decision, constraint, antigoal)</td></tr>
+      <tr><td><span class="k">R</span> rule</td><td>thin border · <code>@role</code> top right: who decides</td></tr>
+      <tr><td><span class="k">E</span> effect</td><td>dashed · <span class="box"></span>hypothesis → ☑ seen at the table</td></tr>
+      <tr><td><span class="k">S</span> stub</td><td>dotted · carries a slot template</td></tr>
+      <tr><td><span class="k">T</span> table</td><td>dotted · numbered list you can roll on</td></tr>
+    </table>
+    <h3>Kit</h3>
+    <p>These cards · stickies (<b>?</b> <b>?!</b> <b>!</b>) · binder clips (cycles, sequences) · rubber band (end of session) · one notebook, grid or dot · a box with dividers: <b>GOALS</b>, <b>GIVENS</b>, one per group or act, <b>ATTIC</b> at the back. Optional: whiteboard + magnets, d6/d20, phone camera.</p>
+    <div class="foot"><span>one node per card · one notebook · rituals in place of the build</span><span>1</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Card anatomy <small>tinker · analog</small></h2>
+    <div style="display:flex; gap:0.15in">
+<pre class="anatomy">┌──────────────────────────────┐
+│ R  delve            @player  │
+│ enter the next room          │
+│  · flip a room, resolve it   │
+│  · gain 1 fatigue            │
+│                              │
+│ needs: room, fatigue         │
+│ + choice  + dread   − fast   │
+└──────────────────────────────┘
+  [? does a cleared room stay
+     cleared]  ← sticky</pre>
+      <ul style="flex:1">
+        <li><b>Top left:</b> kind letter, then id. No id on an unnamed rule: its text is its name.</li>
+        <li><b>Top right:</b> <code>@role</code>, or a goal's rank.</li>
+        <li><b>Middle:</b> text and steps.</li>
+        <li><b>Bottom band</b>, and nothing else there: <code>needs:</code>, <code>+goal</code>, <code>−goal</code>, <code>≡given</code>, <code>✗given</code>; on a given, <code>resolves:</code>. One place = quick to scan.</li>
+        <li>Questions go on stickies, never on the card.</li>
+      </ul>
+    </div>
+    <div class="foot"><span></span><span>2</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Marks &amp; stickies <small>tinker · analog</small></h2>
+    <div class="cols">
+      <div>
+        <h3 style="margin-top:0">Bottom band</h3>
+        <table>
+          <tr><td>+goal</td><td>serves it</td></tr>
+          <tr><td>−goal</td><td>hurts it (tension)</td></tr>
+          <tr><td>≡given</td><td>shaped by it</td></tr>
+          <tr><td>✗given</td><td>breaks it (violation)</td></tr>
+          <tr><td>needs:</td><td>names it depends on</td></tr>
+          <tr><td>resolves:</td><td>on a given: the <b>?!</b> id it settles</td></tr>
+        </table>
+        <h3>On the card</h3>
+        <table>
+          <tr><td>①②③</td><td>goal rank; renumber, never recopy</td></tr>
+          <tr><td>○</td><td>void goal: deliberately unserved</td></tr>
+          <tr><td><span class="box"></span>☑</td><td>effect: hypothesis / seen</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Stickies</h3>
+        <table>
+          <tr><td>?</td><td>question. Peel it off to close it.</td></tr>
+          <tr><td>?! id</td><td>blocker. Not peeled: when a given settles it, move it to that given's back.</td></tr>
+          <tr><td>!</td><td>flag: an issue or task for yourself. On a card, or on top of the stack.</td></tr>
+        </table>
+        <h3>Sequences</h3>
+        <p>Parent rule in front; numbered children clipped behind it in order (<code>turn.1</code>, <code>turn.2</code>).</p>
+      </div>
+    </div>
+    <div class="foot"><span></span><span>3</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Notebook <small>tinker · analog</small></h2>
+    <p>Only what happens over time: sessions, play, insights. The design lives on the cards.</p>
+    <div class="cols">
+      <table>
+        <tr><td>?</td><td>open question (+ sticky)</td></tr>
+        <tr><td>*</td><td>insight</td></tr>
+        <tr><td>!</td><td>flag: issue or next task (+ sticky)</td></tr>
+        <tr><td>?!</td><td>blocker until a given settles it (+ sticky)</td></tr>
+        <tr><td>~</td><td>hunch: a possible effect, not on a card yet</td></tr>
+      </table>
+      <table>
+        <tr><td>★</td><td>seen at the table: confirms an effect</td></tr>
+        <tr><td>→</td><td>moved onto a card (line done)</td></tr>
+        <tr><td>×</td><td>dropped</td></tr>
+        <tr><td>@</td><td>role</td></tr>
+      </table>
+    </div>
+    <h3>Pages</h3>
+    <ul class="plain">
+      <li><b>Index</b></li>
+      <li><b>Goals</b>: re-copied on every re-rank; old page stays as history</li>
+      <li><b>Session log</b>: dated, rapid-logged</li>
+      <li><b>Readiness</b>: the checklist, a score column per session</li>
+    </ul>
+    <div class="foot"><span></span><span>4</span></div>
+  </div>
+  <i class="cut v" style="left:0.5in;top:0.85in"></i><i class="cut v" style="left:0.5in;top:7.4in"></i><i class="cut v" style="left:5.5in;top:0.85in"></i><i class="cut v" style="left:5.5in;top:7.4in"></i><i class="cut v" style="left:10.5in;top:0.85in"></i><i class="cut v" style="left:10.5in;top:7.4in"></i><i class="cut h" style="top:1.25in;left:0.1in"></i><i class="cut h" style="top:1.25in;left:10.6in"></i><i class="cut h" style="top:4.25in;left:0.1in"></i><i class="cut h" style="top:4.25in;left:10.6in"></i><i class="cut h" style="top:7.25in;left:0.1in"></i><i class="cut h" style="top:7.25in;left:10.6in"></i>
+</div>
+
+<div class="sheet">
+  <div class="card ref">
+    <h2>Open · Close <small>1 min each</small></h2>
+    <h3 style="margin-top:0">Open</h3>
+    <ol>
+      <li>Rubber band off.</li>
+      <li><b>Next</b> is the first <b>!</b> sticky, else the first <b>?!</b>, else the top <b>?</b>.</li>
+      <li>Read the goal cards in rank order, then the givens.</li>
+    </ol>
+    <h3>Close</h3>
+    <ol>
+      <li>Write the <b>next</b> task as a <b>!</b> sticky; put it on top of the stack.</li>
+      <li>Rubber band.</li>
+      <li>One log line saying where you stopped.</li>
+    </ol>
+    <p style="margin-top:0.06in">Coming back after weeks then takes 30 seconds. Pick one ritual per sitting; each fits a 20-minute burst.</p>
+    <div class="foot"><span></span><span>5</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Teach-sort <small>5 min · teaching order &amp; cycles</small></h2>
+    <ol>
+      <li>Shuffle the rule cards out face up.</li>
+      <li>Repeat: put down any card whose <code>needs:</code> are all already in the row, preferring the one that comes earliest in play.</li>
+      <li>If no card can be placed, the leftover cards that need each other form a <b>cycle</b>. Clip them together and put them in the row as one unit. Log <code>cycle: a ↔ b</code>.</li>
+      <li>That's your run sheet: goal cards first (rank order), then givens, then the row. Photograph it.</li>
+    </ol>
+    <p style="margin-top:0.06in">A <code>needs:</code> name with no card turns up here: it can't be placed. That's also where typos surface, and where an attic dependency shows.</p>
+    <div class="foot"><span></span><span>6</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Goal trace <small>5 min · what each rule is for</small></h2>
+    <ol>
+      <li>Goal cards across the top, in rank order.</li>
+      <li>Under each goal, stack the rule and effect cards marked <code>+</code> for it.</li>
+      <li>Givens in a second row, under the goals, above the stacks. Not columns: nothing has to stack under them, and a rule marked <code>≡</code> still needs a goal.</li>
+      <li>Pull in any card a stacked card <code>needs</code>, any card clipped behind one (sequences), and any card nested under one.</li>
+      <li>Left on the table = <b>doesn't trace to a goal</b>. Give it a goal, connect it to something that has one, or attic it.</li>
+      <li>A goal with an empty column <b>has nothing serving it</b>, unless it's ○ void.</li>
+    </ol>
+    <div class="foot"><span>leave it laid out for Tension</span><span>7</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Tension <small>3 min · cards still laid out from the goal trace</small></h2>
+    <h3 style="margin-top:0">Tensions: <code>+</code> and <code>−</code></h3>
+    <p>Any card with both <code>+</code> and <code>−</code> goes <b>sideways</b>, spanning the two columns. Log each one, and say which goal wins. Rank decides by default.</p>
+    <h3>Violations: <code>✗</code></h3>
+    <p>Any card marked <code>✗</code> for a given is a <b>violation</b>, not a tension. Pull it out and put it on that given. Then either:</p>
+    <ul>
+      <li>change the rule, or</li>
+      <li>re-make the given, and log <b>!</b> saying why.</li>
+    </ul>
+    <div class="foot"><span></span><span>8</span></div>
+  </div>
+  <i class="cut v" style="left:0.5in;top:0.85in"></i><i class="cut v" style="left:0.5in;top:7.4in"></i><i class="cut v" style="left:5.5in;top:0.85in"></i><i class="cut v" style="left:5.5in;top:7.4in"></i><i class="cut v" style="left:10.5in;top:0.85in"></i><i class="cut v" style="left:10.5in;top:7.4in"></i><i class="cut h" style="top:1.25in;left:0.1in"></i><i class="cut h" style="top:1.25in;left:10.6in"></i><i class="cut h" style="top:4.25in;left:0.1in"></i><i class="cut h" style="top:4.25in;left:10.6in"></i><i class="cut h" style="top:7.25in;left:0.1in"></i><i class="cut h" style="top:7.25in;left:10.6in"></i>
+</div>
+
+<div class="sheet">
+  <div class="card ref">
+    <h2>Readiness <small>2 min · tick, score in the log</small></h2>
+    <div class="cols">
+      <ul class="plain">
+        <li><span class="box"></span>pitch written (one line, on the box lid)</li>
+        <li><span class="box"></span>has goals</li>
+        <li><span class="box"></span>has rules</li>
+        <li><span class="box"></span>every name in a <code>needs:</code> exists as a card</li>
+        <li><span class="box"></span>no clipped cycles</li>
+        <li><span class="box"></span>every rule traces to a goal</li>
+      </ul>
+      <ul class="plain">
+        <li><span class="box"></span>every goal is served (or void)</li>
+        <li><span class="box"></span>every effect has <code>needs:</code> and a <code>+</code> or <code>−</code></li>
+        <li><span class="box"></span>every stub has a slot, and its tables exist</li>
+        <li><span class="box"></span>no card breaks a given (<code>✗</code>)</li>
+        <li><span class="box"></span>no <b>?</b>, <b>?!</b>, or <b>!</b> stickies on active cards</li>
+      </ul>
+    </div>
+    <p style="margin-top:0.06in">Settled <b>?!</b> on the back of a given don't count.</p>
+    <div class="foot"><span>score = ticks / 11</span><span>9</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Paper playthrough <small>10–20 min</small></h2>
+    <ol>
+      <li>Deal the teach-sort row.</li>
+      <li>Walk one turn or scene in play order, reading each card aloud: "what happens here?"</li>
+      <li>For a stub, roll on its tables and improvise.</li>
+      <li>Anything unclear becomes a new sticky on that card.</li>
+      <li>Anything improvised and worth keeping: log <code>*</code>, then move it <code>→</code> onto a card.</li>
+      <li>An effect you watch happen: ☑ on its card, <code>★</code> in the log.</li>
+    </ol>
+    <div class="foot"><span></span><span>10</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Attic · Migration · Whiteboard <small>tinker · analog</small></h2>
+    <h3 style="margin-top:0">Attic</h3>
+    <p>Behind the ATTIC divider: never sorted, traced, or scored. If an active card <code>needs</code> one, the teach-sort shows it (the card isn't in the row): bring it forward or cut the dependency.</p>
+    <h3>Migration <span style="font-weight:normal">(monthly, or when the box feels muddy)</span></h3>
+    <p><b>Re-copy every active card by hand.</b> Not worth re-copying → attic. Rewriting is where cards get merged, renamed, sharpened: the lint pass.</p>
+    <h3>Whiteboard (optional)</h3>
+    <p>Edges: solid → <code>needs</code> · dashed → <code>+</code>/<code>−</code> to goals · thick ⇒ sequences. Box each group or act. Sketches sit beside the cards. <b>Photograph before erasing.</b></p>
+    <div class="foot"><span></span><span>11</span></div>
+  </div>
+
+  <div class="card ref">
+    <h2>Back to digital <small>one card = one list item</small></h2>
+<pre class="anatomy" style="font-size:7.6pt; margin-bottom:0.05in">- rule delve @player: enter the next room
+  - flip a room, resolve it
+  - needs: room, fatigue
+  - serves: choice dread  hurts: fast
+  - ? does a cleared room stay cleared</pre>
+    <table>
+      <tr><td>divider</td><td>heading; ATTIC → <code>## Attic</code></td></tr>
+      <tr><td>clipped sequence</td><td>numbered list</td></tr>
+      <tr><td>given card</td><td><code>- given id: text</code> under <code>## Givens</code></td></tr>
+      <tr><td>≡x · ✗x</td><td><code>serves: x</code> · <code>hurts: x</code></td></tr>
+      <tr><td>stickies</td><td><code>- ?</code> · <code>- ?! id:</code> · <code>- !</code></td></tr>
+    </table>
+    <div class="foot"><span></span><span>12</span></div>
+  </div>
+  <i class="cut v" style="left:0.5in;top:0.85in"></i><i class="cut v" style="left:0.5in;top:7.4in"></i><i class="cut v" style="left:5.5in;top:0.85in"></i><i class="cut v" style="left:5.5in;top:7.4in"></i><i class="cut v" style="left:10.5in;top:0.85in"></i><i class="cut v" style="left:10.5in;top:7.4in"></i><i class="cut h" style="top:1.25in;left:0.1in"></i><i class="cut h" style="top:1.25in;left:10.6in"></i><i class="cut h" style="top:4.25in;left:0.1in"></i><i class="cut h" style="top:4.25in;left:10.6in"></i><i class="cut h" style="top:7.25in;left:0.1in"></i><i class="cut h" style="top:7.25in;left:10.6in"></i>
+</div>
+
+<!-- ───────────── blank templates ───────────── -->
+<div class="sheet">
+  <div class="card goal tpl">
+    <div class="head"><span class="glyph">G</span><span class="field">id</span><span class="rank">rank</span></div>
+    <div class="lines"></div>
+    <span class="kind">goal · ① ② ③ or ○ void</span>
+  </div>
+
+  <div class="card given tpl">
+    <div class="head"><span class="glyph">≡</span><span class="field">id</span></div>
+    <div class="lines"></div>
+    <div class="band"><div>resolves:</div></div>
+    <span class="kind">given</span>
+  </div>
+
+  <div class="card rule tpl">
+    <div class="head"><span class="glyph">R</span><span class="field">id</span><span class="field role">@</span></div>
+    <div class="lines"></div>
+    <div class="band"><div>needs:</div><div><span>+</span><span>−</span><span>≡ / ✗</span></div></div>
+    <span class="kind">rule</span>
+  </div>
+
+  <div class="card effect tpl">
+    <div class="head"><span class="glyph">E</span><span class="field">id</span><span class="hyp"></span></div>
+    <div class="lines"></div>
+    <div class="band"><div>needs:</div><div><span>+</span><span>−</span></div></div>
+    <span class="kind">effect · ☐ hypothesis → ☑ seen</span>
+  </div>
+  <i class="cut v" style="left:0.5in;top:0.85in"></i><i class="cut v" style="left:0.5in;top:7.4in"></i><i class="cut v" style="left:5.5in;top:0.85in"></i><i class="cut v" style="left:5.5in;top:7.4in"></i><i class="cut v" style="left:10.5in;top:0.85in"></i><i class="cut v" style="left:10.5in;top:7.4in"></i><i class="cut h" style="top:1.25in;left:0.1in"></i><i class="cut h" style="top:1.25in;left:10.6in"></i><i class="cut h" style="top:4.25in;left:0.1in"></i><i class="cut h" style="top:4.25in;left:10.6in"></i><i class="cut h" style="top:7.25in;left:0.1in"></i><i class="cut h" style="top:7.25in;left:10.6in"></i>
+</div>
+
+<div class="sheet">
+  <div class="card stub tpl">
+    <div class="head"><span class="glyph">S</span><span class="field">id</span></div>
+    <div class="lines"></div>
+    <div class="band"><div>slot:</div></div>
+    <span class="kind">stub · {table} in the slot</span>
+  </div>
+
+  <div class="card table tpl">
+    <div class="head"><span class="glyph">T</span><span class="field">id</span></div>
+    <div class="rolls">
+      <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div>
+      <div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div>
+    </div>
+    <span class="kind">table</span>
+  </div>
+
+  <div class="card rule tpl">
+    <div class="head"><span class="glyph">R</span><span class="field">id</span><span class="field role">@</span></div>
+    <div class="lines"></div>
+    <div class="band"><div>needs:</div><div><span>+</span><span>−</span><span>≡ / ✗</span></div></div>
+    <span class="kind">rule</span>
+  </div>
+
+  <div class="card slips">
+    <div class="slip"><b>?</b><div class="ln"></div></div>
+    <div class="slip"><b>?!</b><span class="field">id</span><div class="ln"></div></div>
+    <div class="slip"><b>!</b><div class="ln"></div></div>
+    <div class="slip"><b>?</b><div class="ln"></div></div>
+    <div class="slip"><b>?!</b><span class="field">id</span><div class="ln"></div></div>
+    <div class="slip"><b>!</b><div class="ln"></div></div>
+  </div>
+  <i class="cut v" style="left:0.5in;top:0.85in"></i><i class="cut v" style="left:0.5in;top:7.4in"></i><i class="cut v" style="left:5.5in;top:0.85in"></i><i class="cut v" style="left:5.5in;top:7.4in"></i><i class="cut v" style="left:10.5in;top:0.85in"></i><i class="cut v" style="left:10.5in;top:7.4in"></i><i class="cut h" style="top:1.25in;left:0.1in"></i><i class="cut h" style="top:1.25in;left:10.6in"></i><i class="cut h" style="top:4.25in;left:0.1in"></i><i class="cut h" style="top:4.25in;left:10.6in"></i><i class="cut h" style="top:7.25in;left:0.1in"></i><i class="cut h" style="top:7.25in;left:10.6in"></i>
+</div>
+
+</body>
