@@ -66,12 +66,21 @@
 [data-hold-cmd][data-holding] .icon,
 [data-hold-cmd][data-holding] span { animation: anxious var(--hold-ms) steps(1, end); }
 
+/* Holding a to-do: it fades out while it shakes, then asks Abort, Retry, Fail.
+   No text selection or callout on the long press. */
+.checklist label { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+@keyframes fading { to { opacity: 0.3; } }
+.checklist li[data-holding] { animation: fading var(--hold-ms) steps(4, end) forwards; }
+.checklist li[data-holding] span { animation: anxious var(--hold-ms) steps(1, end); }
+
 /* Reduced motion: no poof, no shake, no blink. (Options can turn blink off too.) */
 @media (prefers-reduced-motion: reduce) {
   .checklist li[data-anim="poof"],
   .checklist li[data-anim="blink"],
   [data-hold-cmd][data-holding] .icon,
-  [data-hold-cmd][data-holding] span { animation: none; }
+  [data-hold-cmd][data-holding] span,
+  .checklist li[data-holding],
+  .checklist li[data-holding] span { animation: none; }
 }
 
 /* Dialogs and the menu draw in top to bottom in hard steps, and close
@@ -149,17 +158,6 @@
 }
 
 .checklist span { overflow-wrap: anywhere; }
-
-.checklist button[aria-label="Delete"] {
-  background: none;
-  border: 0;
-  color: var(--ink-dim);
-  font-size: 1.2em;
-  line-height: 1;
-  padding: 0 4px;
-  flex-shrink: 0;
-}
-.checklist button[aria-label="Delete"]:hover { color: var(--ink); }
 
 .add-row { display: flex; gap: 10px; align-items: flex-end; }
 
@@ -259,6 +257,9 @@
 .dialog textarea[hidden] { display: none; }
 
 .dialog-buttons { display: flex; gap: 8px; }
+
+/* Abort, Retry, Fail: always mono, whatever Font says. */
+.dialog.dos { font-family: var(--font-mono); }
 
 /* ---- cupertino: no title tab; a double rule instead ---- */
 :root[data-theme="cupertino"] .app-header { border-bottom: 3px double var(--ink); padding-left: 12px; }

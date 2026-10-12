@@ -88,6 +88,14 @@ export function isSnoozed(text) {
 }
 
 /**
+ * Retry: snooze a day, waking neutral -- the `!`s and `?`s give way to a `>`.
+ * @param {string} text
+ */
+export function retryOf(text) {
+  return withTier(text, 0) + ">";
+}
+
+/**
  * One day's decay: one `>` off a snoozed to-do, else down a tier, stopping at
  * forgotten.
  * @param {string} text

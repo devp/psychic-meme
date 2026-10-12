@@ -6,7 +6,7 @@ import { syncAppHeight } from "./lib/viewport.js";
 import { theme, mode, font, icons, fit, deskclock, flash, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
-import { dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed } from "./lib/forget.js";
+import { dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed, retryOf } from "./lib/forget.js";
 import { sweepable, snoozed, recyclable, forgetSome, rememberSome, shakeUp } from "./lib/organize.js";
 import { ICONS, bitmapSvg } from "./lib/icons.js";
 import { preferredSize, largestFitting } from "./lib/fit.js";
@@ -536,6 +536,31 @@ async function fastForward() {
   });
   if (ok) apply(changes);
 }
+
+// ---- hold a to-do ----------------------------------------------------------
+// Abort, Retry, Fail? Retry snoozes a day and wakes neutral; Fail deletes.
+
+const dosDialog = /** @type {HTMLDialogElement} */ (document.getElementById("dos-dialog"));
+const dosTitle = /** @type {HTMLElement} */ (document.getElementById("dos-title"));
+
+checklist.addEventListener("row-hold", (e) => {
+  const id = /** @type {CustomEvent<string>} */ (e).detail;
+  const rec = lists.ensureActive();
+  const item = rec.items.find((i) => i.id === id);
+  if (!item) return;
+  dosTitle.textContent = item.text;
+  dosDialog.returnValue = "";
+  dosDialog.showModal();
+  dosDialog.addEventListener("close", async () => {
+    if (dosDialog.returnValue === "retry") {
+      lists.updateItem(rec.id, id, { text: retryOf(item.text), done: false, doneDay: null, seenDay: dayKey() });
+      checklist.note("Snoozed till tomorrow.");
+    } else if (dosDialog.returnValue === "fail") {
+      await animate(rowOf(id), "poof");
+      lists.removeItem(rec.id, id);
+    }
+  }, { once: true });
+});
 
 // ---- erase ----------------------------------------------------------------
 // Hold Recycle: asks three times, then reloads into a first run.

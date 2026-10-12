@@ -26,6 +26,9 @@ export const SETUP_STEPS = [
   { text: "You're done with the tutorial! POWER ON!>>", done: false },
 ];
 
+/** Press and hold a row this long for Abort, Retry, Fail. */
+const HOLD_MS = 800;
+
 export class Checklist extends LitElement {
   static properties = {
     record: {},
@@ -50,6 +53,8 @@ export class Checklist extends LitElement {
     this.editingId = null;
     this._note = "";
     this._noteTimer = 0;
+    // A hold just fired; its release mustn't tick the box.
+    this._held = false;
   }
 
   /**
@@ -79,8 +84,14 @@ export class Checklist extends LitElement {
     if (this.editArmed) this._setArmed(false);
   }
 
-  /** While armed, a tap anywhere on a row edits it instead of toggling or deleting. @param {Event} e @param {string} itemId */
+  /** While armed, a tap anywhere on a row edits it instead of toggling. @param {Event} e @param {string} itemId */
   _rowTap(e, itemId) {
+    if (this._held) {
+      this._held = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (!this.editArmed) return;
     e.preventDefault();
     e.stopPropagation();
@@ -123,10 +134,31 @@ export class Checklist extends LitElement {
     lists.updateItem(this.record.id, itemId, { done, doneDay: done ? dayKey() : null });
   }
 
-  /** @param {string} itemId */
-  _remove(itemId) {
-    if (!this.record) return;
-    lists.removeItem(this.record.id, itemId);
+  /**
+   * Press and hold a row: it fades and shakes, then fires `row-hold` with the
+   * item's id. Moving off it, or a scroll, calls it off.
+   * @param {PointerEvent} e @param {string} itemId
+   */
+  _press(e, itemId) {
+    this._held = false;
+    if (e.button !== 0 || this.editArmed || this.editingId) return;
+    const row = /** @type {HTMLElement} */ (e.currentTarget);
+    const { clientX: x, clientY: y } = e;
+    row.dataset.holding = "";
+    const stop = () => {
+      clearTimeout(timer);
+      delete row.dataset.holding;
+      for (const type of ["pointerup", "pointercancel", "pointerleave"]) row.removeEventListener(type, stop);
+      row.removeEventListener("pointermove", moved);
+    };
+    const moved = (/** @type {PointerEvent} */ m) => Math.hypot(m.clientX - x, m.clientY - y) > 8 && stop();
+    const timer = setTimeout(() => {
+      stop();
+      this._held = true;
+      this.dispatchEvent(new CustomEvent("row-hold", { detail: itemId, bubbles: true }));
+    }, HOLD_MS);
+    for (const type of ["pointerup", "pointercancel", "pointerleave"]) row.addEventListener(type, stop);
+    row.addEventListener("pointermove", moved);
   }
 
   /** @param {SubmitEvent} e */
@@ -163,13 +195,15 @@ export class Checklist extends LitElement {
       <p class="count">${this._note ||
         html`${done} of ${all.length} done${hidden ? html`<span class="hidden-count"> · ${hidden} forgotten</span>` : ""}${
           asleep ? html`<span class="hidden-count"> · ${asleep} snoozed</span>` : ""}`}</p>
-      <ul class=${this.editArmed ? "checklist edit-armed" : "checklist"}>
+      <ul class=${this.editArmed ? "checklist edit-armed" : "checklist"} style="--hold-ms: ${HOLD_MS}ms">
         ${repeat(
           items,
           (i) => i.id,
           (i) => html`<li data-id=${i.id}
               class=${[i.done ? "done" : "", priorityOf(i.text) > 0 ? "urgent" : "", isFaded(i.text) ? "faded" : ""].join(" ").trim()}
-              @click=${{ handleEvent: (/** @type {Event} */ e) => this._rowTap(e, i.id), capture: true }}>
+              @click=${{ handleEvent: (/** @type {Event} */ e) => this._rowTap(e, i.id), capture: true }}
+              @pointerdown=${(/** @type {PointerEvent} */ e) => this._press(e, i.id)}
+              @contextmenu=${(/** @type {Event} */ e) => this.editingId !== i.id && e.preventDefault()}>
             ${this.editingId === i.id
               ? html`<input class="edit-field" type="text" aria-label="Edit to-do" enterkeyhint="done"
                   autocomplete="off" autocapitalize="sentences" .value=${i.text}
@@ -188,9 +222,6 @@ export class Checklist extends LitElement {
               />
               <span>${i.text}</span>
             </label>`}
-            <button type="button" aria-label="Delete" @click=${() => this._remove(i.id)}>
-              &times;
-            </button>
           </li>`
         )}
       </ul>

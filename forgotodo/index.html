@@ -161,7 +161,7 @@
 
   <section class="help">
   <ul>
-    <li>Add tasks. Do them, or delete them.</li>
+    <li>Add tasks. Do them, or press and hold one: <em>Abort</em> leaves it, <em>Retry</em> snoozes it a day (it wakes with no <code>!</code> or <code>?</code>), <em>Fail</em> deletes it.</li>
     <li>If you wait a day, you'll start to forget.</li>
     <li>You can also choose to forget (or remember, or even shake things up).</li>
     <li>End a to-do with <code>!</code> to raise it, <code>?</code> to lower it, or <code>&gt;</code> to snooze it a day. Stack them: <code>!!</code>, <code>??</code> (forgotten), <code>&gt;&gt;&gt;</code>.</li>
@@ -221,6 +221,19 @@
     <div class="dialog-buttons">
       <button type="submit" value="ok" class="primary">OK</button>
       <button type="submit" value="cancel" id="alert-cancel" class="primary">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Hold a to-do: Abort leaves it, Retry snoozes it a day (waking neutral), Fail deletes it. -->
+<dialog id="dos-dialog" class="dialog dos">
+  <h2 id="dos-title"></h2>
+  <form method="dialog">
+    <p class="dialog-msg">Abort, Retry, Fail?</p>
+    <div class="dialog-buttons">
+      <button type="submit" value="abort" class="primary">Abort</button>
+      <button type="submit" value="retry" class="primary">Retry</button>
+      <button type="submit" value="fail" class="primary">Fail</button>
     </div>
   </form>
 </dialog>

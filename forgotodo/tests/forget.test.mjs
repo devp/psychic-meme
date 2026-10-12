@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dayKey, daysBetween, priorityOf, decayOnce, forgetChanges, fastForwardChanges, tierOf, withTier, isFaded, isForgotten, snoozeOf, isSnoozed } from "../lib/forget.js";
+import { dayKey, daysBetween, priorityOf, decayOnce, forgetChanges, fastForwardChanges, tierOf, withTier, isFaded, isForgotten, snoozeOf, isSnoozed, retryOf } from "../lib/forget.js";
 
 test("priority comes from the trailing run", () => {
   assert.equal(priorityOf("foo!!"), 2);
@@ -85,6 +85,10 @@ test("snooze grammar: the trailing run decides", () => {
   assert.equal(priorityOf("a!!>"), 0, "a snoozed to-do has no priority while asleep");
   assert.equal(priorityOf("a>!"), 1, "> before the tail is just text");
   assert.ok(!isForgotten("a??>") && !isFaded("a?>"), "snoozed is neither faded nor forgotten");
+});
+
+test("retry: one > in place of any !s and ?s", () => {
+  assert.deepEqual(["a!!", "a?", "a", "a ?! ", "a>b!"].map(retryOf), ["a>", "a>", "a>", "a>", "a>b>"]);
 });
 
 test("snooze: a > a day, then the tier underneath decays as usual", () => {

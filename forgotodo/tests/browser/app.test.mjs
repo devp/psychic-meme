@@ -31,7 +31,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   const seed = await page.locator(".checklist li").count();
   const tally = async () => (await page.locator("forgo-checklist .count").innerText()).match(/^\d+ of \d+ done/)?.[0];
   await ok("checklist seeds on first run", seed > 0, `${seed} items`);
-  const total = Number((await tally())?.match(/of (\d+)/)?.[1]);
+  let total = Number((await tally())?.match(/of (\d+)/)?.[1]);
   await ok("count line renders", (await tally()) === `0 of ${total} done`);
 
   // --- reactivity: no manual re-render call anywhere ------------------------
@@ -52,11 +52,40 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
     await page.locator(".add-row input").evaluate((el) => document.activeElement === el));
   await ok("count updates on add", (await tally()) === `1 of ${total + 1} done`);
 
-  // --- delete --------------------------------------------------------------
-  const delRow = (text) => page.locator(".checklist li", { hasText: text }).locator('button[aria-label="Delete"]').click();
-  await delRow("buy more batteries");
+  // --- hold a to-do: Abort, Retry, Fail ------------------------------------
+  const hold = async (text) => {
+    const box = await page.locator(".checklist li", { hasText: text }).locator("span").boundingBox();
+    await page.mouse.move(box.x + 4, box.y + 4);
+    await page.mouse.down();
+    await page.waitForTimeout(900);
+    await page.mouse.up();
+    await page.waitForTimeout(60);
+  };
+  const row = (text) => page.locator(".checklist li", { hasText: text });
+  await page.fill(".add-row input", "try again!!");
+  await page.click(".add-row button");
+  await hold("try again!!");
+  await ok("holding a to-do asks Abort, Retry, Fail", await page.locator("#dos-dialog").isVisible() &&
+    (await page.locator("#dos-title").innerText()) === "try again!!");
+  await ok("the release doesn't tick it", !(await row("try again!!").locator("input").isChecked()));
+  await ok("the prompt is mono whatever the Font",
+    (await page.locator("#dos-dialog").evaluate((el) => getComputedStyle(el).fontFamily)).startsWith('"Departure Mono"'));
+  await page.click('#dos-dialog button[value="abort"]');
+  await ok("Abort leaves it", (await row("try again!!").count()) === 1);
+  await hold("try again!!");
+  await page.click('#dos-dialog button[value="retry"]');
   await page.waitForTimeout(60);
-  await ok("delete works", (await page.locator(".checklist li").count()) === seed);
+  await ok("Retry snoozes it, neutral", (await row("try again").count()) === 0 &&
+    (await page.evaluate(() => localStorage.getItem("forgotodo:lists:records") ?? "")).includes('"try again>"') &&
+    (await page.locator("forgo-checklist .count").innerText()) === "Snoozed till tomorrow.");
+  total += 1; // still counted while it sleeps
+  const fail = async (text) => {
+    await hold(text);
+    await page.click('#dos-dialog button[value="fail"]');
+    await page.waitForTimeout(700);
+  };
+  await fail("buy more batteries");
+  await ok("Fail deletes it", (await row("buy more batteries").count()) === 0);
 
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });
@@ -116,9 +145,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.waitForTimeout(60);
   await ok("receive appends items", (await tally()) === `2 of ${total + 2} done`);
   await ok("receive dialog closes", !(await page.locator("#receive-dialog").isVisible()));
-  await delRow("charge the cradle");
-  await delRow("find the cable");
-  await page.waitForTimeout(60);
+  await fail("charge the cradle");
+  await fail("find the cable");
 
   // --- theme ---------------------------------------------------------------
   await page.click("#title-btn");
