@@ -78,3 +78,13 @@ test("scripts/warnings.local.sh adds file types to sw-assets", () => {
   const r = spawnSync(script, [dir], { encoding: "utf8" });
   assert.match(r.stdout, /warn\[sw-assets\] .*fonts\/a\.woff2 is not in ASSETS/);
 });
+
+test("starter-leftover skips the app's own pizza-* name", () => {
+  const dir = fixture({
+    "package.json": '{ "name": "pizza-repl-lil" }\n',
+    "index.html": "<title>pizza-repl</title>\n<!-- pizza-starter -->\n",
+  });
+  const r = spawnSync(script, [dir], { encoding: "utf8" });
+  assert.doesNotMatch(r.stdout, /`pizza-repl`/);
+  assert.match(r.stdout, /warn\[starter-leftover\] .*`pizza-starter`/);
+});

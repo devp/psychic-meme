@@ -138,8 +138,10 @@ done
 
 # starter-leftover: names a copy of pizza-starter should have replaced.
 if ! grep -q '"name": "pizza-starter"' package.json 2>/dev/null; then
+  slug=$(grep -oE '"name": "[^"]+"' package.json 2>/dev/null | head -1 | sed 's/.*: "//; s/"$//')
   for f in $(app_files | grep -v '^vendor/'); do
     grep -noE 'pizza-[a-z]+|pizza\.svg' "$f" | while IFS=: read -r n name; do
+      case "$slug" in "$name" | "$name"-*) continue ;; esac # this app's own name
       hit starter-leftover "$f" "$n" "\`$name\` is from pizza-starter; rename it for this app"
     done
   done
