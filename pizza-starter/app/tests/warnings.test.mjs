@@ -64,7 +64,7 @@ test("every rule fires on a fixture full of footguns", () => {
   assert.match(r.stdout, /warn\[class-field-shadow\] components\/v\.js/, "array-form properties");
 });
 
-test("the starter itself is clean under --strict", () => {
+test("this app is clean under --strict", () => {
   const out = execFileSync(script, ["--strict", repo], { encoding: "utf8" });
   assert.match(out, /warnings: 0/);
 });
