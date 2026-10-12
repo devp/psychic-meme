@@ -35,7 +35,7 @@ and each entry resumes it. So REPL semantics (locals, `*1`, `,doc`) are Fennel's
 reimplemented, and pasting an export replays form by form.
 
 `just serve`, `just dev-check` (`just dev-init` once), `just warnings`. Add or remove a file:
-update `ASSETS` in `sw.js`.
+update `ASSETS` in `sw-assets.js`.
 
 ## Known gaps
 

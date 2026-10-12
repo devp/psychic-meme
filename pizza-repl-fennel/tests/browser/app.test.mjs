@@ -234,7 +234,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   });
   await ok("service worker activates", swState === "active", swState);
 
-  const assets = (await readFile(join(root, "sw.js"), "utf8")).match(/const ASSETS = \[([^\]]*)\]/)?.[1].match(/"[^"]+"/g)?.length;
+  const assets = (await readFile(join(root, "sw-assets.js"), "utf8")).match(/const ASSETS = \[([^\]]*)\]/)?.[1].match(/"[^"]+"/g)?.length;
   const cached = await page.evaluate(async () => {
     const names = await caches.keys();
     const c = await caches.open(names[0]);
