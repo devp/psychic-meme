@@ -92,7 +92,11 @@ sw.addEventListener("fetch", (event) => {
     caches.open(CACHE).then(async (cache) => {
       // ignoreSearch: `app.js?x` finds `app.js`. Not cached (not in ASSETS):
       // straight to the network, as with no worker at all.
-      return (await cache.match(key, { ignoreSearch: true })) ?? fetch(req);
+      const hit = await cache.match(key, { ignoreSearch: true });
+      // Cloudflare assets 307s index.html to /, so the cached copy is marked
+      // redirected, and Chrome refuses that as the answer to a navigation.
+      if (hit?.redirected && req.redirect !== "follow") return new Response(hit.body, hit);
+      return hit ?? fetch(req);
     })
   );
 });
