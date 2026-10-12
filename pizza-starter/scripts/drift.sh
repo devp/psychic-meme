@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Diff a copied app against the starter tree in its STARTER stamp. Committed
-# state only (HEAD). Extra args go to git diff; default --stat.
+# Diff a copied app against the starter tree it last took: STARTER-LAST-UPDATED
+# (written by sync.sh), else STARTER. Committed state only (HEAD). Extra args
+# go to git diff; default --stat.
 #
 #   scripts/drift.sh <app> [git-diff-args...]    # app is relative to the repo root
 set -euo pipefail
@@ -12,10 +13,12 @@ shift
 top=$(git rev-parse --show-toplevel)
 prefix=$(git rev-parse --show-prefix)app
 
-tree=$(sed -n 's/^tree: //p' "$top/$app/STARTER")
-[ -n "$tree" ] || { echo "no tree: line in $app/STARTER" >&2; exit 1; }
+stamp=$app/STARTER-LAST-UPDATED
+[ -f "$top/$stamp" ] || stamp=$app/STARTER
+tree=$(sed -n 's/^tree: //p' "$top/$stamp")
+[ -n "$tree" ] || { echo "no tree: line in $stamp" >&2; exit 1; }
 
-echo "== starter since copy ($prefix)"
+echo "== starter since $stamp ($prefix)"
 git --no-pager diff "$@" "$tree" "HEAD:$prefix"
-echo "== $app since copy"
+echo "== $app since $stamp"
 git --no-pager diff "$@" "$tree" "HEAD:$app"

@@ -14,7 +14,8 @@ Includes a vendored copy of [Lit](https://lit.dev/), and a hand-written service 
 - `just new-app <name>` copies `app/` to `<name>` at the repo root and stamps it with a `STARTER` file (commit, tree hash, date). It sets `<name>` as the localStorage namespace (`app-ns`) and `package.json` name; `just warnings` lists the other names to change. Everything outside `app/` is about the starter, not part of it.
 - `cd <name> && just serve`.
 - Edit files. Work through app's default checklist to customize. Run `just warnings` sometimes.
-- Later, from `pizza-starter/`: `just drift <name>` shows what the starter and the app each changed since the copy. Pass `-p` for the full diff.
+- Later, from `pizza-starter/`: `just drift <name>` shows what the starter and the app each changed since the copy (or the last sync). Pass `-p` for the full diff.
+- Later, from `pizza-starter/`: `just sync <name>` merges starter changes to the files in `CORE` into the app and stamps `STARTER-LAST-UPDATED`. Core files stay identical across apps; app-specific parts live beside them (`sw-assets.js`, `scripts/warnings.local.sh`). Everything else is the app's, and sync only lists what changed upstream.
 
 ## Usage
 
@@ -82,8 +83,10 @@ Paths in this table are relative to `pizza-starter/`.
 |---|---|
 | README.md | 2 |
 | justfile | 6 |
+| CORE | 6 |
 | scripts/drift.sh | 6 |
 | scripts/new-app.sh | 6 |
+| scripts/sync.sh | 6 |
 | app/icons/pizza.svg | 5 |
 | app/app.css | 6 |
 | app/app.js | 6 |
