@@ -68,3 +68,13 @@ test("the starter itself is clean under --strict", () => {
   const out = execFileSync(script, ["--strict", repo], { encoding: "utf8" });
   assert.match(out, /warnings: 0/);
 });
+
+test("scripts/warnings.local.sh adds file types to sw-assets", () => {
+  const dir = fixture({
+    "sw-assets.js": "const ASSETS = [\n];\n",
+    "fonts/a.woff2": "",
+    "scripts/warnings.local.sh": "extra_files=(-o -name '*.woff2')\n",
+  });
+  const r = spawnSync(script, [dir], { encoding: "utf8" });
+  assert.match(r.stdout, /warn\[sw-assets\] .*fonts\/a\.woff2 is not in ASSETS/);
+});
