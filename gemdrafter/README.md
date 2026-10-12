@@ -163,7 +163,7 @@ tests/browser/             the same flows in a real browser, including offline.
 just serve            # http://localhost:8000 -- a service worker needs http://
 just dev-init         # dev tooling; nothing in node_modules ships
 just dev-check        # types and tests
-just warnings         # footgun checks, incl. files missing from ASSETS in sw.js; no node_modules
+just warnings         # footgun checks, incl. files missing from ASSETS in sw-assets.js; no node_modules
 just dev-init-browser # opt in to the browser tests
 ```
 
