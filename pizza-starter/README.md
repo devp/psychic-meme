@@ -25,8 +25,8 @@ Workflow tasks: see `justfile` (install [just](https://just.systems/), or read t
 No build step or npm needed to make changes: edit, save and reload.
 
 - **Offline** is `sw.js`: it answers from its cache. On every launch and resume it refetches all of `ASSETS` and keeps them only if every fetch succeeded. So an edit shows up **one reload late** (the first reload fetches it, the second shows it). `components/update-toast.js` shows a "new version" toast with a Reload button as soon as an update lands; ignored, the app reloads the next time it comes back to the foreground. Its `idle` property can veto that reload while input is unsaved. Chrome DevTools > Application > Service workers > "Bypass for network" skips that while iterating.
-- **Adding, renaming or deleting a file:** update `ASSETS` in `sw.js` by hand. `just warnings` lists what's missing or gone; edit until it's clean. `just dev-init-hooks` runs it on push.
-- **Don't want offline:** delete the `// ---- offline` block in `app.js` and `sw.js`.
+- **Adding, renaming or deleting a file:** update `ASSETS` in `sw-assets.js` by hand. `just warnings` lists what's missing or gone; edit until it's clean. `just dev-init-hooks` runs it on push.
+- **Don't want offline:** delete the `// ---- offline` block in `app.js`, and `sw.js` and `sw-assets.js`.
 - `just dev-check`: typecheck and tests. Needs node (`just dev-init` once).
 
 ## Design notes
@@ -105,6 +105,7 @@ Paths in this table are relative to `pizza-starter/`.
 | app/scripts/warnings.sh | 6 |
 | app/state.js | 6 |
 | app/sw.js | 6 |
+| app/sw-assets.js | 6 |
 | app/tests/browser/app.test.mjs | 6 |
 | app/tests/store.test.mjs | 6 |
 | app/tests/warnings.test.mjs | 6 |

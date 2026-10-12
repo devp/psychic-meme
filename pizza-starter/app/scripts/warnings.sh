@@ -19,21 +19,21 @@ hit() { # rule file line message; loops below run in subshells, so record to a f
   echo "warn[$rule] $file:$line: $msg" | tee -a "$findings"
 }
 
-app_files() { # what sw.js's ASSETS should list: everything the page loads
+app_files() { # what sw-assets.js's ASSETS should list: everything the page loads
   find . -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.webmanifest' -o -name '*.svg' \) \
     -not -path './node_modules/*' -not -path './scripts/*' -not -path './tests/*' \
-    -not -name 'sw.js' | sed 's#^\./##' | sort
+    -not -name 'sw.js' -not -name 'sw-assets.js' | sed 's#^\./##' | sort
 }
 app_js() { app_files | grep -E '\.js$' | grep -v '^vendor/'; }
 
-# sw-assets: sw.js's ASSETS must match the app files on disk.
-if [ -f sw.js ]; then
-  assets=$(awk '/^const ASSETS = \[/ { on=1; next } on && /^\];/ { exit } on' sw.js | grep -oE '"[^"]+"' | tr -d '"')
+# sw-assets: sw-assets.js's ASSETS must match the app files on disk.
+if [ -f sw-assets.js ]; then
+  assets=$(awk '/^const ASSETS = \[/ { on=1; next } on && /^\];/ { exit } on' sw-assets.js | grep -oE '"[^"]+"' | tr -d '"')
   for f in $(app_files); do
-    echo "$assets" | grep -qxF "$f" || hit sw-assets sw.js 1 "$f is not in ASSETS; offline, it will be missing"
+    echo "$assets" | grep -qxF "$f" || hit sw-assets sw-assets.js 1 "$f is not in ASSETS; offline, it will be missing"
   done
   for url in $assets; do
-    [ -f "$url" ] || hit sw-assets sw.js "$(grep -nF "\"$url\"" sw.js | head -1 | cut -d: -f1)" \
+    [ -f "$url" ] || hit sw-assets sw-assets.js "$(grep -nF "\"$url\"" sw-assets.js | head -1 | cut -d: -f1)" \
       "$url is in ASSETS but not on disk; install fails, so no offline at all"
   done
 fi

@@ -39,7 +39,8 @@ test("every rule fires on a fixture full of footguns", () => {
       "}",
     ].join("\n"),
     "style.css": "body { height: 100vh; }\ninput { font-size: 14px; }\n",
-    "sw.js": 'importScripts("missing.js");\nconst ASSETS = [\n  "app.js",\n  "gone.js",\n];\n',
+    "sw.js": 'importScripts("missing.js");\n',
+    "sw-assets.js": 'const ASSETS = [\n  "app.js",\n  "gone.js",\n];\n',
   });
   const r = spawnSync(script, ["--strict", dir], { encoding: "utf8" });
   assert.equal(r.status, 1);
