@@ -1,0 +1,89 @@
+# Deploy changed dirs to Cloudflare Workers static assets at <name>.dzza.workers.dev.
+# push to main: deploy. pull_request: --dry-run. workflow_dispatch: deploy every dir.
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; without them, every run is a dry run.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+
+env:
+  # "<dir> <worker name>", one per line. The name is the subdomain.
+  SITES: |
+    demo-pzsr-recipe1 supper
+    detype detype
+    forgotodo forgotodo
+    gemdrafter gemdrafter
+    pizza-repl-fennel fnl
+    pizza-repl-lil lil
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      sites: ${{ steps.plan.outputs.sites }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          case $EVENT in
+            push) base=$BEFORE ;;
+            pull_request) base=$PR_BASE ;;
+            *) base= ;;
+          esac
+          all= changed=
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            all=1
+          else
+            changed=$(git diff --name-only "$base" HEAD)
+            if printf '%s\n' "$changed" | grep -qx '\.github/workflows/deploy\.yml'; then all=1; fi
+          fi
+          printf '%s\n' "$SITES" | while read -r dir name; do
+            [ -n "$dir" ] || continue
+            if [ -n "$all" ] || printf '%s\n' "$changed" | grep -q "^$dir/"; then
+              jq -cn --arg dir "$dir" --arg name "$name" '{dir: $dir, name: $name}'
+            fi
+          done | jq -cs . > sites.json
+          cat sites.json
+          echo "sites=$(cat sites.json)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: plan
+    if: needs.plan.outputs.sites != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ${{ fromJson(needs.plan.outputs.sites) }}
+    name: ${{ matrix.site.name }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          dry=
+          if [ "$EVENT" = pull_request ]; then dry=--dry-run; fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then dry=--dry-run; echo "::warning::no CLOUDFLARE_API_TOKEN secret; dry run only"; fi
+          npx --yes wrangler@4.141.0 deploy $dry \
+            --name "${{ matrix.site.name }}" \
+            --assets "${{ matrix.site.dir }}" \
+            --compatibility-date 2026-09-25
