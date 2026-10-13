@@ -50,7 +50,7 @@ jobs:
             all=1
           else
             changed=$(git diff --name-only "$base" HEAD)
-            if printf '%s\n' "$changed" | grep -qxE '\.github/workflows/deploy\.yml|scripts/cf-stage\.sh'; then all=1; fi
+            if printf '%s\n' "$changed" | grep -qx '\.github/workflows/deploy\.yml'; then all=1; fi
           fi
           printf '%s\n' "$SITES" | while read -r dir name; do
             [ -n "$dir" ] || continue
@@ -75,7 +75,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - run: scripts/cf-stage.sh "${{ matrix.site.dir }}" "$RUNNER_TEMP/dist"
       - env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -86,5 +85,5 @@ jobs:
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then dry=--dry-run; echo "::warning::no CLOUDFLARE_API_TOKEN secret; dry run only"; fi
           npx --yes wrangler@4.141.0 deploy $dry \
             --name "${{ matrix.site.name }}" \
-            --assets "$RUNNER_TEMP/dist" \
+            --assets "${{ matrix.site.dir }}" \
             --compatibility-date 2026-09-25
