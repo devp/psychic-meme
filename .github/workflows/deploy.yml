@@ -18,14 +18,12 @@ concurrency:
 env:
   # "<dir> <worker name>", one per line. The name is the subdomain.
   SITES: |
-    demo-pzsr-recipe1 demo-pzsr-recipe1
+    demo-pzsr-recipe1 supper
     detype detype
     forgotodo forgotodo
     gemdrafter gemdrafter
-    pizza-repl-fennel pizza-repl-fennel
-    pizza-repl-lil pizza-repl-lil
-    whatlink whatlink
-    misc/qr qr
+    pizza-repl-fennel fnl
+    pizza-repl-lil lil
 
 jobs:
   plan:
