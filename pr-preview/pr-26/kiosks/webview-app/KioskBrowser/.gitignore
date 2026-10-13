@@ -1,5 +1,0 @@
-# SwiftPM build directory
-.build/
-# build.sh output (KioskBrowser.app)
-build/
-.DS_Store
