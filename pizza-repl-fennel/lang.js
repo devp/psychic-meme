@@ -17,6 +17,8 @@ const fengari = /** @type {any} */ (globalThis).fengari;
 export const name = "fennel";
 export const comment = ";;";
 export const placeholder = "(+ 1 2)";
+/** Default shortcuts behind the key row's ⋯ button; each is pasted into the input as-is. */
+export const commands = [",doc", ",help"];
 export const greeting =
   "Fennel REPL — try (+ 1 2) or (print :hi). ,help lists REPL commands. Reference tabs above; the log tab keeps your sessions.";
 

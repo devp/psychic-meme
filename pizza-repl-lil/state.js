@@ -15,6 +15,10 @@ const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content"
 
 export const theme = persistedValue(NS + ":theme", "dusk");
 export const font = persistedValue(NS + ":font", "mono");
+// What tapping a log entry's caret does: "both" | "copy" | "fill".
+export const caretAction = persistedValue(NS + ":caret-action", "both");
+// Comma-separated command shortcuts; blank means the language's defaults.
+export const commandsPref = persistedValue(NS + ":commands", "");
 export const tab = persistedValue(NS + ":tab", "repl");
 // Each item is one REPL entry: { input, output, isError }.
 export const sessions = recordStore(NS + ":sessions");

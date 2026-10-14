@@ -61,6 +61,7 @@
 .key-row .k-paren { background: var(--k-paren); }
 .key-row .k-bracket { background: var(--k-bracket); }
 .key-row .k-brace { background: var(--k-brace); }
+.key-row .k-more { background: var(--fg-dim); }
 .key-row + .input-row { border-top: 0; }
 
 .input-row {
@@ -170,3 +171,26 @@ session-list { display: flex; flex-direction: column; gap: 8px; }
 /* ---- settings ---- */
 .about p { margin: 0 0 8px; font-size: 13px; color: var(--fg-dim); }
 .about a { color: var(--accent); }
+
+.command-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.command-item {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  text-align: left;
+}
+
+.text-field {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
