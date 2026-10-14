@@ -79,6 +79,16 @@ test("scripts/warnings.local.sh adds file types to sw-assets", () => {
   assert.match(r.stdout, /warn\[sw-assets\] .*fonts\/a\.woff2 is not in ASSETS/);
 });
 
+test("scripts/warnings.local.sh drops paths from sw-assets", () => {
+  const dir = fixture({
+    "sw-assets.js": "const ASSETS = [\n];\n",
+    "dist/a.js": "",
+    "scripts/warnings.local.sh": "extra_excludes=(-not -path './dist/*')\n",
+  });
+  const r = spawnSync(script, [dir], { encoding: "utf8" });
+  assert.doesNotMatch(r.stdout, /dist\/a\.js/);
+});
+
 test("starter-leftover skips the app's own pizza-* name", () => {
   const dir = fixture({
     "package.json": '{ "name": "pizza-repl-lil" }\n',
