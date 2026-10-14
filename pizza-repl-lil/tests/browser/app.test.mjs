@@ -153,6 +153,29 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.fill("#input", "");
   await setCaret("both");
 
+  // --- key row -------------------------------------------------------------
+  await page.click('#key-row [data-ins="("]');
+  await page.click('#key-row [data-ins=")"]');
+  await ok("bracket keys insert at the caret", (await page.inputValue("#input")) === "()");
+  await page.fill("#input", "");
+  await page.click("#commands-btn");
+  const cmd = (await page.locator("#commands-list .command-item").first().textContent()) ?? "";
+  await ok("⋯ lists the language's commands", cmd !== "");
+  await page.locator("#commands-list .command-item").first().click();
+  await ok("picking a command pastes it and closes the popup",
+    (await page.inputValue("#input")) === cmd && !(await page.locator("#commands-dialog").evaluate((d) => /** @type {HTMLDialogElement} */ (d).open)));
+  await page.fill("#input", "");
+  await ok("defaults offer two shortcuts", (await page.locator("#commands-list .command-item").count()) === 2);
+  await page.click("#settings-btn");
+  await page.fill("#commands-field", "alpha, beta ,, gamma");
+  await page.click('#settings-dialog [data-close]');
+  await ok("custom shortcuts replace the defaults",
+    (await page.locator("#commands-list .command-item").allTextContents()).join("|") === "alpha|beta|gamma");
+  await page.click("#settings-btn");
+  await page.fill("#commands-field", "");
+  await page.click('#settings-dialog [data-close]');
+  await ok("blank restores the defaults", (await page.locator("#commands-list .command-item").count()) === 2);
+
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(120);

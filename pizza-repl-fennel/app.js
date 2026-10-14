@@ -7,7 +7,7 @@
 import { html } from "lit";
 import { syncAppHeight, autoGrow, submitOnEnter } from "./lib/viewport.js";
 import { exportSession } from "./lib/export.js";
-import { theme, font, tab, caretAction, sessions } from "./state.js";
+import { theme, font, tab, caretAction, commandsPref, sessions } from "./state.js";
 import * as lang from "./lang.js";
 import { Tabs } from "./components/tabs.js";
 import { AppendLog } from "./components/append-log.js";
@@ -90,17 +90,45 @@ submitOnEnter(input, () => form.requestSubmit());
 input.addEventListener("input", () => autoGrow(input));
 // Tapping Run would move focus off the textarea and drop the keyboard.
 byId("run-btn").addEventListener("pointerdown", (e) => e.preventDefault());
-
-// Bracket keys insert at the caret (replacing any selection). Tapping one
-// would move focus off the textarea and drop the keyboard, so keep it there.
+// Key row: brackets, plus a gray middle key that pops up the language's
+// command shortcuts. Tapping a key would move focus off the textarea and drop
+// the keyboard, so keep it there. Everything inserts at the caret (replacing any
+// selection).
+/** @param {string} text */
+const insertAtCaret = (text) => {
+  input.focus();
+  input.setRangeText(text, input.selectionStart, input.selectionEnd, "end");
+  autoGrow(input);
+};
 byId("key-row").addEventListener("pointerdown", (e) => e.preventDefault());
 byId("key-row").addEventListener("click", (e) => {
   const b = /** @type {HTMLElement} */ (e.target).closest("button[data-ins]");
-  if (!(b instanceof HTMLElement)) return;
-  input.focus();
-  input.setRangeText(b.dataset.ins ?? "", input.selectionStart, input.selectionEnd, "end");
-  autoGrow(input);
+  if (b instanceof HTMLElement) insertAtCaret(b.dataset.ins ?? "");
 });
+
+const commandsDialog = /** @type {HTMLDialogElement} */ (byId("commands-dialog"));
+const commandsList = byId("commands-list");
+const commandsField = /** @type {HTMLInputElement} */ (byId("commands-field"));
+commandsField.placeholder = lang.commands.join(", ");
+commandsField.addEventListener("input", () => commandsPref.set(commandsField.value));
+commandsPref.subscribe((v) => {
+  if (commandsField.value !== v) commandsField.value = v;
+  const custom = v.split(",").map((c) => c.trim()).filter(Boolean);
+  commandsList.replaceChildren(
+    ...(custom.length ? custom : lang.commands).map((cmd) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "command-item";
+      b.textContent = cmd;
+      b.addEventListener("click", () => {
+        commandsDialog.close();
+        insertAtCaret(cmd);
+      });
+      return b;
+    })
+  );
+});
+byId("commands-btn").addEventListener("click", () => commandsDialog.showModal());
 
 const newSession = () => sessions.create("");
 byId("new-session-btn").addEventListener("click", newSession);

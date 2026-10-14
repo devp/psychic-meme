@@ -51,6 +51,7 @@
       <button type="button" data-ins="(" class="k-paren" aria-label="Insert (">(</button>
       <button type="button" data-ins="[" class="k-bracket" aria-label="Insert [">[</button>
       <button type="button" data-ins="{" class="k-brace" aria-label="Insert {">{</button>
+      <button type="button" id="commands-btn" class="k-more" aria-label="Command shortcuts" aria-haspopup="dialog">⋯</button>
       <button type="button" data-ins="}" class="k-brace" aria-label="Insert }">}</button>
       <button type="button" data-ins="]" class="k-bracket" aria-label="Insert ]">]</button>
       <button type="button" data-ins=")" class="k-paren" aria-label="Insert )">)</button>
@@ -94,6 +95,12 @@
   <button type="button" class="primary" data-close>Close</button>
 </dialog>
 
+<dialog id="commands-dialog" class="settings">
+  <h2>Commands</h2>
+  <div class="command-list" id="commands-list"></div>
+  <button type="button" class="primary" data-close>Close</button>
+</dialog>
+
 <dialog id="session-dialog" class="settings session-dialog">
   <div class="session-dialog-header">
     <input id="session-name" type="text" placeholder="Untitled session" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Session name">
@@ -131,6 +138,12 @@
       <button type="button" class="swatch" role="radio" data-set-caret="copy" aria-checked="false">copy only</button>
       <button type="button" class="swatch" role="radio" data-set-caret="fill" aria-checked="false">fill input only</button>
     </div>
+  </section>
+
+  <section>
+    <h3>Command shortcuts (⋯ key)</h3>
+    <input id="commands-field" class="text-field" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Command shortcuts, comma-separated">
+    <p class="hint">Comma-separated. Leave blank for the defaults.</p>
   </section>
 
   <section>
