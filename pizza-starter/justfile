@@ -3,9 +3,9 @@
 default:
     @just --list
 
-# Copy app/ (as committed) to <dest>, relative to the repo root, stamped with STARTER.
-new-app dest:
-    scripts/new-app.sh {{dest}}
+# Copy app/ (as committed) to <dest> (absolute, else relative to the repo root), stamped with STARTER. <name> defaults to basename of <dest>.
+new-app dest name="":
+    scripts/new-app.sh {{dest}} {{name}}
 
 # Diff <app> (a path; may be in another repo) against its last starter stamp: what the starter and the app each changed since. Default --stat.
 drift app *args:
