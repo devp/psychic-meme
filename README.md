@@ -14,7 +14,7 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
 
 - [detype](detype) -- freewriting, morning-pages style: type a line, press Enter, let it fade. One page per day to look back on
 - [forgotodo](forgotodo) -- a to-do list with retro Palm/Newton looks
-- pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel)
+- pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel), [prolog](pizza-repl-prolog)
 - [mermaid-utils](mermaid-utils)
 - [prompts-library](prompts-library)
 - [tak-board](tak-board) -- `<tak-board>` web component: renders a Tak position from TPS, using TPS-Ninja. Drop-in single file

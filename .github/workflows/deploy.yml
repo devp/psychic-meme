@@ -24,6 +24,7 @@ env:
     gemdrafter gemdrafter
     pizza-repl-fennel fnl
     pizza-repl-lil lil
+    pizza-repl-prolog pl
 
 jobs:
   plan:
