@@ -43,7 +43,7 @@ same in every `pizza-repl-<lang>`; `diff -r` against a sibling shows exactly the
 | `components/append-log.js`, `tabs.js`, `lib/` | from the starter |
 
 `just serve`, `just dev-check` (`just dev-init` once), `just warnings`. Add or remove a file:
-update `ASSETS` in `sw.js`.
+update `ASSETS` in `sw-assets.js`.
 
 ## Known gaps
 

@@ -1,0 +1,28 @@
+// Every file the app needs offline, fetched on install. Add a file to the app,
+// add it here -- `just warnings` flags anything missing or listed-but-gone.
+// sw.js loads this with importScripts, so it's a classic script: no export.
+const ASSETS = [
+  "index.html",
+  "manifest.webmanifest",
+  "theme.css",
+  "base.css",
+  "app.css",
+  "app.js",
+  "state.js",
+  "lib/markdown.js",
+  "lib/fit.js",
+  "lib/forget.js",
+  "lib/icons.js",
+  "lib/organize.js",
+  "lib/store.js",
+  "lib/viewport.js",
+  "components/checklist.js",
+  "components/update-toast.js",
+  "vendor/lit.js",
+  "fonts/DepartureMono-Regular.woff2",
+  "fonts/ComicNeue-Regular.woff2",
+  "fonts/ComicNeue-Bold.woff2",
+  "fonts/DejaVuSans-Regular.woff2",
+  "fonts/DejaVuSans-Bold.woff2",
+  "icons/forgotodo.svg",
+];

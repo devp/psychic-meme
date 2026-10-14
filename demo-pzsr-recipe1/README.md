@@ -95,13 +95,13 @@ tests/browser/       the same flows in a real browser, including offline.
 just serve            # http://localhost:8000 -- a service worker needs http://
 just dev-init         # dev tooling; nothing in node_modules ships
 just dev-check        # types, tests
-just warnings         # grep-level footgun checks, incl. sw.js ASSETS vs files on disk
+just warnings         # grep-level footgun checks, incl. sw-assets.js ASSETS vs files on disk
 just dev-init-browser # opt in to the browser tests
 ```
 
 Without `just` installed, read the `justfile` — every recipe is a one-liner.
 
-Adding, renaming or deleting a file: update `ASSETS` in `sw.js` by hand, or it
+Adding, renaming or deleting a file: update `ASSETS` in `sw-assets.js` by hand, or it
 won't be there offline. `just warnings` lists what's missing or gone.
 
 ## Making it yours

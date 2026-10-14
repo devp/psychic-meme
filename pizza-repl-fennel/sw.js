@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+/// <reference path="sw-assets.js" />
 // Offline support, hand-written. No build step, no library.
 //
 // How a service worker gets here: app.js calls register("sw.js"). The browser
@@ -26,36 +27,10 @@ const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self
 const PREFIX = sw.registration.scope + " ";
 const CACHE = PREFIX + "v1";
 
-// Every file the app needs offline, fetched on install. Add a file to the app,
-// add it here -- `just warnings` flags anything missing or listed-but-gone.
-// Editing this list changes sw.js's bytes, which is what makes browsers pick
-// it up.
-const ASSETS = [
-  "index.html",
-  "manifest.webmanifest",
-  "theme.css",
-  "base.css",
-  "app.css",
-  "app.js",
-  "state.js",
-  "lang.js",
-  "lib/store.js",
-  "lib/viewport.js",
-  "lib/export.js",
-  "components/append-log.js",
-  "components/tabs.js",
-  "components/doc-view.js",
-  "components/session-list.js",
-  "components/update-toast.js",
-  "vendor/lit.js",
-  "vendor/marked.min.js",
-  "vendor/fengari-web.js",
-  "vendor/fennel.lua",
-  "docs/reference.md",
-  "docs/tutorial.md",
-  "docs/lua-primer.md",
-  "icons/repl.svg",
-];
+// ASSETS, every file the app needs offline, is in sw-assets.js: the app's
+// list, kept apart so sw.js stays the same in every app. The browser checks
+// imported scripts for changes too, so editing the list updates the worker.
+importScripts("sw-assets.js");
 
 // Install: download ASSETS into the cache.
 //

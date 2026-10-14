@@ -5,7 +5,7 @@
 //
 // Not a function, but the same problem: a button beside a text field should
 // cancel `pointerdown`, or tapping it moves focus and drops the keyboard. The
-// click still fires. See the Add button in components/checklist.js.
+// click still fires.
 
 /**
  * The height actually visible to the user, which on mobile is *not*

@@ -94,7 +94,7 @@ Fonts, vendored so they work offline:
 
 The same as pizza-starter: `just serve`, `just dev-init`, `just dev-check`,
 `just warnings`. Adding, renaming or deleting an app file (fonts included)
-means updating `ASSETS` in `sw.js`; `just warnings` flags any mismatch.
+means updating `ASSETS` in `sw-assets.js`; `just warnings` flags any mismatch.
 
 Browser tests are one file per block in `tests/browser/` (shared setup in
 `harness.mjs`), so `node --test` runs them in parallel.
