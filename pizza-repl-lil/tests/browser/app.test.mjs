@@ -134,6 +134,25 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("caret never clobbers a half-typed input", (await page.inputValue("#input")) === "half-typed");
   await page.fill("#input", "");
 
+  // caret option: copy only / fill only (both is the default, tested above)
+  const setCaret = async (/** @type {string} */ mode) => {
+    await page.click("#settings-btn");
+    await page.click(`[data-set-caret="${mode}"]`);
+    await page.click('#settings-dialog [data-close]');
+  };
+  await page.evaluate(() => void ((/** @type {any} */ (window)).__copied = null));
+  await setCaret("copy");
+  await page.locator("#output .copy-caret").first().click();
+  await ok("copy-only: copies", (await copied()) === LANG.value[0]);
+  await ok("copy-only: leaves the input alone", (await page.inputValue("#input")) === "");
+  await setCaret("fill");
+  await page.evaluate(() => void ((/** @type {any} */ (window)).__copied = null));
+  await page.locator("#output .copy-caret").first().click();
+  await ok("fill-only: refills the input", (await page.inputValue("#input")) === LANG.value[0]);
+  await ok("fill-only: doesn't copy", (await copied()) === null);
+  await page.fill("#input", "");
+  await setCaret("both");
+
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(120);

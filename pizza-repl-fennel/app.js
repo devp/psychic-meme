@@ -7,7 +7,7 @@
 import { html } from "lit";
 import { syncAppHeight, autoGrow, submitOnEnter } from "./lib/viewport.js";
 import { exportSession } from "./lib/export.js";
-import { theme, font, tab, sessions } from "./state.js";
+import { theme, font, tab, caretAction, sessions } from "./state.js";
 import * as lang from "./lang.js";
 import { Tabs } from "./components/tabs.js";
 import { AppendLog } from "./components/append-log.js";
@@ -37,9 +37,11 @@ output.dataset.empty = lang.greeting;
 const activeId = () => sessions.ensureActive().id;
 
 /**
- * Tapping an entry's caret copies its input. In the live log it also refills
- * the input box -- the usual reason to tap is "run that again" -- but only
- * when the box is empty, so it never clobbers work in progress.
+ * Tapping an entry's caret copies its input and/or, in the live log, refills
+ * the input box -- the usual reason to tap is "run that again" -- per the
+ * caretAction option (default: both). Filling only happens when the box is
+ * empty, so it never clobbers work in progress. Saved sessions in the dialog
+ * always just copy: there's no input behind the dialog to fill.
  * @param {boolean} live
  */
 const renderEntry = (live) => (/** @type {Entry} */ e) =>
@@ -48,8 +50,9 @@ const renderEntry = (live) => (/** @type {Entry} */ e) =>
       <button type="button" class="copy-caret" title=${live ? "Copy / reuse" : "Copy"}
         aria-label=${live ? "Copy this input, and reuse it if the input box is empty" : "Copy this input"}
         @click=${(/** @type {Event} */ ev) => {
-          copyText(e.input, /** @type {HTMLElement} */ (ev.currentTarget));
-          if (live && input.value.trim() === "") {
+          const action = live ? caretAction.get() : "copy";
+          if (action !== "fill") copyText(e.input, /** @type {HTMLElement} */ (ev.currentTarget));
+          if (action !== "copy" && input.value.trim() === "") {
             input.value = e.input;
             autoGrow(input);
           }
@@ -186,6 +189,8 @@ theme.subscribe((v) => {
   syncChecked("[data-set-theme]", "data-set-theme", v);
 });
 
+caretAction.subscribe((v) => syncChecked("[data-set-caret]", "data-set-caret", v));
+
 font.subscribe((v) => {
   document.documentElement.setAttribute("data-font", v);
   syncChecked("[data-set-font]", "data-set-font", v);
@@ -227,6 +232,8 @@ document.addEventListener("click", (e) => {
   if (t) theme.set(t.getAttribute("data-set-theme") ?? "dusk");
   const f = el.closest("[data-set-font]");
   if (f) font.set(f.getAttribute("data-set-font") ?? "mono");
+  const c = el.closest("[data-set-caret]");
+  if (c) caretAction.set(c.getAttribute("data-set-caret") ?? "both");
   if (el.closest("[data-close]")) el.closest("dialog")?.close();
 });
 
