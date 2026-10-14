@@ -39,7 +39,8 @@ test("every rule fires on a fixture full of footguns", () => {
       "}",
     ].join("\n"),
     "style.css": "body { height: 100vh; }\ninput { font-size: 14px; }\n",
-    "sw.js": 'importScripts("missing.js");\nconst ASSETS = [\n  "app.js",\n  "gone.js",\n];\n',
+    "sw.js": 'importScripts("missing.js");\n',
+    "sw-assets.js": 'const ASSETS = [\n  "app.js",\n  "gone.js",\n];\n',
   });
   const r = spawnSync(script, ["--strict", dir], { encoding: "utf8" });
   assert.equal(r.status, 1);
@@ -63,7 +64,27 @@ test("every rule fires on a fixture full of footguns", () => {
   assert.match(r.stdout, /warn\[class-field-shadow\] components\/v\.js/, "array-form properties");
 });
 
-test("the starter itself is clean under --strict", () => {
+test("this app is clean under --strict", () => {
   const out = execFileSync(script, ["--strict", repo], { encoding: "utf8" });
   assert.match(out, /warnings: 0/);
+});
+
+test("scripts/warnings.local.sh adds file types to sw-assets", () => {
+  const dir = fixture({
+    "sw-assets.js": "const ASSETS = [\n];\n",
+    "fonts/a.woff2": "",
+    "scripts/warnings.local.sh": "extra_files=(-o -name '*.woff2')\n",
+  });
+  const r = spawnSync(script, [dir], { encoding: "utf8" });
+  assert.match(r.stdout, /warn\[sw-assets\] .*fonts\/a\.woff2 is not in ASSETS/);
+});
+
+test("starter-leftover skips the app's own pizza-* name", () => {
+  const dir = fixture({
+    "package.json": '{ "name": "pizza-repl-lil" }\n',
+    "index.html": "<title>pizza-repl</title>\n<!-- pizza-starter -->\n",
+  });
+  const r = spawnSync(script, [dir], { encoding: "utf8" });
+  assert.doesNotMatch(r.stdout, /`pizza-repl`/);
+  assert.match(r.stdout, /warn\[starter-leftover\] .*`pizza-starter`/);
 });
