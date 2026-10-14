@@ -141,9 +141,9 @@ export function replayCaveat(_inputs) {
 }
 
 /**
- * Relative links point at pages of fennel-lang.org.
+ * Drops YAML front matter (learnxinyminutes); relative links point at pages of fennel-lang.org.
  * @param {string} md
  */
 export function preprocessDoc(md) {
-  return md.replace(/\]\((?!https?:|#)\/?([^)#.]+)(?:\.md)?(#[^)]*)?\)/g, "](https://fennel-lang.org/$1$2)");
+  return md.replace(/^---\n[\s\S]*?\n---\n/, "").replace(/\]\((?!https?:|#)\/?([^)#.]+)(?:\.md)?(#[^)]*)?\)/g, "](https://fennel-lang.org/$1$2)");
 }

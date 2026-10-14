@@ -25,5 +25,6 @@ const ASSETS = [
   "docs/reference.md",
   "docs/tutorial.md",
   "docs/lua-primer.md",
+  "docs/learnxinyminutes.md",
   "icons/repl.svg",
 ];

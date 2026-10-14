@@ -66,3 +66,7 @@ test("preprocessDoc sends relative links to fennel-lang.org", () => {
     "[a](https://fennel-lang.org/tutorial#modules) [b](https://fennel-lang.org/api#repl) [c](https://fennel-lang.org/macros) [d](https://x.org/y) [e](#here)"
   );
 });
+
+test("preprocessDoc drops leading front matter only", () => {
+  assert.equal(lang.preprocessDoc("---\nname: fennel\n---\n\nbody\n---\n"), "\nbody\n---\n");
+});

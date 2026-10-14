@@ -20,7 +20,8 @@ Built on [pizza-starter](../pizza-starter) (see `STARTER`). Sibling: [pizza-repl
 ,help
 ```
 
-Tabs: `reference`, `tutorial`, and `lua` (the Lua primer) are Fennel's own docs. The round
+Tabs: `reference`, `tutorial`, and `lua` (the Lua primer) are Fennel's own docs; `learnx` is
+[Learn X in Y minutes](https://learnxinyminutes.com/fennel/)' Fennel page. The round
 button on a doc tab jumps to a section. `log` keeps sessions: rename, delete, or copy one as
 commented Fennel that pastes back in and reruns.
 
