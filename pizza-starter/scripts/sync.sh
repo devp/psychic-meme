@@ -4,28 +4,33 @@
 # last stamp (else STARTER), so the app's own edits survive; a conflict is left
 # as markers. Non-core files that changed upstream are listed, not touched.
 #
-#   scripts/sync.sh <app>    # app is relative to the repo root
+#   scripts/sync.sh <app>    # app: relative to the repo root, or any path
+#
+# The app can be in another repo: the stamp's commit is fetched from its
+# remote: (or STARTER_REMOTE, or this checkout's origin) if it is missing here.
 set -euo pipefail
+cwd=$PWD
 cd "$(dirname "$0")/.."
+. scripts/lib.sh
 
 app=${1:?usage: sync.sh <app>}
-top=$(git rev-parse --show-toplevel)
-prefix=$(git rev-parse --show-prefix)app
-dir=$top/$app
+resolve_app "$app" "$cwd"
 
 [ -f "$dir/STARTER" ] || { echo "no $app/STARTER; not a copy of the starter" >&2; exit 1; }
 if [ -n "$(git status --porcelain -- app CORE)" ]; then
   echo "starter app/ or CORE has uncommitted changes; commit them first" >&2
   exit 1
 fi
-if [ -n "$(git -C "$top" status --porcelain -- "$app")" ]; then
+if in_repo "$dir" && [ -n "$(git -C "$dir" status --porcelain -- .)" ]; then
   echo "$app has uncommitted changes; commit them first so the merge is reviewable" >&2
   exit 1
 fi
 
 stamp=$dir/STARTER-LAST-UPDATED
 [ -f "$stamp" ] || stamp=$dir/STARTER
-base=$(sed -n 's/^tree: //p' "$stamp")
+base=$(stamp_field "$stamp" tree)
+remote=$(starter_remote "$stamp")
+ensure_tree "$base" "$(stamp_field "$stamp" commit)" "$remote"
 commit=$(git log -1 --format=%H -- app)
 tree=$(git rev-parse "$commit:$prefix")
 core=$(grep -v '^#' CORE | grep .)
@@ -45,7 +50,7 @@ for f in $core; do
   fi
   cmp -s "$tmp/theirs" "$ours" && continue
   git cat-file blob "$base:$f" >"$tmp/base" 2>/dev/null || : >"$tmp/base"
-  if git merge-file -L "$app" -L "starter@${base:0:7}" -L "starter@${commit:0:7}" "$ours" "$tmp/base" "$tmp/theirs"; then
+  if git merge-file -L "$(basename "$dir")" -L "starter@${base:0:7}" -L "starter@${commit:0:7}" "$ours" "$tmp/base" "$tmp/theirs"; then
     echo "merged   $f"
   else
     echo "CONFLICT $f"
@@ -60,10 +65,11 @@ if [ -n "$skeleton" ]; then
   echo "  see: git diff ${base:0:7} ${tree:0:7} -- <path>"
 fi
 
-if [ "$(sed -n 's/^tree: //p' "$dir/STARTER-LAST-UPDATED" 2>/dev/null)" != "$tree" ]; then
+if [ "$(stamp_field "$dir/STARTER-LAST-UPDATED" tree 2>/dev/null)" != "$tree" ]; then
   cat >"$dir/STARTER-LAST-UPDATED" <<STAMP
 from: $prefix
-commit: $commit
+${remote:+remote: $remote
+}commit: $commit
 tree: $tree
 updated: $(date +%Y-%m-%d)
 STAMP

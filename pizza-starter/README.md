@@ -15,6 +15,7 @@ Includes a vendored copy of [Lit](https://lit.dev/), and a hand-written service 
 - `cd <name> && just serve`.
 - Edit files. Work through app's default checklist to customize. Run `just warnings` sometimes.
 - Later, from `pizza-starter/`: `just drift <name>` shows what the starter and the app each changed since the copy (or the last sync). Pass `-p` for the full diff.
+- `drift` and `sync` also take an app in another repo, by path: `just sync ~/code/foo/foo-client`. Relative paths are tried against the starter repo root, then the current directory. If the stamp's commit isn't in your starter checkout (a shallow clone, say), it's fetched from the stamp's `remote:`, `$STARTER_REMOTE`, or `origin`. Commit the app's own changes first; sync refuses a dirty app.
 - Later, from `pizza-starter/`: `just sync <name>` merges starter changes to the files in `CORE` into the app and stamps `STARTER-LAST-UPDATED`. Core files stay identical across apps; app-specific parts live beside them (`sw-assets.js`, `scripts/warnings.local.sh`). Everything else is the app's, and sync only lists what changed upstream.
 
 ## Usage
