@@ -47,6 +47,14 @@
 <main class="panels">
   <section class="panel repl-panel active" data-panel="repl">
     <append-log id="output" class="output"></append-log>
+    <div class="key-row" id="key-row">
+      <button type="button" data-ins="(" class="k-paren" aria-label="Insert (">(</button>
+      <button type="button" data-ins="[" class="k-bracket" aria-label="Insert [">[</button>
+      <button type="button" data-ins="{" class="k-brace" aria-label="Insert {">{</button>
+      <button type="button" data-ins="}" class="k-brace" aria-label="Insert }">}</button>
+      <button type="button" data-ins="]" class="k-bracket" aria-label="Insert ]">]</button>
+      <button type="button" data-ins=")" class="k-paren" aria-label="Insert )">)</button>
+    </div>
     <form class="input-row" id="input-form">
       <textarea id="input" rows="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
       <button type="submit" id="run-btn">Run</button>
