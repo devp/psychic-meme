@@ -11,6 +11,8 @@ try {
 } catch {}
 
 const root = new URL("../..", import.meta.url).pathname;
+// The localStorage prefix new-app.sh set; read, not hardcoded, so a renamed copy passes.
+const appNs = (await readFile(join(root, "index.html"), "utf8")).match(/name="app-ns" content="([^"]+)"/)?.[1];
 const TYPES = {
   ".html": "text/html",
   ".js": "text/javascript",
@@ -133,7 +135,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="phosphor"]', "aria-checked")) === "true");
   await ok("other swatch unchecked", (await page.getAttribute('[data-set-theme="dusk"]', "aria-checked")) === "false");
   await page.click("#settings-close");
-  await ok("storage keys use the app-ns meta", (await page.evaluate(() => localStorage.getItem("pizza-starter:theme"))) === "phosphor");
+  await ok("storage keys use the app-ns meta", (await page.evaluate((k) => localStorage.getItem(k), `${appNs}:theme`)) === "phosphor");
 
   // --- service worker ------------------------------------------------------
   const swState = await page.evaluate(async () => {
