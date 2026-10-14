@@ -41,6 +41,28 @@
 }
 .copy-caret.copied { color: var(--fg-dim); }
 
+.key-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px 0;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+}
+.key-row button {
+  flex: 1;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 10px;
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+}
+.key-row .k-paren { background: var(--k-paren); }
+.key-row .k-bracket { background: var(--k-bracket); }
+.key-row .k-brace { background: var(--k-brace); }
+.key-row + .input-row { border-top: 0; }
+
 .input-row {
   display: flex;
   gap: 8px;

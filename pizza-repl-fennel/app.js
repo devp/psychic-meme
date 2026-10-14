@@ -88,6 +88,17 @@ input.addEventListener("input", () => autoGrow(input));
 // Tapping Run would move focus off the textarea and drop the keyboard.
 byId("run-btn").addEventListener("pointerdown", (e) => e.preventDefault());
 
+// Bracket keys insert at the caret (replacing any selection). Tapping one
+// would move focus off the textarea and drop the keyboard, so keep it there.
+byId("key-row").addEventListener("pointerdown", (e) => e.preventDefault());
+byId("key-row").addEventListener("click", (e) => {
+  const b = /** @type {HTMLElement} */ (e.target).closest("button[data-ins]");
+  if (!(b instanceof HTMLElement)) return;
+  input.focus();
+  input.setRangeText(b.dataset.ins ?? "", input.selectionStart, input.selectionEnd, "end");
+  autoGrow(input);
+});
+
 const newSession = () => sessions.create("");
 byId("new-session-btn").addEventListener("click", newSession);
 byId("settings-new-session-btn").addEventListener("click", newSession);
