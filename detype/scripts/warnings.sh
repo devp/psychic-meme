@@ -20,8 +20,10 @@ hit() { # rule file line message; loops below run in subshells, so record to a f
 }
 
 # This app's additions, kept out of this file so it stays the same in every app.
-# It can set extra_files: more find tests for app_files, e.g. (-o -name '*.woff2').
+# It can set extra_files: more find tests for app_files, e.g. (-o -name '*.woff2'),
+# and extra_excludes: more to leave out, e.g. (-not -path './dist/*').
 extra_files=()
+extra_excludes=()
 # shellcheck source=/dev/null
 [ -f scripts/warnings.local.sh ] && . scripts/warnings.local.sh
 
@@ -29,7 +31,8 @@ app_files() { # what sw-assets.js's ASSETS should list: everything the page load
   find . -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.webmanifest' -o -name '*.svg' \
     ${extra_files[@]+"${extra_files[@]}"} \) \
     -not -path './node_modules/*' -not -path './scripts/*' -not -path './tests/*' \
-    -not -name 'sw.js' -not -name 'sw-assets.js' | sed 's#^\./##' | sort
+    -not -name 'sw.js' -not -name 'sw-assets.js' \
+    ${extra_excludes[@]+"${extra_excludes[@]}"} | sed 's#^\./##' | sort
 }
 app_js() { app_files | grep -E '\.js$' | grep -v '^vendor/'; }
 
