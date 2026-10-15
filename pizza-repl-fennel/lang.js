@@ -147,7 +147,7 @@ const DELIMITER = /[\s()[\]{}"';`,]/;
 /**
  * Names the symbol before the caret could become: locals, globals, special
  * forms and macros, fields after `.`, methods after `:`, and repl commands.
- * None inside a string or comment, or for a :keyword or number.
+ * None inside a string or comment, or for a :keyword or number (-1, +2, .5 too).
  * @param {string} source
  * @param {number} caret
  * @returns {{from: number, items: string[]} | null} items replace source.slice(from, caret)
@@ -159,7 +159,7 @@ export function complete(source, caret) {
   while (from > 0 && !DELIMITER.test(before[from - 1])) from--;
   if (from > 0 && before[from - 1] === "," && before.slice(0, from - 1).trim() === "") from--;
   const fragment = before.slice(from);
-  if (fragment === "" || /^[:\d]/.test(fragment)) return null;
+  if (fragment === "" || /^(:|[-+]?\.?\d)/.test(fragment)) return null;
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, completeRef);
   lua.lua_pushstring(L, to_luastring(fragment));
   if (lua.lua_pcall(L, 1, 1, 0) !== lua.LUA_OK) {

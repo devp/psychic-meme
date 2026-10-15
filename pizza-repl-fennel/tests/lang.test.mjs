@@ -77,7 +77,8 @@ test("complete: locals from earlier entries, without disturbing *1", () => {
 });
 
 test("complete: nothing in strings, comments, keywords, numbers", () => {
-  for (const s of ['"(str', "1 ; (str", "(print :str", "(+ 12"]) assert.equal(lang.complete(s, s.length), null, s);
+  for (const s of ['"(str', "1 ; (str", "(print :str", "(+ 12", "(- -1", "(+ +2", "(* .5", "(- -.5"]) assert.equal(lang.complete(s, s.length), null, s);
+  assert.ok(lang.complete("(->", 3)?.items.includes("->>"), "a symbol that starts with - still completes");
   assert.equal(lang.complete("(string", 7)?.items.includes("string"), false, "the fragment itself isn't offered");
 });
 
