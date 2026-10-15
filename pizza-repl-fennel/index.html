@@ -47,6 +47,7 @@
 <main class="panels">
   <section class="panel repl-panel active" data-panel="repl">
     <append-log id="output" class="output"></append-log>
+    <div class="suggest-row" id="suggest-row" hidden aria-label="Completions"></div>
     <div class="key-row" id="key-row">
       <button type="button" data-ins="(" class="k-paren" aria-label="Insert (">(</button>
       <button type="button" data-ins="[" class="k-bracket" aria-label="Insert [">[</button>
@@ -142,6 +143,15 @@
       <button type="button" class="swatch" role="radio" data-set-caret="copy" aria-checked="false">copy only</button>
       <button type="button" class="swatch" role="radio" data-set-caret="fill" aria-checked="false">fill input only</button>
     </div>
+  </section>
+
+  <section id="suggest-section" hidden>
+    <h3>Completions while typing</h3>
+    <div class="swatches" role="radiogroup" aria-label="Completions while typing">
+      <button type="button" class="swatch" role="radio" data-set-suggest="on" aria-checked="true">on</button>
+      <button type="button" class="swatch" role="radio" data-set-suggest="off" aria-checked="false">off</button>
+    </div>
+    <p class="hint">After two characters. Tab completes on a keyboard.</p>
   </section>
 
   <section>

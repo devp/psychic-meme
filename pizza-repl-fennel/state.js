@@ -18,6 +18,8 @@ export const font = persistedValue(NS + ":font", "mono");
 // What tapping a log entry's caret does: "both" | "copy" | "fill".
 export const caretAction = persistedValue(NS + ":caret-action", "both");
 // Comma-separated command shortcuts; blank means the language's defaults.
+// Completion strip above the key row, for languages whose lang.js has complete(): "on" | "off".
+export const suggestPref = persistedValue(NS + ":suggest", "on");
 export const commandsPref = persistedValue(NS + ":commands", "");
 export const tab = persistedValue(NS + ":tab", "repl");
 // Each item is one REPL entry: { input, output, isError }.

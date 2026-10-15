@@ -59,6 +59,28 @@ test("hasUnterminated", () => {
   for (const s of ["(+ 1 2)", '(.. ")" "(")', "; ( in a comment\n1", "(+ 1 2))"]) assert.equal(lang.hasUnterminated(s), false, s);
 });
 
+test("complete: globals, fields, special forms, commands", () => {
+  assert.deepEqual(lang.complete("(str", 4), { from: 1, items: ["string"] });
+  assert.deepEqual(lang.complete("(string.fo", 10), { from: 1, items: ["string.format"] });
+  assert.ok(lang.complete("(ea", 3)?.items.includes("each"));
+  assert.deepEqual(lang.complete(",he", 3), { from: 0, items: [",help"] });
+  assert.ok(lang.complete("(+ 1 2) (str", 12)?.items.includes("string"), "a later form");
+  assert.ok(lang.complete("(str x)", 4)?.items.includes("string"), "caret mid-input");
+});
+
+test("complete: locals from earlier entries, without disturbing *1", () => {
+  lang.evaluate("(+ 40 2)");
+  lang.evaluate("(local completeme 1)");
+  lang.evaluate("(+ 41 1)");
+  assert.deepEqual(lang.complete("(completem", 10)?.items, ["completeme"]);
+  assert.equal(lang.evaluate("*1").text, "42");
+});
+
+test("complete: nothing in strings, comments, keywords, numbers", () => {
+  for (const s of ['"(str', "1 ; (str", "(print :str", "(+ 12"]) assert.equal(lang.complete(s, s.length), null, s);
+  assert.equal(lang.complete("(string", 7)?.items.includes("string"), false, "the fragment itself isn't offered");
+});
+
 test("preprocessDoc sends relative links to fennel-lang.org", () => {
   const md = "[a](tutorial#modules) [b](api.md#repl) [c](/macros.md) [d](https://x.org/y) [e](#here)";
   assert.equal(
