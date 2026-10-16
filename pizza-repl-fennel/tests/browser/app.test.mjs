@@ -176,6 +176,30 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click('#settings-dialog [data-close]');
   await ok("blank restores the defaults", (await page.locator("#commands-list .command-item").count()) === 2);
 
+  // --- completions ---------------------------------------------------------
+  const chips = () => page.locator("#suggest-row .suggest-item").allTextContents();
+  await page.locator("#input").pressSequentially("(s");
+  await ok("no completions under two characters", (await chips()).length === 0);
+  await page.locator("#input").pressSequentially("tr");
+  await ok("completions show for the word at the caret", (await chips()).includes("string"), JSON.stringify(await chips()));
+  await page.locator("#suggest-row .suggest-item", { hasText: /^string$/ }).click();
+  await ok("tapping a completion replaces the word", (await page.inputValue("#input")) === "(string");
+  await ok("tapping a completion keeps focus in the input",
+    await page.locator("#input").evaluate((el) => document.activeElement === el));
+  await page.locator("#input").pressSequentially(".forma");
+  await page.press("#input", "Tab");
+  await ok("Tab completes a single candidate", (await page.inputValue("#input")) === "(string.format");
+  await page.fill("#input", "");
+  await page.click("#settings-btn");
+  await page.click('[data-set-suggest="off"]');
+  await page.click('#settings-dialog [data-close]');
+  await page.locator("#input").pressSequentially("(str");
+  await ok("completions can be turned off", await page.locator("#suggest-row").isHidden());
+  await page.fill("#input", "");
+  await page.click("#settings-btn");
+  await page.click('[data-set-suggest="on"]');
+  await page.click('#settings-dialog [data-close]');
+
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(120);

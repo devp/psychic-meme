@@ -41,6 +41,30 @@
 }
 .copy-caret.copied { color: var(--fg-dim); }
 
+.suggest-row {
+  display: flex;
+  gap: 6px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 8px 14px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+}
+.suggest-row[hidden] { display: none; }
+.suggest-item {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+.suggest-row:not([hidden]) + .key-row { border-top: 0; }
+
 .key-row {
   display: flex;
   gap: 6px;
