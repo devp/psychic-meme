@@ -13,3 +13,8 @@ It's one file, `index.html`. It borrows Fengari and Fennel from `../pizza-repl-f
 It exists to try the interaction model before deciding on a "structural" input mode for
 [pizza-repl-fennel](../pizza-repl-fennel). Pick a case from the dropdown; each one lists steps
 to try.
+
+v3: a **file | repl** flip over one shared interpreter and log. The REPL line is scratch space,
+and "→ file" keeps an entry. Holes ending in `…` repeat (args, body) until an empty ⏎. You can
+restart the REPL or "eval fresh" (restart, then the file alone), and each form's result is struck
+through once you edit that form. Case 7 shows the image remembering a deleted function.

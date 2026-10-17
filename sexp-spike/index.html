@@ -53,7 +53,22 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 
 header { display: flex; gap: 6px; align-items: center; padding-block: 6px; border-bottom: 1px solid var(--border); background: var(--bg-alt); }
 header h1 { font-size: 14px; margin: 0; font-weight: 650; white-space: nowrap; }
-#case { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 5px; background: var(--bg-raised); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; }
+.grow { flex: 1; }
+.seg { display: flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.seg button { background: none; border: 0; padding: 5px 12px; font-size: 13px; color: var(--fg-dim); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+/* REPL view: same interpreter and log, the file is put away. */
+body.view-repl #editor-wrap, body.view-repl #ctx, body.view-repl #nav, body.view-repl #entry { display: none !important; }
+body:not(.view-repl) #repl-line { display: none; }
+body.view-repl #log { flex: 1 1 auto; max-height: none; display: flex; border-bottom: 0; }
+#repl-line { display: flex; gap: 6px; align-items: center; padding-block: 6px max(8px, env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--border); }
+#repl-field { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 16px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--fg); }
+#repl-line button { min-height: 40px; min-width: 40px; border-radius: 8px; padding: 0 10px; border: 1px solid var(--border); background: var(--bg-raised); }
+.entry .in button { background: none; border: 1px solid var(--border); border-radius: 5px; font-size: 11.5px; padding: 1px 6px; color: var(--fg-dim); font-family: var(--font-sans); white-space: nowrap; }
+.badge.stale { opacity: .45; text-decoration: line-through; }
+#case-grid { margin-bottom: 14px; }
+#case-grid button[aria-current="true"] { border-color: var(--accent); }
 .hbtn { background: none; border: 1px solid var(--border); border-radius: 6px; min-width: 34px; height: 30px; padding: 0 8px; }
 
 #log { flex: 0 1 auto; max-height: 26%; overflow: auto; padding-block: 6px; display: flex; flex-direction: column; gap: 8px; font-family: var(--font-mono); font-size: 13px; border-bottom: 1px solid var(--border); }
@@ -124,7 +139,11 @@ body.typing #ctx, body.typing #nav { display: none; }
 <body>
 <header class="pad">
   <h1>fnl·node</h1>
-  <select id="case" aria-label="Try a case"></select>
+  <div class="seg" role="group" aria-label="View">
+    <button type="button" data-view="file" aria-pressed="true">file</button>
+    <button type="button" data-view="repl" aria-pressed="false">repl</button>
+  </div>
+  <span class="grow"></span>
   <button id="undo-btn" class="hbtn" type="button" aria-label="Undo">↶</button>
   <button id="steps-btn" class="hbtn" type="button" aria-label="Steps for this case">?</button>
 </header>
@@ -153,10 +172,16 @@ body.typing #ctx, body.typing #nav { display: none; }
   <button data-op="tpl" type="button"><b>λ</b><small>template</small></button>
 </div>
 
+<form id="repl-line" class="pad" autocomplete="off">
+  <button id="restart-btn" type="button" aria-label="Restart REPL" title="Restart REPL">↻</button>
+  <input id="repl-field" type="text" enterkeyhint="go" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="scratch: (+ 1 2" aria-label="REPL line">
+  <button type="submit">run</button>
+</form>
+
 <div id="scrim" hidden></div>
 <div id="more-sheet" class="sheet pad" hidden><h2>All actions</h2><div class="grid" id="more-grid"></div></div>
-<div id="tpl-sheet" class="sheet pad" hidden><h2>Templates · inserted after the focus, then fill the ▢ holes</h2><div class="grid" id="tpl-grid"></div></div>
-<div id="steps-sheet" class="sheet pad" hidden><h2 id="steps-title">Steps</h2><div id="steps"></div></div>
+<div id="tpl-sheet" class="sheet pad" hidden><h2>Templates · fill the ▢ holes; ▢…  holes repeat until an empty ⏎</h2><div class="grid" id="tpl-grid"></div></div>
+<div id="steps-sheet" class="sheet pad" hidden><h2>Cases</h2><div class="grid" id="case-grid"></div><h2 id="steps-title">Steps</h2><div id="steps"></div></div>
 
 <script src="../pizza-repl-fennel/vendor/fengari-web.js"></script>
 <script>
@@ -223,18 +248,21 @@ function at(root, path) {
 const forms = (n) => n.kids.filter((k) => k.t !== "cmt");
 function walk(n, f) { f(n); n.kids.forEach((k) => walk(k, f)); }
 const isHole = (n, src = S.src) => n.t === "atom" && src.startsWith(HOLE, n.s);
+const isRep = (n) => isHole(n) && S.src[n.e - 1] === "…"; // repeating: stays until an empty ⏎
+const headOf = (src) => { const k = parse(src).kids[0]; return k && isColl(k) && k.kids[0] ? src.slice(k.kids[0].s, k.kids[0].e) : null; };
+const stripRep = (src) => src.replace(/\s*▢[^\s()\[\]{}";]*…/g, "");
 function holes(root) { const hs = []; walk(root, (n) => { if (isHole(n)) hs.push(n); }); return hs; }
 
 // ----------------------------------------------------------------- state ---
 // mode: null (not typing) | "add" | "edit" | "fill"
-const S = { src: "", path: [], head: null, mode: null, badge: null, undo: [] };
+const S = { src: "", path: [], head: null, mode: null, badges: {}, undo: [], view: "file" };
 let tree = parse("");
 const $ = (id) => document.getElementById(id);
 const editor = $("editor"), field = $("field"), logEl = $("log");
 
 function commit(src, path) {
   if (src !== S.src) S.undo.push({ src: S.src, path: S.path });
-  S.src = src; S.path = path; S.head = null; S.badge = null;
+  S.src = src; S.path = path; S.head = null;
   draw();
 }
 const focusNode = () => at(tree, S.path);
@@ -293,8 +321,10 @@ function renderInto(el, root, src, ctx) {
     } else if (sp.classList.contains("hole")) sp.textContent = src.slice(n.s + 1, n.e) || "form";
     else sp.textContent = src.slice(n.s, n.e);
     parent.append(sp);
-    if (ctx.badge && ctx.badge.node === n) {
-      const b = document.createElement("span"); b.className = "badge" + (ctx.badge.err ? " err" : ""); b.textContent = "⇒ " + ctx.badge.text; parent.append(b);
+    const bd = ctx.badgeFor && ctx.badgeFor(n);
+    if (bd) {
+      const b = document.createElement("span"); b.className = "badge" + (bd.err ? " err" : "") + (bd.stale ? " stale" : "");
+      b.textContent = "⇒ " + bd.text; parent.append(b);
     }
   };
   el.replaceChildren();
@@ -305,13 +335,13 @@ function renderInto(el, root, src, ctx) {
 
 // The action row: only what applies to the focused node, most useful first.
 const ACT = {
-  eval: ["⇒", "eval"], evalAll: ["⇒", "eval file"], edit: ["✎", "edit"], fill: ["✎", "fill"],
+  eval: ["⇒", "eval"], evalAll: ["⇒", "eval file"], evalFresh: ["↻⇒", "eval fresh"], restart: ["↻", "restart REPL"], edit: ["✎", "edit"], fill: ["✎", "fill"],
   "wrap(": ["(·)", "wrap"], "wrap[": ["[·]", "wrap"], "wrap{": ["{·}", "wrap"],
   glom: [")⇠", "glom"], yeet: ["⇢)", "yeet"], splice: ["·", "splice"], raise: ["⤴", "raise"],
   del: ["⌫", "delete"], copy: ["⧉", "copy"], clear: ["∅", "clear file"], more: ["⋯", "more"],
 };
 function actionsFor(f) {
-  if (f === tree) return ["evalAll", "copy"];
+  if (f === tree) return ["evalAll", "evalFresh", "copy"];
   if (isHole(f)) return ["fill", "del"];
   const nested = f.parent !== tree;
   const inColl = isColl(f) || isColl(f.parent);
@@ -336,7 +366,13 @@ function draw() {
   tree = parse(S.src);
   const f = focusNode();
   S.path = pathOf(f);
-  edCtx.badge = S.badge && { node: at(tree, S.badge.path), text: S.badge.text, err: S.badge.err };
+  edCtx.badgeFor = (n) => {
+    const b = S.badges[pathOf(n).join(",")];
+    if (!b) return null;
+    if (text(n) === b.src) return b;
+    // edited since: show it struck through, unless a different form now sits in this spot
+    return headOf(text(n)) === headOf(b.src) ? { text: b.text, err: b.err, stale: true } : null;
+  };
   renderInto(editor, tree, S.src, edCtx);
   if (!tree.kids.length) {
     const e = document.createElement("span"); e.className = "empty"; e.textContent = "Empty file. Tap + add, or λ for a template.";
@@ -369,7 +405,7 @@ function draw() {
     S.mode === "edit" ? "replace" :
     S.mode === "fill" ? "fill " + (text(f).slice(1) || "▢") :
     S.head ? "head of" : (f === tree || (isColl(f) && !forms(f).length)) ? "inside" : "after";
-  field.placeholder = S.mode === "fill" ? "⏎ empty skips this hole" : "⏎ empty steps out";
+  field.placeholder = S.mode !== "fill" ? "⏎ empty steps out" : isRep(f) ? "one at a time · empty ⏎ = done" : "⏎ empty skips this hole";
 }
 
 // ------------------------------------------------------------ typing ---
@@ -442,11 +478,20 @@ function submit(raw) {
 // Holes: fill the focused one, then jump to the next hole after it (inside the template first).
 function fill(frag) {
   const h = focusNode();
+  const p = pathOf(h);
   let from = h.e;
   if (frag) {
     const c = close(frag); if (!c) return;
-    commit(splice(h.s, h.e, c.text), pathOf(h));
+    if (isRep(h)) { // add before the hole and stay on it
+      const n = parse(c.text).kids.length;
+      return commit(splice(h.s, h.s, c.text + " "), [...p.slice(0, -1), p[p.length - 1] + n]);
+    }
+    commit(splice(h.s, h.e, c.text), p);
     from = h.s + c.text.length;
+  } else if (isRep(h)) { // empty ⏎ ends a repeating hole: drop it
+    const s0 = h.s - S.src.slice(0, h.s).match(/\s*$/)[0].length;
+    commit(splice(s0, h.e, ""), p);
+    from = s0;
   }
   // next hole in the same top-level form: after this one, else wrap around
   const topIdx = pathOf(h)[0];
@@ -461,7 +506,8 @@ function insertTemplate(t) {
   const c = close(t.code);
   const f = focusNode();
   let p;
-  if (S.mode === "fill" && isHole(f)) { p = pathOf(f); commit(splice(f.s, f.e, c.text), p); } // a template can fill a hole
+  if (S.mode === "fill" && isRep(f)) { p = pathOf(f); commit(splice(f.s, f.s, c.text + " "), p); } // goes before a repeating hole
+  else if (S.mode === "fill" && isHole(f)) { p = pathOf(f); commit(splice(f.s, f.e, c.text), p); } // a template can fill a hole
   else p = insertText(c);
   const first = holes(at(tree, p))[0];
   if (first) { S.path = pathOf(first); openEntry("fill"); }
@@ -523,10 +569,12 @@ const ops = {
     const f = focusNode(); const t = f === tree ? S.src : text(f);
     navigator.clipboard?.writeText(t).then(() => say("copied"), () => say("copy blocked here"));
   },
-  undo() { const u = S.undo.pop(); if (!u) return say("nothing to undo"); S.src = u.src; S.path = u.path; S.badge = null; S.head = null; draw(); },
+  undo() { const u = S.undo.pop(); if (!u) return say("nothing to undo"); S.src = u.src; S.path = u.path; S.head = null; draw(); },
   clear() { commit("", []); },
   eval() { evalNode(focusNode()); },
-  evalAll() { evalNode(tree); },
+  evalAll() { evalFile(false); },
+  evalFresh() { evalFile(true); },
+  restart() { restart(); },
 };
 for (const o of "([{") ops["wrap" + o] = () => ops.wrap(o);
 function sib(d) {
@@ -542,7 +590,7 @@ function openSheet(id) { SHEETS.forEach((s) => ($(s).hidden = s !== id)); $("scr
 function closeSheets() { SHEETS.forEach((s) => ($(s).hidden = true)); $("scrim").hidden = true; }
 $("scrim").addEventListener("click", closeSheets);
 
-const MORE = ["eval", "edit", "wrap(", "wrap[", "wrap{", "glom", "yeet", "splice", "raise", "del", "copy", "evalAll", "clear"];
+const MORE = ["eval", "edit", "wrap(", "wrap[", "wrap{", "glom", "yeet", "splice", "raise", "del", "copy", "evalAll", "evalFresh", "restart", "clear"];
 for (const op of MORE) {
   const b = document.createElement("button"); b.type = "button";
   b.innerHTML = `<b>${ACT[op][0]}</b><small>${ACT[op][1]}</small>`;
@@ -552,18 +600,18 @@ for (const op of MORE) {
 
 // Templates: ▢name marks a hole; the word after ▢ is its hint.
 const TEMPLATES = [
-  { name: "fn", code: "(fn ▢name [▢args] ▢body)" },
-  { name: "λ", code: "(λ ▢name [▢args] ▢body)" },
+  { name: "fn", code: "(fn ▢name [▢args…] ▢body…)" },
+  { name: "λ", code: "(λ ▢name [▢args…] ▢body…)" },
   { name: "#( $ )", code: "#(▢body $)" },
   { name: "local", code: "(local ▢name ▢value)" },
-  { name: "let", code: "(let [▢name ▢value] ▢body)" },
+  { name: "let", code: "(let [▢name ▢value] ▢body…)" },
   { name: "if", code: "(if ▢test ▢then ▢else)" },
-  { name: "when", code: "(when ▢test ▢body)" },
-  { name: "each", code: "(each [_ ▢v (ipairs ▢seq)] ▢body)" },
-  { name: "for", code: "(for [▢i 1 ▢n] ▢body)" },
+  { name: "when", code: "(when ▢test ▢body…)" },
+  { name: "each", code: "(each [_ ▢v (ipairs ▢seq)] ▢body…)" },
+  { name: "for", code: "(for [▢i 1 ▢n] ▢body…)" },
   { name: "icollect", code: "(icollect [_ ▢v (ipairs ▢seq)] ▢body)" },
-  { name: "print", code: "(print ▢value)" },
-  { name: "{ }", code: "{▢key ▢value}" },
+  { name: "print", code: "(print ▢values…)" },
+  { name: "{ }", code: "{▢key ▢value ▢more…}" },
 ];
 for (const t of TEMPLATES) {
   const b = document.createElement("button"); b.type = "button";
@@ -599,6 +647,7 @@ local function start()
 end
 start()
 return function(src)
+  if src == nil then start(); return "", false end
   out, failed = {}, false
   local ok, depth = coroutine.resume(repl, src .. "\\n")
   if not ok then emit("REPL crashed, restarted: " .. tostring(depth), true); start()
@@ -619,9 +668,9 @@ async function boot() {
     lua.lua_insert(L, -2);
     check(lua.lua_pcall(L, 1, 1, 0), "run boot");
     const ref = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
-    evaluate = (src) => {
+    evaluate = (src) => { // null restarts the REPL
       lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
-      lua.lua_pushstring(L, to_luastring(src));
+      if (src === null) lua.lua_pushnil(L); else lua.lua_pushstring(L, to_luastring(src));
       check(lua.lua_pcall(L, 1, 2, 0), "evaluate");
       const r = { text: lua.lua_tojsstring(L, -2), isError: lua.lua_toboolean(L, -1) };
       lua.lua_pop(L, 2); return r;
@@ -633,29 +682,56 @@ async function boot() {
 
 function note(t) { const d = document.createElement("div"); d.className = "note"; d.textContent = t; logEl.append(d); }
 
-// Eval never changes the file. The whole file, or one form, with the result shown inline.
+// Eval never changes the file. Each evaluated form gets an inline result that goes stale when edited.
+function ready(n) {
+  if (!fennel) return say("Fennel still loading"), false;
+  const h = holes(n).find((x) => !isRep(x));
+  if (h) { S.path = pathOf(h); draw(); return say("fill the holes first"), false; }
+  if ((function bad(m) { return m.closed === false || m.bad || m.kids.some(bad); })(n)) return say("unbalanced, fix first"), false;
+  return true;
+}
+function evalOne(n) {
+  const r = evaluate(stripRep(text(n)));
+  const last = r.text.split("\n").filter(Boolean).pop() || "(no value)";
+  S.badges[pathOf(n).join(",")] = { src: text(n), text: short(last, 40), err: r.isError };
+  return r;
+}
 function evalNode(n) {
+  if (n === tree) return evalFile(false);
+  if (!ready(n)) return;
+  addLog(text(n), evalOne(n), "form");
+  draw();
+}
+function restart(quiet) {
   if (!fennel) return say("Fennel still loading");
-  if (n === tree && !S.src.trim()) return say("file is empty");
-  const h = holes(n)[0];
-  if (h) { S.path = pathOf(h); draw(); return say("fill the holes first"); }
-  if (n.closed === false || (function bad(m) { return m.closed === false || m.bad || m.kids.some(bad); })(n)) return say("unbalanced, fix first");
-  const src = text(n);
-  const r = evaluate(src);
-  if (n !== tree) {
-    const last = r.text.split("\n").filter(Boolean).pop() || "(no value)";
-    S.badge = { path: pathOf(n), text: short(last, 40), err: r.isError };
-  }
-  addLog(src, r, n === tree ? "file" : "form");
+  evaluate(null); S.badges = {};
+  if (!quiet) { note("REPL restarted: locals are gone, the file is unchanged."); draw(); }
+}
+function evalFile(fresh) {
+  if (!S.src.trim()) return say("file is empty");
+  if (!ready(tree)) return;
+  if (fresh) restart(true);
+  S.badges = {};
+  const rs = forms(tree).map(evalOne); // form by form, so each gets its own result
+  const r = { text: rs.map((x) => x.text).filter(Boolean).join("\n"), isError: rs.some((x) => x.isError) };
+  addLog(S.src, r, fresh ? "fresh file" : "file");
   draw();
 }
 
-function addLog(src, r, what) {
+function addLog(src, r, what, toFile) {
   const box = document.createElement("div"); box.className = "entry";
   const head = document.createElement("div"); head.className = "in";
   const tag = document.createElement("span"); tag.className = "sub"; tag.textContent = what;
   const code = document.createElement("code"); code.textContent = short(src.replace(/\s+/g, " "), 60);
   head.append(tag, code);
+  if (toFile) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = "→ file";
+    b.addEventListener("click", () => {
+      const k = parse(S.src).kids.length, base = S.src.replace(/\s+$/, "");
+      commit(base + (base ? "\n" : "") + src, [k]); say("added to the file"); b.disabled = true; b.textContent = "in file";
+    });
+    head.append(b);
+  }
   const out = document.createElement("div"); out.className = "out code" + (r.isError ? " err" : "");
   const use = document.createElement("button"); use.type = "button"; use.className = "use"; use.hidden = true;
   if (r.isError || !r.text) out.textContent = r.text || "(no value)";
@@ -709,6 +785,23 @@ $("done").addEventListener("click", closeEntry);
 $("tpl-key").addEventListener("click", () => openSheet("tpl-sheet"));
 $("entry").addEventListener("submit", (e) => { e.preventDefault(); const v = field.value; field.value = ""; submit(v); });
 
+function setView(v) {
+  S.view = v; if (S.mode) closeEntry();
+  document.body.classList.toggle("view-repl", v === "repl");
+  document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  logEl.scrollTop = logEl.scrollHeight;
+}
+document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+$("repl-line").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!fennel) return;
+  const f = $("repl-field"), c = close(f.value.trim()); if (!c) return;
+  f.value = "";
+  addLog(c.text, evaluate(c.text), "repl", true);
+});
+$("restart-btn").addEventListener("pointerdown", (e) => e.preventDefault());
+$("restart-btn").addEventListener("click", () => restart());
+
 // Keep the layout above the on-screen keyboard (iOS doesn't resize the layout viewport).
 function syncHeight() { const vv = window.visualViewport; document.documentElement.style.setProperty("--app-height", (vv ? vv.height : innerHeight) + "px"); }
 (window.visualViewport || window).addEventListener("resize", syncHeight); syncHeight();
@@ -716,10 +809,10 @@ function syncHeight() { const vv = window.visualViewport; document.documentEleme
 // ------------------------------------------------------------- cases ---
 const CASES = [
   { name: "1 · A function from a template", src: "", path: [], steps: [
-    "Tap <b>λ</b>, pick <b>fn</b>. Holes appear; the first one is focused.",
-    "Type <code>sq</code> ⏎, <code>n</code> ⏎, <code>(* n n</code> ⏎. Each ⏎ fills a hole and moves on.",
-    "Still typing: <code>(sq 7</code> ⏎. Tap <b>done</b>.",
-    "Tap <b>↑ out</b> until the crumb says <i>file</i>, then <b>⇒ eval file</b>.",
+    "Tap <b>λ</b>, pick <b>λ</b>. Holes appear; the first is focused.",
+    "Type <code>area</code> ⏎. Then into <i>args…</i>: <code>w</code> ⏎ <code>?h</code> ⏎ and an empty ⏎ to finish the args.",
+    "<i>body…</i>: <code>(* w (or ?h w)</code> ⏎, empty ⏎ (the <code>?</code> is part of the name). You're now typing after the λ: <code>(area 3</code> ⏎, <b>done</b>.",
+    "<b>↑ out</b> to <i>file</i>, <b>⇒ eval file</b>. Each form gets its own result. <code>?h</code> is optional, so <code>(area 3)</code> is 9.",
   ] },
   { name: "2 · Eval a piece in place", src: "(+ 1 (* 2 3) (- 10 4))", path: [0], steps: [
     "Tap <code>*</code>, tap again: focus widens to <code>(* 2 3)</code>. <b>⇒ eval</b>.",
@@ -744,21 +837,36 @@ const CASES = [
     "<code>3</code> is focused. <b>+ add</b>, type <code>4</code> ⏎ <code>5</code> ⏎, <b>done</b>.",
     "<b>↑</b> to the <code>each</code> and <b>⇒ eval</b>.",
   ] },
-  { name: "7 · Blank file", src: "", path: [], steps: [
+  { name: "7 · The image remembers", src: "(fn area [w h] (* w h))\n(area 3 4)", path: [], steps: [
+    "<b>⇒ eval file</b>: 12. Now tap <code>4</code>, <b>✎ edit</b>, <code>5</code> ⏎, <b>done</b>. That result goes stale (struck through).",
+    "Tap the <code>fn</code> form and <b>⌫</b> delete it. Focus <code>(area 3 5)</code>, <b>⇒ eval</b>: still works, because the REPL kept the old <code>area</code>.",
+    "<b>↑</b> to the file, <b>↻⇒ eval fresh</b>: restart, then the file alone. Now it fails, honestly.",
+  ] },
+  { name: "8 · Flip to the REPL", src: "(local nums [1 2 3 4])", path: [0], steps: [
+    "<b>⇒ eval</b> the <code>local</code>. Then tap <b>repl</b> at the top: same interpreter, full-height log.",
+    "Type <code>(icollect [_ n (ipairs nums)] (* n n</code> and run. The closers are added for you.",
+    "Tap <b>→ file</b> on that entry to keep it, then flip back to <b>file</b>. <b>↻</b> in the REPL line restarts.",
+  ] },
+  { name: "9 · Blank file", src: "", path: [], steps: [
     "Build anything. <b>+ add</b> types forms; <b>λ</b> inserts templates with holes.",
     "Unclosed <code>(</code> <code>[</code> <code>{</code> close themselves. Empty ⏎ steps out one level.",
   ] },
 ];
-const sel = $("case");
-CASES.forEach((c, i) => sel.append(new Option(c.name, i)));
+CASES.forEach((c, i) => {
+  const b = document.createElement("button"); b.type = "button"; b.dataset.case = i;
+  b.innerHTML = "<b></b>"; b.firstChild.textContent = c.name;
+  b.addEventListener("click", () => loadCase(i));
+  $("case-grid").append(b);
+});
 function loadCase(i) {
   const c = CASES[i];
-  Object.assign(S, { undo: [], src: c.src, path: c.path, badge: null, head: null, mode: null });
+  document.querySelectorAll("[data-case]").forEach((b) => b.setAttribute("aria-current", String(+b.dataset.case === i)));
+  setView("file");
+  Object.assign(S, { undo: [], src: c.src, path: c.path, badges: {}, head: null, mode: null });
   $("steps-title").textContent = c.name;
   $("steps").innerHTML = "<ol>" + c.steps.map((s) => `<li>${s}</li>`).join("") + "</ol>";
   draw();
 }
-sel.addEventListener("change", () => loadCase(+sel.value));
 $("steps-btn").addEventListener("click", () => openSheet("steps-sheet"));
 loadCase(0);
 boot();
