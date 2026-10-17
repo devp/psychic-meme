@@ -27,7 +27,7 @@ Push needs server-side state anyway, for the subscriptions. Once that exists, th
 ```
 u:<id>             {secretHash, name, sub, allows: [ids]}
 p:<code>           {id}                         expires after 10 min
-i:<to>:<itemId>    {url, text, from, sentAt}    expires after 30 days
+i:<to>:<itemId>    {url, text, note, from, sentAt}   expires after 30 days
 ```
 
 `allows` is who may send to *me*. That's the only list `send` checks.
@@ -66,6 +66,7 @@ i:<to>:<itemId>    {url, text, from, sentAt}    expires after 30 days
 - A **send** button on the card, next to edit, plus a `p` key binding.
 - It goes to everyone you're paired with, so there's no picker.
 - It marks the card read: `patchCard(id, { readAt: Date.now() })`.
+- It carries the sender's comment as `note`. On the receiving side, the note becomes the new card's `comment`, so it shows where comments already show, next to "from Laura". The receiver can edit it like any comment.
 - The toast says "sent to Laura". On the receiving side, cards land in the unread lane with `from` set, and `people` gains the name.
 
 ## State (client)
@@ -99,7 +100,3 @@ i:<to>:<itemId>    {url, text, from, sentAt}    expires after 30 days
 - **Push with the card as payload:** needs payload encryption, and the card is lost if the notification is dismissed.
 - **ntfy.sh:** the public server keeps messages for only 12 hours by default.
 - **"Send as link" through `navigator.share`:** about 30 lines and no backend. But on iOS the link opens in Safari, which doesn't share storage with the home-screen app. It could still be added later as an extra.
-
-## Open
-
-- Does a sent card carry the sender's comment as a note?
