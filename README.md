@@ -12,6 +12,7 @@ It does not yet exist.
 
 Currently, miscellaneous side-projects and utilities -- some hand-coded, some LLM-assisted -- that I'd like visible and useful for others.
 
+- [carousel](carousel) -- a deck of links shared from your phone: swipe through, tap to read in a frame, and it's gone. Early-web themes
 - [detype](detype) -- freewriting, morning-pages style: type a line, press Enter, let it fade. One page per day to look back on
 - [forgotodo](forgotodo) -- a to-do list with retro Palm/Newton looks
 - pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel), [prolog](pizza-repl-prolog)
