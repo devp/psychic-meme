@@ -79,9 +79,8 @@ at 4×. **Desktop icons** in Options turns them off for a plain list by name.
 **Press and hold** some desktop icons for 2 seconds to run something else;
 the icon shakes harder as the hold runs out.
 - **Themes**: switch to a random other theme (and its font).
-- **Recycle**: erase all data. It deletes this app's to-dos and settings on
-  this device (other apps on the same site are untouched), after three
-  confirms, then starts over as a first run.
+- **Recycle**: erase every to-do on the list, after three confirms. Settings
+  stay, and it doesn't start over as a first run.
 
 Any desktop icon can take a hold command: `data-hold-cmd` in `index.html`,
 `HOLD_COMMANDS` in `app.js`.

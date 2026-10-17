@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, mode, font, icons, fit, deskclock, flash, lists, eraseAll } from "./state.js";
+import { theme, mode, font, icons, fit, deskclock, flash, lists } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { FORGOTTEN, dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed, retryOf, withTier } from "./lib/forget.js";
@@ -576,19 +576,19 @@ checklist.addEventListener("row-hold", (e) => {
 });
 
 // ---- erase ----------------------------------------------------------------
-// Hold Recycle: asks three times, then reloads into a first run.
+// Hold Recycle: asks three times, then empties the list. Settings stay, and
+// it's no first run: no tutorial, no About.
 
 async function erase() {
   const steps = [
-    { title: "Erase", message: "Erase every to-do and setting in this app, on this device?" },
+    { title: "Erase", message: "Erase every to-do on this list? Settings stay." },
     { title: "Erase", message: "Really? There's no undo. Send your list first if you want a copy." },
-    { title: "Erase", message: "Last chance: erase it all and start fresh?" },
+    { title: "Erase", message: "Last chance: erase every to-do?" },
   ];
   for (const step of steps) {
     if (!(await ask({ ...step, icon: "forget" }))) return;
   }
-  eraseAll();
-  location.reload();
+  lists.clearItems(lists.ensureActive().id);
 }
 
 // ---- shrink to fit --------------------------------------------------------
