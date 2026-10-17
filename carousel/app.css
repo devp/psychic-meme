@@ -60,6 +60,7 @@ cr-deck { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .meta { margin: 0; font-size: 13px; color: var(--fg-dim); }
 .lane-tag, .read-tag { padding: 0 5px; background: var(--accent); color: var(--accent-ink); border-radius: var(--radius); font-size: 12px; }
 .read-tag { background: var(--fg-dim); color: var(--card-bg); }
+.btn.unread { margin-left: 4px; padding: 0 6px; font-size: 12px; line-height: 18px; }
 .comment { width: 100%; resize: none; user-select: text; -webkit-user-select: text; }
 .hint { margin: 0; padding: 0 12px 8px; font-size: 11px; color: var(--fg-dim); }
 .empty p { margin: 12px; }
@@ -94,6 +95,10 @@ cr-deck.spinning .stage { pointer-events: none; }
 :root[data-theme="santa-monica"] .desc { color: var(--accent); font-size: 18px; }
 :root[data-theme="santa-monica"] .app-header { color: #fff; }
 :root[data-theme="santa-monica"] .lanes { background: #6699cc; }
+/* Cupertino: a grey LCD in white plastic; the selection is an inverted bar. */
+:root[data-theme="cupertino"] .titlebar { justify-content: center; gap: 12px; border-bottom: 1px solid #8e9488; }
+:root[data-theme="cupertino"] .desc { font-size: 18px; }
+:root[data-theme="cupertino"] .btn.spin { border-radius: 999px; }
 
 /* ---- prev / position / next ---- */
 .deck-nav {

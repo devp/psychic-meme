@@ -154,28 +154,34 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.fill('.editor textarea[name="description"]', "renamed");
   await page.click(".editor .btn.primary");
   await ok("edit saves description", (await desc()) === "renamed");
-  await ok("new lane appears in the strip", (await page.locator(".lane-chip").count()) === 2);
+  await ok("new lane appears after unread and read", (await page.locator(".lane-chip").count()) === 3);
 
+  const chip = () => page.locator('.lane-chip[aria-pressed="true"]').innerText();
   await drag(0, -120);
-  await ok("swipe up: next lane", (await page.locator('.lane-chip[aria-pressed="true"]').innerText()).startsWith("music"));
+  await ok("swipe up: the read lane", (await chip()).startsWith("read") && (await desc()) === "third", await chip());
+  await drag(0, -120);
+  await ok("swipe up: next lane", (await chip()).startsWith("music"));
   await ok("lane filters", (await pos()) === "1 / 1" && (await desc()) === "renamed");
   await drag(0, 120);
-  await ok("swipe down: back to all unread", (await pos()) === "2 / 2", await pos());
+  await drag(0, 120);
+  await ok("swipe down: back to unread", (await chip()).startsWith("unread") && (await pos()) === "2 / 2", await pos());
 
   await drag(0, 0, 700);
   await page.fill('.editor textarea[name="description"]', "not this");
   await page.click('.editor .btn.close');
   await ok("cancel discards", (await desc()) === "renamed");
 
-  // Mark-unread from the editor brings a read card back.
-  const readId = (await cardsNow())[2].id;
-  await page.evaluate((id) => {
-    const ed = /** @type {any} */ (document.querySelector("cr-editor"));
-    const items = JSON.parse(localStorage.getItem(document.querySelector('meta[name="app-ns"]').getAttribute("content") + ":deck:records"))[0].items;
-    ed.edit(items.find((i) => i.id === id));
-  }, readId);
-  await page.uncheck('.editor input[name="read"]');
+  // The read lane: un-mark from the card, re-mark from the editor, un-mark again.
+  await page.locator(".lane-chip", { hasText: "read" }).filter({ hasNotText: "unread" }).click();
+  await page.click(".card .btn.unread");
+  await ok("mark unread button clears readAt", (await cardsNow())[2].readAt === null);
+  await ok("…and the card stays until we move", (await desc()) === "third" && !(await page.locator(".card .read-tag").count()));
+  await drag(0, 0, 700);
+  await page.check('.editor input[name="read"]');
   await page.click(".editor .btn.primary");
+  await ok("editor marks read again", typeof (await cardsNow())[2].readAt === "number");
+  await page.click(".card .btn.unread");
+  await page.locator(".lane-chip", { hasText: "unread" }).click();
   await ok("mark unread puts it back in the deck", (await pos()).endsWith("/ 3"), await pos());
 
   // --- spin ----------------------------------------------------------------------

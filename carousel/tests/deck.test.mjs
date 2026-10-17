@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseShare, platformOf, embedUrl, frameUrl, laneCards, resolve, wrap, spin, cleanText } from "../lib/deck.js";
+import { parseShare, platformOf, embedUrl, frameUrl, laneCards, READ, resolve, wrap, spin, cleanText } from "../lib/deck.js";
 
 const share = (/** @type {Record<string,string>} */ o) => parseShare(new URLSearchParams(o));
 
@@ -85,6 +85,11 @@ test("laneCards: unread, oldest first, filtered by lane", () => {
 test("laneCards: keeps the card being looked at even once read", () => {
   assert.equal(ids(laneCards(cards, "", "b")), "abc");
   assert.equal(ids(laneCards(cards, "music", "b")), "c");
+});
+
+test("laneCards: READ is everything read, and keeps one just marked unread", () => {
+  assert.equal(ids(laneCards(cards, READ)), "bd");
+  assert.equal(ids(laneCards(cards, READ, "c")), "bcd");
 });
 
 test("resolve: exact, then next added, then wrap", () => {

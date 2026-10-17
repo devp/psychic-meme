@@ -1,13 +1,17 @@
 import { LitElement, html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
-import { cards, deck, lane, lanes, positions, setComment } from "../state.js";
-import { laneCards, resolve, wrap, spin, hostOf, platformOf } from "../lib/deck.js";
+import { cards, deck, lane, lanes, positions, setComment, patchCard } from "../state.js";
+import { laneCards, READ, resolve, wrap, spin, hostOf, platformOf } from "../lib/deck.js";
 
 /** @typedef {import("../lib/deck.js").Card} Card */
 
 const SWIPE = 50; // px before a drag counts as a swipe
 const HOLD = 550; // ms before a press counts as a long press
 const LABELS = { youtube: "video", instagram: "gram", facebook: "fb", other: "link" };
+/** The two lanes always there, ahead of the user's own. */
+const BUILTIN = ["", READ];
+/** @param {string} l */
+const laneName = (l) => (l === "" ? "unread" : l === READ ? "read" : l);
 
 /**
  * The deck: lane strip, the current card, prev/next. Fires `read` and `edit`
@@ -69,7 +73,7 @@ export class DeckView extends LitElement {
 
   /** @param {number} delta */
   changeLane(delta) {
-    const all = ["", ...lanes.get()];
+    const all = [...BUILTIN, ...lanes.get()];
     this.pickLane(all[wrap(Math.max(0, all.indexOf(lane.get())), delta, all.length)], delta);
   }
 
@@ -178,9 +182,9 @@ export class DeckView extends LitElement {
 
     return html`
       <nav class="lanes" aria-label="Lanes">
-        ${["", ...lanes.get()].map(
+        ${[...BUILTIN, ...lanes.get()].map(
           (l) => html`<button type="button" class="lane-chip" aria-pressed=${String(l === current)} @click=${() => this.pickLane(l)}>
-            ${l || "all unread"} <span class="n">${count(l)}</span>
+            ${laneName(l)} <span class="n">${count(l)}</span>
           </button>`
         )}
       </nav>
@@ -192,8 +196,8 @@ export class DeckView extends LitElement {
         ${card
           ? repeat([card], (c) => c.id, (c) => this.renderCard(c, index, list.length))
           : html`<div class="empty window">
-              <div class="titlebar"><span>${current || "all unread"}</span></div>
-              <p>Nothing unread here.</p>
+              <div class="titlebar"><span>${laneName(current)}</span></div>
+              <p>${current === READ ? "Nothing read yet." : "Nothing unread here."}</p>
               <p class="dim">Share a link to carousel from any app${current ? ", or swipe to another lane" : ""}.</p>
             </div>`}
       </div>
@@ -222,7 +226,10 @@ export class DeckView extends LitElement {
           <time datetime=${added.toISOString()} title=${added.toLocaleString()}>added ${ago(c.addedAt)}</time>
           ${c.from ? html` · from <b>${c.from}</b>` : ""}
           ${c.lane ? html` · <span class="lane-tag">${c.lane}</span>` : ""}
-          ${c.readAt ? html` · <span class="read-tag">read</span>` : ""}
+          ${c.readAt
+            ? html` · <span class="read-tag">read</span>
+                <button type="button" class="btn unread" @click=${() => patchCard(c.id, { readAt: null })}>mark unread</button>`
+            : ""}
         </p>
         <textarea class="comment" rows="2" placeholder="comment…" aria-label="Comment"
           .value=${c.comment ?? ""}

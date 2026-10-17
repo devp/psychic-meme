@@ -123,10 +123,14 @@ export function embedUrl(url) {
   return null;
 }
 
+/** The lane of everything read. A sentinel, so no user lane can collide. */
+export const READ = "\u0000read";
+
 /**
  * The cards a lane shows, oldest first: unread ones in the lane, plus
  * `keepId` even if read, so a card doesn't vanish while you're looking at it.
- * Lane "" is everything unread.
+ * Lane "" is everything unread; READ is everything read, and keeps `keepId`
+ * the same way once marked unread.
  *
  * @param {Card[]} cards
  * @param {string} lane
@@ -134,6 +138,7 @@ export function embedUrl(url) {
  * @returns {Card[]}
  */
 export function laneCards(cards, lane, keepId = null) {
+  if (lane === READ) return cards.filter((c) => c.readAt || c.id === keepId).sort((a, b) => a.addedAt - b.addedAt);
   return cards
     .filter((c) => (!c.readAt || c.id === keepId) && (lane === "" || c.lane === lane))
     .sort((a, b) => a.addedAt - b.addedAt);
