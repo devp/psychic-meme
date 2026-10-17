@@ -294,3 +294,40 @@ export function recordStore(key) {
 
   return api;
 }
+
+/**
+ * A persisted JSON value -- a list or a small map. persistedValue underneath,
+ * so subscribers get the parsed value.
+ *
+ * @template T
+ * @param {string} key
+ * @param {T} initial
+ */
+export function persistedJson(key, initial) {
+  const raw = persistedValue(key, JSON.stringify(initial));
+  /** @param {string|null} s @returns {T} */
+  const parse = (s) => {
+    try {
+      return s === null ? initial : JSON.parse(s);
+    } catch {
+      return initial;
+    }
+  };
+  return {
+    /** @returns {T} */
+    get() {
+      return parse(raw.get());
+    },
+    /** @param {T} next */
+    set(next) {
+      raw.set(JSON.stringify(next));
+    },
+    /**
+     * @param {(v: T) => void} fn called immediately, then on every change.
+     * @returns {() => void} unsubscribe
+     */
+    subscribe(fn) {
+      return raw.subscribe((s) => fn(parse(s)));
+    },
+  };
+}

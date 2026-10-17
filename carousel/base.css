@@ -1,5 +1,5 @@
-/* Shell: reset, layout, header, tabs, panels, settings dialog.
-   Theme-agnostic; colours come from theme.css tokens. */
+/* Shell: reset, layout, header, windows, buttons, dialogs.
+   Theme-agnostic; colours and shapes come from theme.css tokens. */
 
 /* ---- base ---- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -18,11 +18,12 @@ body {
   color: var(--fg);
   font-family: var(--font-body);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.4;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 button { font: inherit; color: inherit; cursor: pointer; }
+.dim { color: var(--fg-dim); font-weight: normal; }
 
 /* ---- header ---- */
 .app-header {
@@ -30,105 +31,116 @@ button { font: inherit; color: inherit; cursor: pointer; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 16px;
-  padding-top: calc(10px + env(safe-area-inset-top));
+  padding: 8px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top));
   background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
+  box-shadow: var(--raised);
   flex-shrink: 0;
 }
-.app-header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
-
-.icon-btn {
-  background: none;
-  border: 0;
-  padding: 6px;
-  border-radius: 8px;
-  display: flex;
-  color: var(--fg-dim);
-}
-.icon-btn:hover { color: var(--fg); background: var(--bg-raised); }
-
-/* ---- tabs ---- */
-.tabs {
-  display: flex;
-  gap: 2px;
-  padding: 6px 10px;
-  background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  flex-shrink: 0;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar { display: none; }
-
-.tab {
-  background: none;
-  border: 0;
-  padding: 7px 14px;
-  border-radius: 8px;
-  color: var(--fg-dim);
+.app-header h1 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: -0.01em;
+  min-width: 0;
   white-space: nowrap;
-  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.tagline::before { content: var(--tagline); font-size: 12px; font-weight: normal; font-style: italic; opacity: 0.75; margin-left: 6px; }
+.header-btns { display: flex; gap: 6px; flex-shrink: 0; }
 
-/* ---- panels ---- */
-.panels { flex: 1; min-height: 0; position: relative; }
-
-.panel {
-  display: none;
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px;
+/* ---- windows: a box with a title bar ---- */
+.window {
+  background: var(--card-bg);
+  color: var(--fg);
+  border-radius: var(--radius);
+  box-shadow: var(--raised), var(--shadow);
+  padding: 3px;
 }
-.panel.active { display: block; }
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 4px 3px 8px;
+  background: var(--title-bg);
+  color: var(--title-fg);
+  font-size: 13px;
+  font-weight: bold;
+  border-radius: calc(var(--radius) * 0.6) calc(var(--radius) * 0.6) 0 0;
+  min-height: 26px;
+}
+.titlebar > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ---- settings dialog ---- */
-.settings {
-  border: 1px solid var(--border);
-  border-radius: 14px;
+/* ---- buttons ---- */
+.btn {
+  padding: 5px 12px;
   background: var(--bg-raised);
   color: var(--fg);
-  padding: 20px;
-  width: min(92vw, 380px);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--raised);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:active { box-shadow: var(--sunken); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); font-weight: bold; }
+.btn.danger { color: #c00; }
+.titlebar .btn { padding: 0 6px; font-size: 13px; line-height: 20px; font-weight: bold; font-family: var(--font-body); }
+
+.row { display: flex; gap: 8px; align-items: center; }
+.row.wrap { flex-wrap: wrap; margin-top: 8px; }
+
+input, select, textarea {
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: #fff;
+  border: 0;
+  border-radius: calc(var(--radius) * 0.6);
+  box-shadow: var(--sunken);
+  padding: 6px 8px;
+  min-width: 0;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+
+/* ---- panels ---- */
+.panels { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+
+/* ---- dialogs ---- */
+dialog.window { border: 0; padding: 3px; }
+dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+
+.settings {
+  width: min(92vw, 400px);
+  max-height: 90dvh;
   font-family: var(--font-body);
 }
-.settings::backdrop { background: rgb(0 0 0 / 0.5); }
-.settings h2 { margin: 0 0 16px; font-size: 16px; }
-.settings h3 { margin: 0 0 8px; font-size: 13px; color: var(--fg-dim); font-weight: 500; }
-.settings section { margin-bottom: 18px; }
+.settings > .titlebar { margin-bottom: 12px; }
+.settings section, .settings form { padding: 0 10px; margin-bottom: 16px; }
+.settings h3 { margin: 0 0 8px; font-size: 13px; }
+.settings > .primary { width: calc(100% - 20px); margin: 0 10px 10px; padding: 8px; }
 
-.share-link { color: var(--accent); font-size: 14px; }
+.share-link { color: var(--link); font-size: 14px; }
 
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
-
 .swatch {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 12px;
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  font-size: 13px;
-  color: var(--fg-dim);
-}
-.swatch span {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-}
-.swatch[aria-checked="true"] { border-color: var(--accent); color: var(--fg); }
-
-.settings .primary {
-  width: 100%;
-  padding: 11px;
-  background: var(--accent);
-  color: var(--accent-ink);
+  padding: 6px 10px;
+  background: var(--bg-raised);
   border: 0;
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: var(--radius);
+  box-shadow: var(--raised);
+  font-size: 13px;
+  color: var(--fg);
 }
+.swatch span { width: 14px; height: 14px; border: 1px solid #0006; }
+.swatch[aria-checked="true"] { box-shadow: var(--sunken); font-weight: bold; }
+
+.modes { display: grid; gap: 6px; }
+.modes label { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }

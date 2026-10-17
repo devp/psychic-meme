@@ -1,128 +1,145 @@
-/* This app's own styles. Replace freely. */
+/* This app's own styles: the deck, the reader, the editor, toasts. */
 
-/* ---- checklist ---- */
-.count,
-.panel-note { margin: 0 0 12px; color: var(--fg-dim); font-size: 13px; }
+cr-deck { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
-.checklist { list-style: none; margin: 0 0 16px; padding: 0; }
-
-.checklist li {
+/* ---- lane strip ---- */
+.lanes {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-.checklist li.done span { color: var(--fg-dim); text-decoration: line-through; }
-
-.checklist label {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  flex: 1;
-  cursor: pointer;
-  min-width: 0;
-}
-.checklist input[type="checkbox"] {
-  margin: 3px 0 0;
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
+  gap: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
   flex-shrink: 0;
+  scrollbar-width: none;
 }
-.checklist span { overflow-wrap: anywhere; }
-
-.checklist button[data-remove] {
-  background: none;
-  border: 0;
-  color: var(--fg-dim);
-  font-size: 20px;
-  line-height: 1;
-  padding: 0 4px;
-  flex-shrink: 0;
-}
-.checklist button[data-remove]:hover { color: var(--accent); }
-
-.add-row { display: flex; gap: 8px; }
-
-.add-row input {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
-  font: inherit;
-  font-size: 16px; /* < 16px makes iOS zoom on focus */
-  color: var(--fg);
+.lanes::-webkit-scrollbar { display: none; }
+.lane-chip {
+  padding: 4px 10px;
   background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-.add-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-
-.add-row button {
-  padding: 10px 16px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  border: 0;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-/* ---- append-log ---- */
-append-log {
-  display: block;
-  max-height: 60vh;
-  overflow-y: auto;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-alt);
-}
-append-log:empty::after {
-  content: "Nothing yet. Tick something in the list tab.";
-  display: block;
-  padding: 14px;
-  color: var(--fg-dim);
-  font-size: 13px;
-}
-.log-entry {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-.log-entry:last-child { border-bottom: 0; }
-.log-entry time { color: var(--fg-dim); margin-right: 8px; }
-
-/* ---- prose ---- */
-.prose { max-width: 60ch; }
-.prose h2 { font-size: 15px; margin: 20px 0 8px; }
-.prose h2:first-child { margin-top: 0; }
-.prose p, .prose li { color: var(--fg-dim); }
-.prose code {
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 1px 5px;
-  font-family: var(--font-mono);
-  font-size: 0.9em;
   color: var(--fg);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--raised);
+  font-size: 13px;
+  white-space: nowrap;
 }
-.prose ul { padding-left: 20px; }
-.prose li { margin-bottom: 6px; }
+.lane-chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: bold; box-shadow: var(--sunken); }
+.lane-chip .n { opacity: 0.7; font-size: 11px; }
 
-/* ---- list-summary ---- */
-.summary { list-style: none; margin: 0; padding: 0; }
-.summary li {
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+/* ---- the card ---- */
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  touch-action: none; /* we read swipes ourselves */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.card, .empty {
+  width: min(100%, 460px);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
   cursor: pointer;
+}
+.card-body { padding: 12px 12px 8px; overflow: hidden; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.desc {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 20px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.meta { margin: 0; font-size: 13px; color: var(--fg-dim); }
+.lane-tag, .read-tag { padding: 0 5px; background: var(--accent); color: var(--accent-ink); border-radius: var(--radius); font-size: 12px; }
+.read-tag { background: var(--fg-dim); color: var(--card-bg); }
+.comment { width: 100%; resize: none; user-select: text; -webkit-user-select: text; }
+.hint { margin: 0; padding: 0 12px 8px; font-size: 11px; color: var(--fg-dim); }
+.empty p { margin: 12px; }
+
+/* Slide in from the way we came. */
+.card.next { animation: in-right 0.18s ease-out; }
+.card.prev { animation: in-left 0.18s ease-out; }
+.card.up { animation: in-up 0.2s ease-out; }
+.card.down { animation: in-down 0.2s ease-out; }
+.card.spin { animation: spin-in 0.12s linear; }
+@keyframes in-right { from { transform: translateX(40%) rotate(4deg); opacity: 0; } }
+@keyframes in-left { from { transform: translateX(-40%) rotate(-4deg); opacity: 0; } }
+@keyframes in-up { from { transform: translateY(30%); opacity: 0; } }
+@keyframes in-down { from { transform: translateY(-30%); opacity: 0; } }
+@keyframes spin-in { from { transform: rotateY(80deg); } }
+cr-deck.spinning .stage { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .card { animation: none !important; } }
+
+/* South Park: cards are speech bubbles. */
+:root[data-theme="south-park"] .card { position: relative; }
+:root[data-theme="south-park"] .card::after {
+  content: "";
+  position: absolute;
+  left: 28px;
+  bottom: -10px;
+  border: 10px solid transparent;
+  border-bottom: 0;
+  border-top-color: var(--card-bg);
+}
+:root[data-theme="south-park"] .desc { font-weight: normal; }
+/* Santa Monica: orange headings, like a profile's "extended network" box. */
+:root[data-theme="santa-monica"] .desc { color: var(--accent); font-size: 18px; }
+:root[data-theme="santa-monica"] .app-header { color: #fff; }
+:root[data-theme="santa-monica"] .lanes { background: #6699cc; }
+
+/* ---- prev / position / next ---- */
+.deck-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 12px;
+  flex-shrink: 0;
+}
+.pos { font-size: 13px; color: var(--fg-on-bg); }
+
+.btn.spin { background: var(--accent); color: var(--accent-ink); font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ---- reader ---- */
+.reader {
+  width: 90vw;
+  height: 90dvh;
+  max-width: none;
+  max-height: none;
+  display: none;
+  flex-direction: column;
+}
+.reader[open] { display: flex; }
+.reader .controls { display: flex; gap: 4px; flex-shrink: 0; }
+.frame-wrap { flex: 1; min-height: 0; background: #fff; margin-top: 3px; box-shadow: var(--sunken); }
+.frame-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* ---- editor ---- */
+.editor form { display: grid; gap: 10px; padding: 12px 10px 10px; }
+.editor label { display: grid; gap: 3px; font-size: 13px; }
+.editor label.check { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.editor label.check input { width: 18px; height: 18px; box-shadow: none; }
+.editor .row { justify-content: space-between; }
+.editor .row input { flex: 1; }
+.editor textarea { resize: vertical; }
+
+/* ---- toast ---- */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: calc(60px + env(safe-area-inset-top));
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 8px 14px;
+  max-width: calc(100vw - 32px);
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
-.summary li:hover { border-color: var(--accent); }
-cr-list-summary[empty] .summary { display: none; }

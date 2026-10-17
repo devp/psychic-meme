@@ -5,8 +5,13 @@
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#12141a",
-  "theme_color": "#12141a",
+  "background_color": "#008080",
+  "theme_color": "#008080",
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
   "icons": [
     {
       "src": "icons/carousel.svg",

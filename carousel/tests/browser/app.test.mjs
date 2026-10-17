@@ -66,76 +66,138 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 
-  const clickTab = (name) => page.getByRole("tab", { name, exact: true }).click();
+  // noembed.com stands in for the title lookup; never hit the network.
+  await ctx.route("https://noembed.com/**", (r) => r.fulfill({ contentType: "application/json", body: '{"title":"Fetched Title"}' }));
+  // The embed players: answer with a stub so the iframe has something to load.
+  await ctx.route((u) => /(youtube-nocookie|instagram|facebook)\.com$/.test(u.hostname), (r) => r.fulfill({ contentType: "text/html", body: "<p>embed</p>" }));
 
+  const ls = (k) => page.evaluate((k) => localStorage.getItem(k), `${appNs}:${k}`);
+  const cardsNow = async () => JSON.parse((await ls("deck:records")) ?? "[]")[0]?.items ?? [];
+  const desc = () => page.locator(".card .desc").innerText();
+  const pos = () => page.locator(".deck-nav .pos").innerText();
+  const box = async () => (await page.locator(".stage").boundingBox()) ?? { x: 0, y: 0, width: 0, height: 0 };
+  /** Drag across the stage with a mouse, which sends the same pointer events a finger does. */
+  const drag = async (dx, dy, holdMs = 0) => {
+    // Taps and holds go on the description: on the comment box they're the box's.
+    const b = dx || dy ? await box() : ((await page.locator(".card .desc").boundingBox()) ?? (await box()));
+    const x = b.x + b.width / 2, y = b.y + b.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    if (holdMs) await page.waitForTimeout(holdMs);
+    await page.mouse.move(x + dx, y + dy, { steps: 5 });
+    await page.mouse.up();
+    await page.waitForTimeout(60);
+  };
+
+  // --- empty, then share in ------------------------------------------------
   await page.goto(URL, { waitUntil: "networkidle" });
+  await ok("empty deck says so", await page.locator(".empty").isVisible());
 
-  // --- seeding -------------------------------------------------------------
-  const items = await page.locator(".checklist li").count();
-  await ok("checklist seeds on first run", items === 6, `${items} items`);
-  await ok("count line renders", (await page.locator("cr-checklist .count").innerText()) === "0 of 6 done");
+  await page.goto(URL + "?text=" + encodeURIComponent("first one https://example.com/a"), { waitUntil: "networkidle" });
+  await ok("share: card added with text as description", (await desc()) === "first one", await desc());
+  await ok("share: query string is cleaned up", (await page.evaluate(() => location.search)) === "");
+  await ok("share: toast confirms", (await page.locator(".toast").innerText()).startsWith("added"));
 
-  // --- reactivity: no manual re-render call anywhere ------------------------
-  await page.locator(".checklist input[type=checkbox]").first().check();
-  await page.waitForTimeout(60);
-  const afterToggle = await page.locator("cr-checklist .count").innerText();
-  await ok("toggling re-renders via subscriber", afterToggle === "1 of 6 done", afterToggle);
-  await ok("done style applied", await page.locator(".checklist li").first().evaluate((el) => el.classList.contains("done")));
+  await page.goto(URL + "?url=" + encodeURIComponent("https://youtu.be/ID"), { waitUntil: "networkidle" });
+  await page.waitForTimeout(150);
+  const all = await cardsNow();
+  await ok("share: second card", all.length === 2);
+  await ok("share: no description fetches the title", all[1].description === "Fetched Title", all[1].description);
+  await ok("share: addedAt stamped", typeof all[1].addedAt === "number" && all[1].readAt === null && all[1].comment === null);
 
-  // --- add item (delegated submit survives innerHTML rebuild) ---------------
-  await page.fill(".add-row input", "buy more pizza");
-  await page.click(".add-row button");
-  await page.waitForTimeout(60);
-  const afterAdd = await page.locator(".checklist li").count();
-  await ok("add item works after re-render", afterAdd === 7, `${afterAdd} items`);
-  await ok("input clears after add", (await page.inputValue(".add-row input")) === "");
-  await ok("tapping Add keeps focus in the input, so the keyboard stays up",
-    await page.locator(".add-row input").evaluate((el) => document.activeElement === el));
-  await ok("count updates on add", (await page.locator("cr-checklist .count").innerText()) === "1 of 7 done");
+  await page.goto(URL + "?url=" + encodeURIComponent("https://youtu.be/ID"), { waitUntil: "networkidle" });
+  await ok("share: duplicate is refused", (await cardsNow()).length === 2 && (await page.locator(".toast").innerText()).includes("already"));
 
-  // --- delete --------------------------------------------------------------
-  await page.locator('.checklist button[aria-label="Delete"]').last().click();
-  await page.waitForTimeout(60);
-  await ok("delete works", (await page.locator(".checklist li").count()) === 6);
+  await page.goto(URL + "?text=" + encodeURIComponent("third https://www.instagram.com/p/ABC/"), { waitUntil: "networkidle" });
 
-  // --- persistence ---------------------------------------------------------
+  // --- swiping ---------------------------------------------------------------
+  await ok("deck opens on the oldest", (await desc()) === "first one" && (await pos()) === "1 / 3", await pos());
+  await drag(-120, 0);
+  await ok("swipe left: next card", (await desc()) === "Fetched Title", await desc());
+  await drag(120, 0);
+  await drag(120, 0);
+  await ok("swipe right past the start wraps round", (await desc()) === "third", await desc());
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(120);
-  await ok("state persists across reload", (await page.locator("cr-checklist .count").innerText()) === "1 of 6 done");
+  await ok("position persists across reload", (await desc()) === "third");
 
-  // --- tabs ----------------------------------------------------------------
-  const tabCount = await page.getByRole("tab").count();
-  await ok("one tab per panel", tabCount === (await page.locator(".panel[data-panel]").count()), `${tabCount} tabs`);
-  await clickTab("about");
-  await page.waitForTimeout(60);
-  await ok("tab switches panel", await page.locator('.panel[data-panel="about"]').isVisible());
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(120);
-  await ok("active tab persists", await page.locator('.panel[data-panel="about"]').isVisible());
-  await clickTab("list");
+  // --- comment ---------------------------------------------------------------
+  await page.fill(".card .comment", "  nice one \n");
+  await page.waitForTimeout(500);
+  await ok("comment autosaves, trimmed", (await cardsNow())[2].comment === "nice one");
+  await page.fill(".card .comment", "   ");
+  await page.locator(".card .desc").click({ position: { x: 1, y: 1 }, trial: true });
+  await page.waitForTimeout(500);
+  await ok("blank comment saves as null", (await cardsNow())[2].comment === null);
 
-  // --- list-summary: the same store, without Lit -----------------------------
-  await clickTab("summary");
-  await page.waitForTimeout(60);
-  const summaryText = () => page.locator("cr-list-summary .count").innerText();
-  await ok("summary renders from the store", (await summaryText()) === "Setup: 1 of 6 done", await summaryText());
-  await ok("summary shows `limit` items", (await page.locator(".summary li").count()) === 3);
-  await page.locator(".summary li").last().click();
-  await page.waitForTimeout(60);
-  await ok("tapping an item ticks it", (await summaryText()) === "Setup: 2 of 6 done", await summaryText());
-  await clickTab("list");
-  await page.waitForTimeout(60);
-  await ok("checklist sees the same change", (await page.locator("cr-checklist .count").innerText()) === "2 of 6 done");
+  // --- reading -----------------------------------------------------------------
+  await drag(0, 0);
+  await ok("tap: reader opens", await page.locator(".reader[open]").isVisible());
+  const src = await page.locator(".reader iframe").getAttribute("src");
+  await ok("tap: instagram renders as embed by default", src === "https://www.instagram.com/p/ABC/embed/captioned/", src ?? "");
+  const box90 = await page.locator(".reader").boundingBox();
+  await ok("reader takes ~90% of the viewport", Math.abs((box90?.width ?? 0) - 351) < 4, String(box90?.width));
+  await ok("tap: marked read", typeof (await cardsNow())[2].readAt === "number");
+  await page.click(".reader .close");
+  await ok("[x] closes, iframe gone", !(await page.locator(".reader[open]").count()) && !(await page.locator(".reader iframe").count()));
+  await ok("read card stays until we move", (await desc()) === "third" && (await page.locator(".card .read-tag").count()) === 1);
+  await drag(-120, 0);
+  await ok("moving on drops the read card", (await pos()) === "1 / 2", await pos());
+  await drag(-120, 0);
+  await ok("…and it doesn't come round again", (await desc()) !== "third" && (await pos()) === "2 / 2");
 
-  // --- theme ---------------------------------------------------------------
+  // --- edit, lanes -------------------------------------------------------------
+  await drag(0, 0, 700);
+  await ok("long press opens the editor", await page.locator(".editor[open]").isVisible());
+  await ok("long press doesn't read", !(await page.locator(".reader[open]").count()));
+  await page.selectOption('.editor select[name="lane"]', { label: "new lane…" });
+  await page.fill('.editor input[name="lane-new"]', "music");
+  await page.fill('.editor textarea[name="description"]', "renamed");
+  await page.click(".editor .btn.primary");
+  await ok("edit saves description", (await desc()) === "renamed");
+  await ok("new lane appears in the strip", (await page.locator(".lane-chip").count()) === 2);
+
+  await drag(0, -120);
+  await ok("swipe up: next lane", (await page.locator('.lane-chip[aria-pressed="true"]').innerText()).startsWith("music"));
+  await ok("lane filters", (await pos()) === "1 / 1" && (await desc()) === "renamed");
+  await drag(0, 120);
+  await ok("swipe down: back to all unread", (await pos()) === "2 / 2", await pos());
+
+  await drag(0, 0, 700);
+  await page.fill('.editor textarea[name="description"]', "not this");
+  await page.click('.editor .btn.close');
+  await ok("cancel discards", (await desc()) === "renamed");
+
+  // Mark-unread from the editor brings a read card back.
+  const readId = (await cardsNow())[2].id;
+  await page.evaluate((id) => {
+    const ed = /** @type {any} */ (document.querySelector("cr-editor"));
+    const items = JSON.parse(localStorage.getItem(document.querySelector('meta[name="app-ns"]').getAttribute("content") + ":deck:records"))[0].items;
+    ed.edit(items.find((i) => i.id === id));
+  }, readId);
+  await page.uncheck('.editor input[name="read"]');
+  await page.click(".editor .btn.primary");
+  await ok("mark unread puts it back in the deck", (await pos()).endsWith("/ 3"), await pos());
+
+  // --- spin ----------------------------------------------------------------------
+  const before = await desc();
+  await page.click("#spin-btn");
+  await page.waitForTimeout(1500);
+  await ok("spin lands somewhere else", (await desc()) !== before);
+
+  // --- options -------------------------------------------------------------------
   await page.click("#settings-btn");
-  await page.click('[data-set-theme="phosphor"]');
-  await page.waitForTimeout(60);
-  await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "phosphor");
-  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="phosphor"]', "aria-checked")) === "true");
-  await ok("other swatch unchecked", (await page.getAttribute('[data-set-theme="dusk"]', "aria-checked")) === "false");
+  await page.selectOption('select[data-mode="instagram"]', "open");
+  await ok("render mode persists", JSON.parse((await ls("modes")) ?? "{}").instagram === "open");
+  const [download] = await Promise.all([page.waitForEvent("download"), page.click("#export-all")]);
+  const exported = JSON.parse(await (await import("node:fs/promises")).readFile(await download.path(), "utf8"));
+  await ok("export all", exported.cards.length === 3);
+  await page.click("#delete-read");
+  await ok("delete read: first tap only asks", (await cardsNow()).length === 3);
+  await page.click('[data-set-theme="santa-monica"]');
+  await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "santa-monica");
+  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="santa-monica"]', "aria-checked")) === "true");
   await page.click("#settings-close");
-  await ok("storage keys use the app-ns meta", (await page.evaluate((k) => localStorage.getItem(k), `${appNs}:theme`)) === "phosphor");
+  await ok("storage keys use the app-ns meta", (await ls("theme")) === "santa-monica");
 
   // --- service worker ------------------------------------------------------
   const swState = await page.evaluate(async () => {
@@ -223,158 +285,12 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ctx.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(400);
-  const offlineItems = await page.locator(".checklist li").count();
-  await ok("works offline after reload", offlineItems === 6, `${offlineItems} items`);
+  await ok("works offline after reload", await page.locator(".card").isVisible());
   // query string must not miss the cache
   await page.goto(URL + "?utm_source=subway", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(400);
-  await ok("offline with query string (ignoreSearch)", (await page.locator(".checklist li").count()) === 6);
+  await ok("offline with query string (ignoreSearch)", await page.locator(".card").isVisible());
   await ctx.setOffline(false);
-
-
-  // --- append-log: the travelling component ---------------------------------
-  // Driven through its property interface, which is the whole point of it.
-  await clickTab("log");
-  await page.waitForTimeout(60);
-
-  /** @param {{id: string, text: string}[]} items */
-  const setItems = (items) =>
-    page.evaluate((list) => {
-      const el = /** @type {any} */ (document.getElementById("activity-log"));
-      el.items = list.map((i) => ({ ...i, at: 1700000000000 }));
-    }, items);
-
-  await setItems([{ id: "a", text: "alpha" }, { id: "b", text: "bravo" }]);
-  await page.waitForTimeout(60);
-  await ok("log renders items", (await page.locator("#activity-log .log-entry").count()) === 2);
-
-  // Mark the first node, then extend the array. If it's a real append, the
-  // marked node survives untouched.
-  await page.evaluate(() => {
-    const first = document.querySelector("#activity-log .log-entry");
-    /** @type {any} */ (first).__marker = "survivor";
-  });
-  await setItems([
-    { id: "a", text: "alpha" },
-    { id: "b", text: "bravo" },
-    { id: "c", text: "charlie" },
-  ]);
-  await page.waitForTimeout(60);
-  const survived = await page.evaluate(
-    () => /** @type {any} */ (document.querySelector("#activity-log .log-entry")).__marker
-  );
-  await ok("append preserves existing nodes", survived === "survivor");
-  await ok("append adds only the tail", (await page.locator("#activity-log .log-entry").count()) === 3);
-
-  // A non-prefix change must rebuild.
-  await setItems([{ id: "z", text: "zulu" }]);
-  await page.waitForTimeout(60);
-  const afterReset = await page.evaluate(
-    () => /** @type {any} */ (document.querySelector("#activity-log .log-entry"))?.__marker
-  );
-  await ok("non-prefix change rebuilds", afterReset === undefined);
-  await ok("rebuild renders the new list", (await page.locator("#activity-log .log-entry").count()) === 1);
-  await ok("aria-busy cleared after rebuild", (await page.getAttribute("#activity-log", "aria-busy")) === null);
-  await ok("log carries role and live region", (await page.getAttribute("#activity-log", "role")) === "log");
-
-  // Scroll: follow when pinned to the bottom, stay put when reading back.
-  const many = Array.from({ length: 60 }, (_, i) => ({ id: "n" + i, text: "line " + i }));
-  await setItems(many);
-  await page.waitForTimeout(80);
-  const pinned = await page.evaluate(() => {
-    const el = /** @type {HTMLElement} */ (document.getElementById("activity-log"));
-    return el.scrollHeight - el.scrollTop - el.clientHeight < 8;
-  });
-  await ok("stays pinned to the bottom while following", pinned);
-
-  await page.evaluate(() => {
-    /** @type {HTMLElement} */ (document.getElementById("activity-log")).scrollTop = 0;
-  });
-  await setItems([...many, { id: "extra", text: "arrived while reading" }]);
-  await page.waitForTimeout(80);
-  const stayedPut = await page.evaluate(
-    () => /** @type {HTMLElement} */ (document.getElementById("activity-log")).scrollTop
-  );
-  await ok("does not yank you down when scrolled up", stayedPut < 8, `scrollTop=${stayedPut}`);
-
-  await clickTab("list");
-  await page.waitForTimeout(60);
-
-  // --- the comparison probe ------------------------------------------------
-  await page.goto(URL, { waitUntil: "networkidle" });
-  await page.waitForTimeout(100);
-  await page.click(".add-row input");
-  await page.type(".add-row input", "half-typed");
-  const focusBefore = await page.evaluate(() => document.activeElement?.getAttribute("name"));
-  await page.locator(".checklist input[type=checkbox]").nth(1).check();
-  await page.waitForTimeout(80);
-  const focusAfter = await page.evaluate(() => document.activeElement?.tagName);
-  const valueAfter = await page.inputValue(".add-row input");
-  await ok("typing survives a re-render elsewhere", focusBefore === "text" && focusAfter === "INPUT" && valueAfter === "half-typed",
-    `focus ${focusBefore} -> ${focusAfter}, value "${valueAfter}"`);
-
-  // --- lib/reactive-element.js ---------------------------------------------
-  const re = await page.evaluate(async () => {
-    const { ReactiveElement } = await import("./lib/reactive-element.js");
-    const tick = () => Promise.resolve();
-    let updates = 0;
-    class Probe extends ReactiveElement {
-      static properties = ["count", "label"];
-      constructor() {
-        super();
-        this.count = 0;
-      }
-      update() {
-        updates++;
-        this.textContent = `${this.label}:${this.count}`;
-      }
-    }
-    class SubProbe extends Probe {
-      static properties = ["extra"];
-      update() {
-        super.update();
-        this.textContent += `:${this.extra}`;
-      }
-    }
-    const early = /** @type {any} */ (document.createElement("re-probe"));
-    early.label = "early"; // assigned before the class exists
-    customElements.define("re-probe", Probe);
-    customElements.define("re-sub-probe", SubProbe);
-    const el = /** @type {any} */ (document.createElement("re-probe"));
-    el.label = "off-page";
-    await tick();
-    const r = { offPage: updates };
-    document.body.append(early, el);
-    await tick();
-    early.label = "later"; // would be ignored if the early value still hid the setter
-    await tick();
-    Object.assign(r, { early: early.textContent });
-    updates = 0;
-    el.count = 1;
-    el.count = 2;
-    el.label = "x";
-    await tick();
-    Object.assign(r, { batch: updates, text: el.textContent });
-    updates = 0;
-    el.count = 2; // unchanged
-    await tick();
-    Object.assign(r, { noop: updates });
-    const sub = /** @type {any} */ (document.createElement("re-sub-probe"));
-    document.body.append(sub);
-    sub.label = "s";
-    sub.extra = "e";
-    await tick();
-    Object.assign(r, { sub: sub.textContent });
-    early.remove();
-    el.remove();
-    sub.remove();
-    return r;
-  });
-  await ok("re: no render while off-page", re.offPage === 0);
-  await ok("re: property set before define keeps its setter", re.early === "later:0", re.early);
-  await ok("re: assignments batch into one update", re.batch === 1 && re.text === "x:2", `${re.batch} ${re.text}`);
-  await ok("re: unchanged value skips the update", re.noop === 0);
-  await ok("re: subclass adds to parent's properties", re.sub === "s:0:e", re.sub);
 
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 });
