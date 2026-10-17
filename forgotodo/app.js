@@ -246,7 +246,7 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase };
+const HOLD_COMMANDS = { erase, rememberOne: () => remember("1") };
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
@@ -483,8 +483,10 @@ async function forgetCmd() {
   changes.forEach((c) => lists.updateItem(rec.id, c.id, { text: c.text }));
 }
 
-async function remember() {
-  const query = await askPick("Remember");
+// Held, it skips the prompt and remembers one.
+/** @param {string} [held] */
+async function remember(held) {
+  const query = held ?? (await askPick("Remember"));
   if (query === null) return;
   const rec = lists.ensureActive();
   const changes = rememberSome(/** @type {any} */ (rec.items), query);
