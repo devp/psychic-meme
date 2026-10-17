@@ -165,16 +165,16 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("picking a command pastes it and closes the popup",
     (await page.inputValue("#input")) === cmd && !(await page.locator("#commands-dialog").evaluate((d) => /** @type {HTMLDialogElement} */ (d).open)));
   await page.fill("#input", "");
-  await ok("defaults offer two shortcuts", (await page.locator("#commands-list .command-item").count()) === 2);
+  await ok("defaults offer one shortcut", (await page.locator("#commands-list .command-item").count()) === 1);
   await page.click("#settings-btn");
   await page.fill("#commands-field", "alpha, beta ,, gamma");
   await page.click('#settings-dialog [data-close]');
-  await ok("custom shortcuts replace the defaults",
-    (await page.locator("#commands-list .command-item").allTextContents()).join("|") === "alpha|beta|gamma");
+  await ok("custom shortcuts follow the defaults",
+    (await page.locator("#commands-list .command-item").allTextContents()).join("|") === ",doc|alpha|beta|gamma");
   await page.click("#settings-btn");
   await page.fill("#commands-field", "");
   await page.click('#settings-dialog [data-close]');
-  await ok("blank restores the defaults", (await page.locator("#commands-list .command-item").count()) === 2);
+  await ok("blank leaves just the defaults", (await page.locator("#commands-list .command-item").count()) === 1);
 
   // --- completions ---------------------------------------------------------
   const chips = () => page.locator("#suggest-row .suggest-item").allTextContents();

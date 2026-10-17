@@ -179,13 +179,12 @@ function commonPrefix(items) {
 const commandsDialog = /** @type {HTMLDialogElement} */ (byId("commands-dialog"));
 const commandsList = byId("commands-list");
 const commandsField = /** @type {HTMLInputElement} */ (byId("commands-field"));
-commandsField.placeholder = lang.commands.join(", ");
 commandsField.addEventListener("input", () => commandsPref.set(commandsField.value));
 commandsPref.subscribe((v) => {
   if (commandsField.value !== v) commandsField.value = v;
   const custom = v.split(",").map((c) => c.trim()).filter(Boolean);
   commandsList.replaceChildren(
-    ...(custom.length ? custom : lang.commands).map((cmd) => {
+    ...[...lang.commands, ...custom].map((cmd) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "command-item";
