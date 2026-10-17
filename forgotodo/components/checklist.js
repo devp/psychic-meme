@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
-import { lists, split } from "../state.js";
+import { lists, split, syncs } from "../state.js";
 import { splitEntry } from "../lib/entry.js";
 import { dayKey, priorityOf, isFaded, isForgotten, isSnoozed, snoozeOf } from "../lib/forget.js";
 
@@ -107,6 +107,7 @@ export class Checklist extends LitElement {
     if (!this.record || !t) return;
     // An edit counts as attention: the decay clock starts over.
     lists.updateItem(this.record.id, itemId, { text: t, seenDay: dayKey() });
+    syncs.markDirty(this.record.id);
     this._noteFiled(t);
   }
 
@@ -133,6 +134,7 @@ export class Checklist extends LitElement {
   _toggle(itemId, done) {
     if (!this.record) return;
     lists.updateItem(this.record.id, itemId, { done, doneDay: done ? dayKey() : null });
+    syncs.markDirty(this.record.id);
   }
 
   /**
@@ -173,6 +175,7 @@ export class Checklist extends LitElement {
       lists.append(this.record.id, { text: t, done: false, seenDay: dayKey() });
       this._noteFiled(t);
     }
+    syncs.markDirty(this.record.id);
     form.reset();
   }
 
