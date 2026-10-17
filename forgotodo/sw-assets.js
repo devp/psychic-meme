@@ -10,6 +10,7 @@ const ASSETS = [
   "app.js",
   "state.js",
   "lib/markdown.js",
+  "lib/entry.js",
   "lib/fit.js",
   "lib/forget.js",
   "lib/icons.js",

@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, mode, font, icons, fit, deskclock, flash, lists, eraseAll } from "./state.js";
+import { theme, mode, font, icons, fit, deskclock, flash, split, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { FORGOTTEN, dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed, retryOf, withTier } from "./lib/forget.js";
@@ -94,7 +94,7 @@ font.subscribe((v) => {
 });
 
 // On/off options: a checkbox each in Options, a data- attribute on <html>.
-for (const [name, value] of Object.entries({ icons, fit, deskclock, flash })) {
+for (const [name, value] of Object.entries({ icons, fit, deskclock, flash, split })) {
   const box = /** @type {HTMLInputElement|null} */ (document.querySelector(`[data-toggle="${name}"]`));
   box?.addEventListener("change", () => value.set(box.checked ? "on" : "off"));
   value.subscribe((v) => {
