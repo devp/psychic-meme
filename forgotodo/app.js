@@ -18,12 +18,16 @@ customElements.define("forgo-checklist", Checklist);
 customElements.define("update-toast", UpdateToast);
 const checklist = /** @type {Checklist} */ (document.querySelector("forgo-checklist"));
 
-// First run: seed a few sample to-dos (and show About, further down).
+// First run: seed a few sample to-dos (and show About, further down). Hold
+// Help appends them again.
 const firstRun = lists.getAll().length === 0;
+function appendTutorial() {
+  const rec = lists.ensureActive();
+  SETUP_STEPS.forEach((step) => lists.append(rec.id, step));
+}
 if (firstRun) {
-  const seeded = lists.ensureActive();
-  lists.rename(seeded.id, "Unfiled");
-  SETUP_STEPS.forEach((step) => lists.append(seeded.id, step));
+  lists.rename(lists.ensureActive().id, "Unfiled");
+  appendTutorial();
 } else {
   lists.ensureActive();
 }
@@ -255,7 +259,7 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase, themes: randomTheme };
+const HOLD_COMMANDS = { erase, themes: randomTheme, help: appendTutorial };
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;

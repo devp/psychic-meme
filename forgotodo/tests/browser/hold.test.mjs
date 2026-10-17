@@ -45,4 +45,12 @@ test("desktop hold commands, in a real browser", { skip: !chromium && "playwrigh
     const tf = document.querySelector(`[data-set-theme="${root.dataset.theme}"]`)?.getAttribute("data-theme-font");
     return !tf || tf === root.dataset.font;
   }));
+
+  // Stored order: the list shows by priority, and the tutorial's first is a !!!.
+  const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem("forgotodo:lists:records") ?? "[]")[0].items.map((i) => i.text));
+  await hold("help");
+  const texts = await stored();
+  await ok("hold Help appends the tutorial after the list",
+    texts[0] === "mine" && texts[1]?.startsWith("Welcome to forgotodo"), texts.join(" | "));
+  await ok("hold Help opens no dialog", !(await page.locator("#help-dialog").isVisible()));
 });

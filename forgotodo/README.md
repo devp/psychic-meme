@@ -81,6 +81,7 @@ the icon shakes harder as the hold runs out.
 - **Themes**: switch to a random other theme (and its font).
 - **Recycle**: erase every to-do on the list, after three confirms. Settings
   stay, and it doesn't start over as a first run.
+- **Help**: add the first run's tutorial to-dos to the end of the list.
 
 Any desktop icon can take a hold command: `data-hold-cmd` in `index.html`,
 `HOLD_COMMANDS` in `app.js`.
