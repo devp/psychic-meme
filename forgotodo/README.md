@@ -76,11 +76,15 @@ the tab again) to close it.
 The icons are 10×10 bitmaps, drawn in `lib/icons.js` as ASCII art and shown
 at 4×. **Desktop icons** in Options turns them off for a plain list by name.
 
-**Erase all data**: press and hold Recycle for 2 seconds; it shakes harder
-as the hold runs out. It deletes this app's to-dos and settings on this
-device (other apps on the same site are untouched), after three confirms,
-then starts over as a first run. Any desktop icon can take a hold command:
-`data-hold-cmd` in `index.html`, `HOLD_COMMANDS` in `app.js`.
+**Press and hold** some desktop icons for 2 seconds to run something else;
+the icon shakes harder as the hold runs out.
+- **Themes**: switch to a random other theme (and its font).
+- **Recycle**: erase all data. It deletes this app's to-dos and settings on
+  this device (other apps on the same site are untouched), after three
+  confirms, then starts over as a first run.
+
+Any desktop icon can take a hold command: `data-hold-cmd` in `index.html`,
+`HOLD_COMMANDS` in `app.js`.
 
 **Shrink to fit** in Options (on for new installs): big type for three to-dos or fewer, a little
 smaller with each one after, then as small as it takes (down to 10px) for the

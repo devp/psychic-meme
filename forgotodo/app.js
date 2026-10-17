@@ -120,16 +120,25 @@ function syncChecked(selector, attr, value) {
   });
 }
 
+/** @param {Element} t a [data-set-theme] swatch */
+function chooseTheme(t) {
+  theme.set(t.getAttribute("data-set-theme") ?? "palo-alto");
+  // Choosing a theme picks its font too; the Font row can still change it.
+  const tf = t.getAttribute("data-theme-font");
+  if (tf) font.set(tf);
+}
+
+// Hold Themes: any swatch but the current one.
+function randomTheme() {
+  const others = [...document.querySelectorAll("[data-set-theme]")].filter((t) => t.getAttribute("data-set-theme") !== theme.get());
+  if (others.length) chooseTheme(others[Math.floor(Math.random() * others.length)]);
+}
+
 document.addEventListener("click", (e) => {
   const el = e.target instanceof Element ? e.target : null;
   if (!el) return;
   const t = el.closest("[data-set-theme]");
-  if (t) {
-    theme.set(t.getAttribute("data-set-theme") ?? "palo-alto");
-    // Choosing a theme picks its font too; the Font row can still change it.
-    const tf = t.getAttribute("data-theme-font");
-    if (tf) font.set(tf);
-  }
+  if (t) chooseTheme(t);
   const m = el.closest("[data-set-mode]");
   if (m) mode.set(m.getAttribute("data-set-mode") ?? "light");
   const f = el.closest("[data-set-font]");
@@ -246,7 +255,7 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase };
+const HOLD_COMMANDS = { erase, themes: randomTheme };
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
