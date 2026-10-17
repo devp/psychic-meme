@@ -158,6 +158,8 @@ document.getElementById("about-close")?.addEventListener("click", () => about.cl
 const help = /** @type {HTMLDialogElement} */ (document.getElementById("help-dialog"));
 document.getElementById("help-close")?.addEventListener("click", () => help.close());
 if (firstRun) about.showModal();
+// Hold About: write to the author.
+const mailAuthor = () => (location.href = "mailto:dev@forgreatjustice.net");
 
 // Share: the QR page (misc/qr/) encodes whatever ?q= holds.
 const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
@@ -259,7 +261,7 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase, themes: randomTheme, help: appendTutorial };
+const HOLD_COMMANDS = { erase, themes: randomTheme, help: appendTutorial, about: mailAuthor };
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
