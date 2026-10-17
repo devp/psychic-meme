@@ -18,12 +18,16 @@ customElements.define("forgo-checklist", Checklist);
 customElements.define("update-toast", UpdateToast);
 const checklist = /** @type {Checklist} */ (document.querySelector("forgo-checklist"));
 
-// First run: seed a few sample to-dos (and show About, further down).
+// First run: seed a few sample to-dos (and show About, further down). Hold
+// Help appends them again.
 const firstRun = lists.getAll().length === 0;
+function appendTutorial() {
+  const rec = lists.ensureActive();
+  SETUP_STEPS.forEach((step) => lists.append(rec.id, step));
+}
 if (firstRun) {
-  const seeded = lists.ensureActive();
-  lists.rename(seeded.id, "Unfiled");
-  SETUP_STEPS.forEach((step) => lists.append(seeded.id, step));
+  lists.rename(lists.ensureActive().id, "Unfiled");
+  appendTutorial();
 } else {
   lists.ensureActive();
 }
@@ -120,16 +124,25 @@ function syncChecked(selector, attr, value) {
   });
 }
 
+/** @param {Element} t a [data-set-theme] swatch */
+function chooseTheme(t) {
+  theme.set(t.getAttribute("data-set-theme") ?? "palo-alto");
+  // Choosing a theme picks its font too; the Font row can still change it.
+  const tf = t.getAttribute("data-theme-font");
+  if (tf) font.set(tf);
+}
+
+// Hold Themes: any swatch but the current one.
+function randomTheme() {
+  const others = [...document.querySelectorAll("[data-set-theme]")].filter((t) => t.getAttribute("data-set-theme") !== theme.get());
+  if (others.length) chooseTheme(others[Math.floor(Math.random() * others.length)]);
+}
+
 document.addEventListener("click", (e) => {
   const el = e.target instanceof Element ? e.target : null;
   if (!el) return;
   const t = el.closest("[data-set-theme]");
-  if (t) {
-    theme.set(t.getAttribute("data-set-theme") ?? "palo-alto");
-    // Choosing a theme picks its font too; the Font row can still change it.
-    const tf = t.getAttribute("data-theme-font");
-    if (tf) font.set(tf);
-  }
+  if (t) chooseTheme(t);
   const m = el.closest("[data-set-mode]");
   if (m) mode.set(m.getAttribute("data-set-mode") ?? "light");
   const f = el.closest("[data-set-font]");
@@ -145,6 +158,8 @@ document.getElementById("about-close")?.addEventListener("click", () => about.cl
 const help = /** @type {HTMLDialogElement} */ (document.getElementById("help-dialog"));
 document.getElementById("help-close")?.addEventListener("click", () => help.close());
 if (firstRun) about.showModal();
+// Hold About: write to the author.
+const mailAuthor = () => (location.href = "mailto:dev@forgreatjustice.net");
 
 // Share: the QR page (misc/qr/) encodes whatever ?q= holds.
 const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
@@ -246,7 +261,7 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase, rememberOne: () => remember("1"), forgetAll };
+const HOLD_COMMANDS = { erase, rememberOne: () => remember("1"), forgetAll, themes: randomTheme, help: appendTutorial, about: mailAuthor };
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
@@ -576,19 +591,19 @@ checklist.addEventListener("row-hold", (e) => {
 });
 
 // ---- erase ----------------------------------------------------------------
-// Hold Recycle: asks three times, then reloads into a first run.
+// Hold Recycle: asks three times, then empties the list. Settings stay, and
+// it's no first run: no tutorial, no About.
 
 async function erase() {
   const steps = [
-    { title: "Erase", message: "Erase every to-do and setting in this app, on this device?" },
+    { title: "Erase", message: "Erase every to-do on this list? Settings stay." },
     { title: "Erase", message: "Really? There's no undo. Send your list first if you want a copy." },
-    { title: "Erase", message: "Last chance: erase it all and start fresh?" },
+    { title: "Erase", message: "Last chance: erase every to-do?" },
   ];
   for (const step of steps) {
     if (!(await ask({ ...step, icon: "forget" }))) return;
   }
-  eraseAll();
-  location.reload();
+  lists.clearItems(lists.ensureActive().id);
 }
 
 // ---- shrink to fit --------------------------------------------------------

@@ -2,7 +2,7 @@
 //
 // Components import from here directly; nothing is injected.
 
-import { persistedValue, recordStore, clearPrefix } from "./lib/store.js";
+import { persistedValue, recordStore } from "./lib/store.js";
 
 // localStorage key prefix, from <meta name="app-ns"> in index.html.
 const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
@@ -16,6 +16,3 @@ export const deskclock = persistedValue(NS + ":deskclock", "off");
 export const flash = persistedValue(NS + ":flash", "on");
 export const split = persistedValue(NS + ":split", "on"); // ";" in a new to-do makes several
 export const lists = recordStore(NS + ":lists");
-
-/** Erase all of this app's saved data; reload for a first run. */
-export const eraseAll = () => clearPrefix(NS + ":");
