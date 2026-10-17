@@ -246,7 +246,7 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase };
+const HOLD_COMMANDS = { erase, forgetAll };
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
@@ -469,10 +469,17 @@ function askPick(title) {
 const nothingFor = (query, none) => (/\D/.test(query.trim()) ? `Nothing matches “${query.trim()}”.` : none);
 
 // Forget is silent on purpose: rows puff away and, unless you named them,
-// you aren't told which.
+// you aren't told which. Hold Forget: every to-do still on the list.
 async function forgetCmd() {
   const query = await askPick("Forget");
-  if (query === null) return;
+  if (query !== null) forgetBy(query);
+}
+function forgetAll() {
+  forgetBy(String(lists.ensureActive().items.length));
+}
+
+/** @param {string} query */
+async function forgetBy(query) {
   const rec = lists.ensureActive();
   const changes = forgetSome(/** @type {any} */ (rec.items), query);
   if (changes.length === 0) {
