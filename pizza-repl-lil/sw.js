@@ -16,6 +16,10 @@
 // So an edit shows up one reload late while developing, and an installed app
 // shows the toast moments after launch. Offline, the check just fails
 // quietly and nothing changes.
+//
+// Every navigation starts a check too, from here, without the page. A deploy
+// whose app code throws before <update-toast> runs can't ask for its own fix;
+// this way the fix still lands, and the launch after it runs it.
 
 const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
 
@@ -70,6 +74,7 @@ sw.addEventListener("fetch", (event) => {
   // A navigation is the page itself: a deep link, a refresh, a url carrying
   // ?utm_source=... It's a one-page app, so every one of them gets index.html.
   const key = req.mode === "navigate" ? "index.html" : req;
+  if (req.mode === "navigate") event.waitUntil(startCheck());
 
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
@@ -91,8 +96,8 @@ sw.addEventListener("fetch", (event) => {
 // would leave the next launch running new app.js against old state.js.
 //
 // `no-cache` makes the browser ask the server whether each file changed (a
-// cheap 304 if not) instead of trusting its HTTP cache. Launch and resume can
-// both ask at once; they share one check.
+// cheap 304 if not) instead of trusting its HTTP cache. A navigation, launch
+// and resume can all ask at once; they share one check.
 /** @type {Promise<void> | null} */
 let checking = null;
 
@@ -123,10 +128,13 @@ function sameBytes(a, b) {
   return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
+function startCheck() {
+  return (checking ??= check()
+    .catch(() => {})
+    .finally(() => (checking = null)));
+}
+
 sw.addEventListener("message", (event) => {
   if (event.data !== "check") return;
-  checking ??= check()
-    .catch(() => {})
-    .finally(() => (checking = null));
-  event.waitUntil(checking);
+  event.waitUntil(startCheck());
 });
