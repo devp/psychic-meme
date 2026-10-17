@@ -14,6 +14,7 @@ export const icons = persistedValue(NS + ":icons", "on");
 export const fit = persistedValue(NS + ":fit", "on");
 export const deskclock = persistedValue(NS + ":deskclock", "off");
 export const flash = persistedValue(NS + ":flash", "on");
+export const split = persistedValue(NS + ":split", "on"); // ";" in a new to-do makes several
 export const lists = recordStore(NS + ":lists");
 
 /** Erase all of this app's saved data; reload for a first run. */
