@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, mode, font, icons, fit, deskclock, flash, split, lists, eraseAll } from "./state.js";
+import { theme, mode, font, icons, fit, deskclock, flash, split, lists, syncs, remote } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { FORGOTTEN, dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed, retryOf, withTier } from "./lib/forget.js";
@@ -11,6 +11,8 @@ import { sweepable, snoozed, recyclable, forgetSome, rememberSome, shakeUp } fro
 import { ICONS, bitmapSvg } from "./lib/icons.js";
 import { preferredSize, largestFitting } from "./lib/fit.js";
 import { UpdateToast } from "./components/update-toast.js";
+import { PROVIDERS, RemoteStorageError, userAddress, discover, authorizeURL, fromRedirect, remoteStorage } from "./lib/remotestorage.js";
+import { syncList } from "./lib/sync.js";
 
 // Components read their state from state.js, so defining them is the whole of
 // it -- nothing to inject, nothing to sequence.
@@ -52,6 +54,9 @@ forget();
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") forget();
 });
+
+/** The user just changed the active list; Sync will push it. */
+const touched = () => syncs.markDirty(lists.ensureActive().id);
 
 // ---- shell glue -----------------------------------------------------------
 // Options are just persisted scalars with a subscriber each. No lib needed;
@@ -232,6 +237,7 @@ checklist.addEventListener("edit-armed", (e) => {
 const COMMANDS = {
   send,
   receive: () => receiveDialog.showModal(),
+  sync: () => runSync(false),
   themes: () => themes.showModal(),
   prefs: () => settings.showModal(),
   help: () => help.showModal(),
@@ -261,7 +267,15 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase, rememberOne: () => remember("1"), forgetAll, themes: randomTheme, help: appendTutorial, about: mailAuthor };
+const HOLD_COMMANDS = {
+  erase,
+  rememberOne: () => remember("1"),
+  forgetAll,
+  themes: randomTheme,
+  help: () => (appendTutorial(), touched()),
+  about: mailAuthor,
+  disconnect,
+};
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
@@ -344,6 +358,7 @@ receiveForm.addEventListener("submit", (e) => {
   const rec = lists.ensureActive();
   const seenDay = dayKey();
   items.forEach((item) => lists.append(rec.id, { ...item, seenDay }));
+  touched();
   receiveDialog.close();
 });
 
@@ -357,14 +372,35 @@ const alertTitle = /** @type {HTMLElement} */ (document.getElementById("alert-ti
 const alertIcon = /** @type {HTMLElement} */ (document.getElementById("alert-icon"));
 const alertMsg = /** @type {HTMLElement} */ (document.getElementById("alert-msg"));
 const alertList = /** @type {HTMLElement} */ (document.getElementById("alert-list"));
+const alertOk = /** @type {HTMLElement} */ (document.getElementById("alert-ok"));
+const alertOther = /** @type {HTMLElement} */ (document.getElementById("alert-other"));
 const alertCancel = /** @type {HTMLElement} */ (document.getElementById("alert-cancel"));
 
 /**
+ * @typedef {{ title: string, icon: string, message: string, items?: string[], cancel?: boolean,
+ *   labels?: { ok?: string, other?: string, cancel?: string } }} AlertOpts
+ */
+
+/**
  * Show the alert; resolves true on OK. With `cancel` false it's just a notice.
- * @param {{ title: string, icon: string, message: string, items?: string[], cancel?: boolean }} opts
+ * @param {AlertOpts} opts
  * @returns {Promise<boolean>}
  */
-function ask({ title, icon, message, items = [], cancel = true }) {
+async function ask(opts) {
+  return (await alertBox(opts)) === "ok";
+}
+
+/**
+ * Show the alert; resolves the button's value: "ok", "cancel", or "other" for
+ * a third button, shown only when `labels.other` names it. "" is Escape.
+ * @param {AlertOpts} opts
+ * @returns {Promise<string>}
+ */
+function alertBox({ title, icon, message, items = [], cancel = true, labels = {} }) {
+  alertOk.textContent = labels.ok ?? "OK";
+  alertOther.textContent = labels.other ?? "";
+  alertOther.hidden = !labels.other;
+  alertCancel.textContent = labels.cancel ?? "Cancel";
   alertTitle.textContent = title;
   // warn-ok: innerhtml-assign -- our own static bitmaps, no user text
   alertIcon.innerHTML = bitmapSvg(ICONS[icon]);
@@ -374,7 +410,7 @@ function ask({ title, icon, message, items = [], cancel = true }) {
   alertDialog.returnValue = "";
   alertDialog.showModal();
   return new Promise((resolve) => {
-    alertDialog.addEventListener("close", () => resolve(alertDialog.returnValue === "ok"), { once: true });
+    alertDialog.addEventListener("close", () => resolve(alertDialog.returnValue), { once: true });
   });
 }
 
@@ -394,7 +430,9 @@ async function sweep() {
     message: `Delete ${todos(doomed.length)} you've forgotten?`,
     items: doomed.map((i) => i.text),
   });
-  if (ok) doomed.forEach((i) => lists.removeItem(rec.id, i.id));
+  if (!ok) return;
+  doomed.forEach((i) => lists.removeItem(rec.id, i.id));
+  touched();
 }
 
 // Look Ahead only shows: what's snoozed, soonest first.
@@ -422,7 +460,9 @@ async function recycle() {
     message: `Delete ${todos(done.length)} you've finished? (They'd go tomorrow anyway.)`,
     items: done.map((i) => i.text),
   });
-  if (ok) done.forEach((i) => lists.removeItem(rec.id, i.id));
+  if (!ok) return;
+  done.forEach((i) => lists.removeItem(rec.id, i.id));
+  touched();
 }
 
 /** @param {string} id */
@@ -503,6 +543,7 @@ async function forgetBy(query) {
   }
   await Promise.all(changes.map((c) => animate(rowOf(c.id), "poof")));
   changes.forEach((c) => lists.updateItem(rec.id, c.id, { text: c.text }));
+  touched();
 }
 
 // Held, it skips the prompt and remembers one.
@@ -517,6 +558,7 @@ async function remember(held) {
     return;
   }
   changes.forEach((c) => lists.updateItem(rec.id, c.id, { text: c.text }));
+  touched();
   blink(changes.map((c) => c.id));
 }
 
@@ -524,6 +566,7 @@ function shake() {
   const rec = lists.ensureActive();
   const moved = shakeUp(/** @type {any} */ (rec.items));
   moved.forEach((m) => lists.updateItem(rec.id, m.id, { text: m.text }));
+  if (moved.length) touched();
   /** @param {string} move */
   const n = (move) => moved.filter((m) => m.move === move).length;
   const parts = [`${n("up")} up`, `${n("down")} down`];
@@ -558,7 +601,9 @@ async function fastForward() {
     icon: "fastforward",
     message: `Tomorrow's list, today: ${parts.join(", ")}. Go ahead?`,
   });
-  if (ok) apply(changes);
+  if (!ok) return;
+  apply(changes);
+  touched();
 }
 
 // ---- hold a to-do ----------------------------------------------------------
@@ -577,6 +622,7 @@ checklist.addEventListener("row-hold", (e) => {
   dosDialog.returnValue = "";
   dosDialog.showModal();
   dosDialog.addEventListener("close", async () => {
+    if (["avert", "retry", "free"].includes(dosDialog.returnValue)) touched();
     if (dosDialog.returnValue === "avert") {
       await animate(rowOf(id), "poof");
       lists.updateItem(rec.id, id, { text: withTier(item.text, FORGOTTEN) });
@@ -588,6 +634,145 @@ checklist.addEventListener("row-hold", (e) => {
       lists.removeItem(rec.id, id);
     }
   }, { once: true });
+});
+
+// ---- sync -----------------------------------------------------------------
+// Record > Sync pushes, pulls or asks; opening the app pulls when it can do so
+// without losing anything. The rules are in lib/sync.js, the protocol in
+// lib/remotestorage.js. The first press connects: off to the storage's sign-in
+// page, and back with a token in the fragment.
+
+const connectDialog = /** @type {HTMLDialogElement} */ (document.getElementById("connect-dialog"));
+const connectForm = /** @type {HTMLFormElement} */ (document.getElementById("connect-form"));
+const connectInput = /** @type {HTMLInputElement} */ (document.getElementById("connect-address"));
+const connectStatus = /** @type {HTMLElement} */ (document.getElementById("connect-status"));
+const provider = PROVIDERS[0];
+connectInput.placeholder = `you@${provider.domain}`;
+document.getElementById("connect-signup")?.setAttribute("href", provider.signup);
+connectDialog.addEventListener("close", () => {
+  connectForm.reset();
+  connectStatus.textContent = "";
+});
+document.getElementById("connect-cancel")?.addEventListener("click", () => connectDialog.close());
+
+/** @returns {import("./lib/remotestorage.js").Connection|null} */
+function connection() {
+  try {
+    const c = JSON.parse(remote.get() || "null");
+    return c?.href ? c : null;
+  } catch {
+    return null;
+  }
+}
+
+connectForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  connectStatus.textContent = "Looking it up…";
+  try {
+    const conn = await discover(userAddress(connectInput.value, provider));
+    remote.set(JSON.stringify(conn));
+    location.assign(authorizeURL({ authURL: conn.authURL, scope: "forgotodo:rw", redirectUri: location.origin + location.pathname }));
+  } catch (err) {
+    connectStatus.textContent = err instanceof Error ? err.message : String(err);
+  }
+});
+
+/** @type {Record<import("./lib/sync.js").Outcome, string>} */
+const SYNCED = {
+  "in-sync": "Already in sync.",
+  pulled: "Synced: got the other device's list.",
+  pushed: "Synced: sent this list.",
+  kept: "Left as is. Sync again to choose.",
+  raced: "Another device just synced. Sync again.",
+  skipped: "",
+};
+
+let syncing = false;
+
+/** @param {boolean} quiet the check on open: pull if clean, else say nothing */
+async function runSync(quiet) {
+  const conn = connection();
+  if (!conn?.token) {
+    if (!quiet) connectDialog.showModal();
+    return;
+  }
+  if (syncing) return;
+  syncing = true;
+  const rec = lists.ensureActive();
+  try {
+    const outcome = await syncList({
+      client: remoteStorage(conn),
+      ledger: syncs,
+      id: rec.id,
+      read: () => lists.get(rec.id),
+      write: (doc) => {
+        lists.clearItems(rec.id);
+        doc.items.forEach((/** @type {Object} */ item) => lists.append(rec.id, item));
+        forget(); // the other device may not have caught up today
+      },
+      choose: async () => {
+        const v = await alertBox({
+          title: "Sync",
+          icon: "sync",
+          message: "This list changed here and on another device. Keep which one?",
+          labels: { ok: "This device", other: "Other device", cancel: "Neither" },
+        });
+        return v === "ok" ? "this" : v === "other" ? "other" : "neither";
+      },
+      quiet,
+    });
+    if (SYNCED[outcome]) checklist.note(SYNCED[outcome]);
+  } catch (err) {
+    if (quiet) return;
+    const status = err instanceof RemoteStorageError ? err.status : -1;
+    const signedOut = status === 401 || status === 403;
+    if (signedOut) remote.set(JSON.stringify({ ...conn, token: undefined }));
+    const message =
+      status === 0 ? "Couldn't reach your storage. Offline?" :
+      signedOut ? "Your storage signed this device out. Sync again to reconnect." :
+      err instanceof Error ? err.message : String(err);
+    await ask({ title: "Sync", icon: "sync", message, cancel: false });
+  } finally {
+    syncing = false;
+  }
+}
+
+// Hold Sync: forget the connection and every list's base, so the next Sync
+// connects afresh. The list itself stays.
+async function disconnect() {
+  const conn = connection();
+  if (!conn) {
+    await ask({ title: "Disconnect", icon: "sync", message: "Sync isn't connected.", cancel: false });
+    return;
+  }
+  const ok = await ask({
+    title: "Disconnect",
+    icon: "sync",
+    message: `Stop syncing with ${conn.address}? This list stays on this device.`,
+  });
+  if (!ok) return;
+  remote.set("");
+  syncs.clear();
+  checklist.note("Disconnected.");
+}
+
+// Back from the sign-in page: keep the token, tidy the URL, and sync.
+const redirect = fromRedirect(location.hash);
+if (redirect) {
+  history.replaceState(null, "", location.pathname + location.search);
+  const conn = connection();
+  if ("token" in redirect && conn) {
+    remote.set(JSON.stringify({ ...conn, token: redirect.token }));
+    runSync(false);
+  } else {
+    const why = "error" in redirect ? redirect.error : "start again from Sync";
+    ask({ title: "Sync", icon: "sync", message: `Not connected: ${why}.`, cancel: false });
+  }
+} else {
+  runSync(true);
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") runSync(true);
 });
 
 // ---- erase ----------------------------------------------------------------
@@ -604,6 +789,7 @@ async function erase() {
     if (!(await ask({ ...step, icon: "forget" }))) return;
   }
   lists.clearItems(lists.ensureActive().id);
+  touched();
 }
 
 // ---- shrink to fit --------------------------------------------------------

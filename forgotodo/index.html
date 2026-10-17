@@ -65,6 +65,7 @@
       <div class="desk-icons">
         <button type="button" data-cmd="send" data-icon="send"><span>Send List</span></button>
         <button type="button" data-cmd="receive" data-icon="receive"><span>Receive List…</span></button>
+        <button type="button" data-cmd="sync" data-hold-cmd="disconnect" data-icon="sync"><span>Sync</span><small>other devices</small></button>
         <button type="button" data-cmd="edit" data-icon="edit"><span>Edit</span><small>tap a to-do</small></button>
       </div>
     </section>
@@ -170,7 +171,7 @@
     <li>This is all very intentional, and I hope it helps.</li>
     <li>Install it as an app. Android Chrome: <em>⋮</em> menu → <em>Add to Home screen</em> → <em>Install</em>.
         iPhone Safari: <em>Share</em> → <em>Add to Home Screen</em>. On iPhone the installed app starts empty; it doesn't share Safari's to-dos.</li>
-    <li>Works offline. Everything lives in this browser's localStorage. Nothing is sent anywhere. (Optional self-hosted sync coming soon.)<//li>
+    <li>Works offline. Everything lives in this browser's localStorage. Nothing is sent anywhere, unless you connect <em>Sync</em> to your own <a href="https://remotestorage.io/" target="_blank" rel="noopener">remoteStorage</a>: then this list goes there, and your other devices sync from it. Hold <em>Sync</em> to disconnect.</li>
   </ul>
   </section>
 
@@ -220,8 +221,25 @@
       </div>
     </div>
     <div class="dialog-buttons">
-      <button type="submit" value="ok" class="primary">OK</button>
+      <button type="submit" value="ok" id="alert-ok" class="primary">OK</button>
+      <button type="submit" value="other" id="alert-other" class="primary" hidden></button>
       <button type="submit" value="cancel" id="alert-cancel" class="primary">Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Sync, before it's connected: a user address to look up. app.js fills in
+     the provider (lib/remotestorage.js PROVIDERS). -->
+<dialog id="connect-dialog" class="dialog">
+  <h2>Sync</h2>
+  <form id="connect-form" method="dialog">
+    <p class="dialog-msg">Sync keeps this list in your own <a href="https://remotestorage.io/" target="_blank" rel="noopener">remoteStorage</a>,
+      for your other devices. Your user address? No account? <a id="connect-signup" target="_blank" rel="noopener">Get one</a>.</p>
+    <input id="connect-address" name="address" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+    <p id="connect-status" class="dialog-msg" aria-live="polite"></p>
+    <div class="dialog-buttons">
+      <button type="submit" class="primary">Connect</button>
+      <button type="button" id="connect-cancel" class="primary">Cancel</button>
     </div>
   </form>
 </dialog>

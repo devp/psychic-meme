@@ -3,6 +3,7 @@
 // Components import from here directly; nothing is injected.
 
 import { persistedValue, recordStore } from "./lib/store.js";
+import { syncLedger } from "./lib/sync.js";
 
 // localStorage key prefix, from <meta name="app-ns"> in index.html.
 const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
@@ -16,3 +17,6 @@ export const deskclock = persistedValue(NS + ":deskclock", "off");
 export const flash = persistedValue(NS + ":flash", "on");
 export const split = persistedValue(NS + ":split", "on"); // ";" in a new to-do makes several
 export const lists = recordStore(NS + ":lists");
+// Sync: each list's base and dirty, and the remoteStorage connection (JSON).
+export const syncs = syncLedger(persistedValue(NS + ":sync", ""));
+export const remote = persistedValue(NS + ":remote", "");
