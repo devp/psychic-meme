@@ -70,8 +70,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("the release doesn't tick it", !(await row("try again!!").locator("input").isChecked()));
   await ok("the prompt is mono whatever the Font",
     (await page.locator("#dos-dialog").evaluate((el) => getComputedStyle(el).fontFamily)).startsWith('"Departure Mono"'));
-  await page.click('#dos-dialog button[value="abort"]');
-  await ok("Abort leaves it", (await row("try again!!").count()) === 1);
+  await page.click('#dos-dialog button[value="cancel"]');
+  await ok("Cancel leaves it", (await row("try again!!").count()) === 1);
   await hold("try again!!");
   await page.click('#dos-dialog button[value="retry"]');
   await page.waitForTimeout(60);
@@ -79,13 +79,21 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
     (await page.evaluate(() => localStorage.getItem("forgotodo:lists:records") ?? "")).includes('"try again>"') &&
     (await page.locator("forgo-checklist .count").innerText()) === "Snoozed till tomorrow.");
   total += 1; // still counted while it sleeps
+  await page.fill(".add-row input", "let it go!");
+  await page.click(".add-row button");
+  await hold("let it go!");
+  await page.click('#dos-dialog button[value="avert"]');
+  await page.waitForTimeout(700);
+  await ok("Avert forgets it", (await row("let it go").count()) === 0 &&
+    (await page.evaluate(() => localStorage.getItem("forgotodo:lists:records") ?? "")).includes('"let it go??"'));
+  total += 1; // forgotten, still counted
   const fail = async (text) => {
     await hold(text);
-    await page.click('#dos-dialog button[value="fail"]');
+    await page.click('#dos-dialog button[value="free"]');
     await page.waitForTimeout(700);
   };
   await fail("buy more batteries");
-  await ok("Fail deletes it", (await row("buy more batteries").count()) === 0);
+  await ok("Free deletes it", (await row("buy more batteries").count()) === 0);
 
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });

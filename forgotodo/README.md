@@ -33,8 +33,9 @@ auto (follows the system). The old `backlight` theme is palo alto with it on.
   as `foo!`, and `foo>!` is just urgent. Snoozed to-dos are counted, skipped
   by Forget and Shake Up, and Fast Forward takes a `>` off.
 - **Press and hold** a to-do: it fades and shakes, then asks *Abort, Retry,
-  Fail?* (always in mono). Abort leaves it; Retry swaps its `!`s and `?`s for
-  one `>` (back tomorrow, neutral); Fail deletes it. It's the only delete.
+  Fail?* (always in mono), answered Avert, Retry, Free, or Cancel. Avert
+  forgets it; Retry swaps its `!`s and `?`s for one `>` (back tomorrow,
+  neutral); Free deletes it; Cancel leaves it. It's the only delete.
 - Done items disappear the day after you check them.
 - Catch-up happens when the app opens or comes back to the foreground, so days
   it sat unopened still count.

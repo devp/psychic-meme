@@ -6,7 +6,7 @@ import { syncAppHeight } from "./lib/viewport.js";
 import { theme, mode, font, icons, fit, deskclock, flash, lists, eraseAll } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
-import { dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed, retryOf } from "./lib/forget.js";
+import { FORGOTTEN, dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed, retryOf, withTier } from "./lib/forget.js";
 import { sweepable, snoozed, recyclable, forgetSome, rememberSome, shakeUp } from "./lib/organize.js";
 import { ICONS, bitmapSvg } from "./lib/icons.js";
 import { preferredSize, largestFitting } from "./lib/fit.js";
@@ -538,7 +538,8 @@ async function fastForward() {
 }
 
 // ---- hold a to-do ----------------------------------------------------------
-// Abort, Retry, Fail? Retry snoozes a day and wakes neutral; Fail deletes.
+// Abort, Retry, Fail? Avert forgets; Retry snoozes a day and wakes neutral;
+// Free deletes; Cancel leaves it be.
 
 const dosDialog = /** @type {HTMLDialogElement} */ (document.getElementById("dos-dialog"));
 const dosTitle = /** @type {HTMLElement} */ (document.getElementById("dos-title"));
@@ -552,10 +553,13 @@ checklist.addEventListener("row-hold", (e) => {
   dosDialog.returnValue = "";
   dosDialog.showModal();
   dosDialog.addEventListener("close", async () => {
-    if (dosDialog.returnValue === "retry") {
+    if (dosDialog.returnValue === "avert") {
+      await animate(rowOf(id), "poof");
+      lists.updateItem(rec.id, id, { text: withTier(item.text, FORGOTTEN) });
+    } else if (dosDialog.returnValue === "retry") {
       lists.updateItem(rec.id, id, { text: retryOf(item.text), done: false, doneDay: null, seenDay: dayKey() });
       checklist.note("Snoozed till tomorrow.");
-    } else if (dosDialog.returnValue === "fail") {
+    } else if (dosDialog.returnValue === "free") {
       await animate(rowOf(id), "poof");
       lists.removeItem(rec.id, id);
     }
