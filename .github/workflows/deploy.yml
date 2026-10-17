@@ -1,5 +1,6 @@
 # Deploy changed dirs to Cloudflare Workers static assets at <name>.dzza.workers.dev.
 # push to main: deploy. pull_request: --dry-run. workflow_dispatch: deploy every dir.
+# Each site is typechecked first (if it has a jsconfig.json); a failure skips its deploy.
 # Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; without them, every run is a dry run.
 name: deploy
 
@@ -77,6 +78,15 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      # Typecheck first, so code that can't load never ships: a missing export
+      # blanks the app, and installed copies keep serving it from their cache.
+      - name: typecheck
+        working-directory: ${{ matrix.site.dir }}
+        run: |
+          if [ ! -f jsconfig.json ]; then echo "no jsconfig.json; skipping"; exit 0; fi
+          npx --yes pnpm@10.28.0 install --frozen-lockfile
+          node_modules/.bin/tsc -p jsconfig.json
+          node scripts/check-sw.mjs sw.js
       - env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
