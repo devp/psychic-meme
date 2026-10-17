@@ -1,93 +1,105 @@
 # carousel: sending a card to each other
 
-Dev and Laura only, so there's no picker and there are no accounts beyond one 5apps account. The goals, in order: the fewest lines of code, nothing new to host or run, and a notification you actually see on your phone. The notification can be lossy.
+Dev and Laura only. The goals, in order: the fewest lines of code, nothing new to host beyond what carousel already deploys on, and a push notification you actually see. The notification can be lossy, because the inbox isn't.
 
 ## The shape
 
-- **Data:** one shared remoteStorage space (5apps), holding one document per sent card.
-- **Doorbell:** a push with no payload, sent through a stateless Worker deployed next to the static assets.
+One Cloudflare Worker, deployed with carousel's static assets, plus Workers KV. The Worker holds:
+- who's who
+- each person's push subscription
+- who may send to whom
+- an inbox of sent cards
 
-The app on each phone collects new cards from its inbox whenever it opens. The push only tells you to open it, so a missed notification costs nothing: the card shows up the next time the app opens anyway.
+Every disposable record has an expiry, so state cleans itself up instead of piling up.
 
-## One space, two people, no second sign-in
+Push needs server-side state anyway, for the subscriptions. Once that exists, the inbox is just a few more keys in the same store.
 
-remoteStorage can't let one user into another user's storage: access tokens only cover the account that issued them. Two people can still share one account, though:
+## Identity
 
-1. One device connects to 5apps once, which gives it `{storage href, bearer token}` scoped to `/carousel/`.
-2. Options > **pair this device** shows that pair as a link or QR code: `#rs=<href>&t=<token>`, through `../misc/qr/`. Opening it on the other device stores the same pair. That device never signs in.
+- On first use the device makes a random `{id, secret}` and keeps it in localStorage. It also copies it to the Cache API, because sw.js can't read localStorage.
+- The server stores only a hash of the secret. Every route checks the id and secret.
+- The push subscription is a field on the user. The app re-sends it on every launch and on `pushsubscriptionchange`, because subscriptions rotate and iOS expires them.
+- The VAPID key is the server's own key. It is not anyone's identity.
+- If iOS clears the app's storage, its identity goes with it: re-pair.
 
-The token is a capability: whoever has the link can read and write `/carousel/`. Treat the link like a password. You can revoke it from the 5apps dashboard.
-
-Reuse the remoteStorage client from the FTD branch (see `../forgotodo/TODO.sync.md`): the fetch-with-token call and the connect flow. carousel doesn't need FTD's whole-list ETag merge.
-
-## Data layout
+## KV
 
 ```
-/carousel/inbox/<name>/<card id>.json   {url, text, from, sentAt}
-/carousel/push/<name>.json              that person's push subscription
+u:<id>             {secretHash, name, sub, allows: [ids]}
+p:<code>           {id}                         expires after 10 min
+i:<to>:<itemId>    {url, text, from, sentAt}    expires after 30 days
 ```
 
-- **Send:** `PUT inbox/<other>/<id>.json` with `If-None-Match: *`. Each card is its own document, so two writers never conflict.
-- **Receive:** on launch and on `visibilitychange`, `GET inbox/<me>/` (the folder listing), then GET each item. Each one goes through `add()` in `app.js`, which already skips duplicates, with `from` set. Then DELETE it.
+`allows` is who may send to *me*. That's the only list `send` checks.
 
-## The doorbell
+## Routes
 
-- Leaving out the payload skips web push's payload encryption, which is most of the code in any web-push library. The only crypto left is a VAPID ES256 JWT, which WebCrypto signs in about 30 lines.
-- **Subscribe:** the notifications toggle in Options calls `pushManager.subscribe` with the VAPID public key, then PUTs the subscription to `push/<me>.json`.
-- **Ring:** after a send, the app GETs `push/<other>.json` and POSTs its endpoint to the Worker's `/ring`. The Worker signs the JWT with its secret key, POSTs an empty push to the endpoint, and stores nothing. The Worker only exists because push services don't send CORS headers, so a browser can't POST to them directly.
-- **sw.js:**
-  - `push` shows "carousel: something new".
-  - `notificationclick` focuses or opens the app, and the app drains the inbox.
-  - The service worker writes nothing itself, because it can't reach localStorage, and doesn't need to.
-- **iOS** delivers web push only to home-screen PWAs (16.4+), which carousel already is.
+| route | does |
+|---|---|
+| `POST /register` | creates `u:<id>` |
+| `PUT /sub` | stores my push subscription |
+| `POST /pair` | returns a short code, e.g. `K7M-2QP` |
+| `POST /pair/<code>` | adds each person to the other's `allows`, deletes the code |
+| `DELETE /allow/<id>` | stops `<id>` sending to me. My side only |
+| `POST /send` | writes `i:` for everyone whose `allows` includes me, then pushes each of them |
+| `GET /inbox` | my unacknowledged items |
+| `DELETE /inbox/<itemId>` | the acknowledgement |
 
-## UI
+## Push
 
-- **Card:** a "send to Laura/Dev" button next to edit, plus a `p` key binding. The other person is implied.
-- **Options:**
-  - **me** (Dev or Laura)
-  - **connect storage** / **pair this device**
-  - **notifications** on or off
-- **Receive:** the existing toast says "2 from Laura". The cards land in the unread lane.
+- **No payload.** That skips web push's payload encryption, which is most of the code in any web-push library. What's left is a VAPID ES256 JWT, signed with WebCrypto in about 30 lines. The push only exists because push services don't send CORS headers, so the browser can't reach them directly.
+- **sw.js `push`:** fetches `/inbox` with the cached secret, then shows a single notification with a fixed `tag` that replaces the previous one instead of stacking: "Laura: <title>", or "3 new".
+- **Re-nudging:** anything not acknowledged shows up again in every later notification.
+- **Daily cron:** a Cloudflare Cron Trigger lists the `i:` keys, groups them by recipient, and sends one empty push to each person who has items waiting. That's about 10 lines plus `triggers.crons` in the wrangler config. `list` is fine at two users.
+- **sw.js `notificationclick`:** focuses or opens the app. The app drains `/inbox` through `add()` in `app.js`, then DELETEs each item. The service worker never writes cards itself.
+- KV is eventually consistent, so an item you've already acknowledged can come back for up to a minute. `add()` already skips duplicate URLs; for inbox items it should do that silently.
+- iOS delivers web push only to home-screen PWAs (16.4+), and carousel already is one.
 
-## State
+## Pairing and revoking
+
+- **Pair:** Options > **pair** shows a code that's valid for 10 minutes. The other phone types it in. Making the code and entering it are the two consents, so there's no confirmation round-trip.
+- **Why no QR code:** scanning one on an iPhone opens Safari, which doesn't share storage with the home-screen app.
+- **Revoke:** Options lists the people you're paired with, each with a **remove** button. Removing someone only edits *your* `allows`. They can no longer send to you; your sends to them are their list's business. Re-pair to undo.
+
+## Send
+
+- A **send** button on the card, next to edit, plus a `p` key binding.
+- It goes to everyone you're paired with, so there's no picker.
+- It marks the card read: `patchCard(id, { readAt: Date.now() })`.
+- The toast says "sent to Laura". On the receiving side, cards land in the unread lane with `from` set, and `people` gains the name.
+
+## State (client)
 
 - `state.js`:
-  - `me`: a `persistedValue`.
-  - `rs`: a `persistedJson` holding `{href, token}`.
-- Card: an optional `sentAt`. `from` already exists, and `people` gets the other name added automatically.
-- The push subscription lives in remote storage, not localStorage.
+  - `me`: `persistedValue`, the display name.
+  - `identity`: `persistedJson`, holding `{id, secret}`.
+- Card: an optional `sentAt`. `from` already exists.
 
 ## Deploy
 
-- The Worker script becomes `main` alongside the static assets in carousel's wrangler config.
+- The Worker script becomes `main` next to the static assets in carousel's wrangler config, along with a KV binding and `triggers.crons`.
 - Add a `VAPID_PRIVATE` secret. The public key goes in the client.
-- Check whether `.github/workflows/deploy.yml` needs to know about a `main`. Today it deploys assets only.
+- Check whether `.github/workflows/deploy.yml` needs to know about `main`. Today it deploys assets only.
+- KV's free tier allows 1k writes a day, which is plenty.
 
 ## Rough size
 
 | piece | lines |
 |---|---|
-| inbox send/receive, given the FTD client | ~60 |
-| pairing link and Options | ~30 |
-| subscribe plus sw.js handlers | ~40 |
-| Worker `/ring` (VAPID JWT and fetch) | ~50 |
-| **total** | **~180** |
-
-**Smaller first step, if wanted:** "send as link" through `navigator.share`, with a `?url=&text=&from=` URL that `parseShare` already almost reads. That's about 30 lines and no backend. But on iOS the link opens in Safari, which doesn't share storage with the home-screen app, so it's only worth keeping as an extra option.
+| Worker: routes, auth, KV | ~90 |
+| Worker: VAPID push and cron | ~40 |
+| client: register, subscribe, send, drain | ~50 |
+| client: pairing and revoking in Options | ~30 |
+| sw.js `push` and `notificationclick` | ~20 |
+| **total** | **~230** |
 
 ## Not chosen
 
-- **remoteStorage as two separate users:** the protocol has no way to grant another user access. A pull model through `/public/` with hard-to-guess paths would work, but it means checking each person's storage for new cards and adds more code.
+- **remoteStorage (5apps), one shared account:** no access for a second user, so it would mean sharing the token through a pairing link, porting the FTD client, and depending on a service still labelled beta. And push would need a server anyway.
 - **Push with the card as payload:** needs payload encryption, and the card is lost if the notification is dismissed.
-- **ntfy.sh as the relay:** the public server keeps messages for only 12 hours by default.
-- **An inbox in Workers KV:** duplicates what the shared storage already gives us.
-
-## Caveats
-
-- 5apps still labels its storage "beta", and the remoteStorage spec is still an Internet Draft. If 5apps goes away, the inbox layout moves to any remoteStorage server, or to Workers KV, without UI changes.
+- **ntfy.sh:** the public server keeps messages for only 12 hours by default.
+- **"Send as link" through `navigator.share`:** about 30 lines and no backend. But on iOS the link opens in Safari, which doesn't share storage with the home-screen app. It could still be added later as an extra.
 
 ## Open
 
 - Does a sent card carry the sender's comment as a note?
-- Should each person's deck also sync across their own devices later? The same storage would allow it, but it's out of scope here.
