@@ -267,7 +267,15 @@ desktop.addEventListener("click", (e) => {
 const HOLD_MS = 2000;
 desktop.style.setProperty("--hold-ms", HOLD_MS + "ms");
 /** @type {Record<string, () => void>} */
-const HOLD_COMMANDS = { erase, rememberOne: () => remember("1"), forgetAll, themes: randomTheme, help: () => (appendTutorial(), touched()), about: mailAuthor };
+const HOLD_COMMANDS = {
+  erase,
+  rememberOne: () => remember("1"),
+  forgetAll,
+  themes: randomTheme,
+  help: () => (appendTutorial(), touched()),
+  about: mailAuthor,
+  disconnect,
+};
 
 desktop.addEventListener("pointerdown", (e) => {
   const btn = e.target instanceof Element ? /** @type {HTMLElement|null} */ (e.target.closest("[data-hold-cmd]")) : null;
@@ -727,6 +735,25 @@ async function runSync(quiet) {
   } finally {
     syncing = false;
   }
+}
+
+// Hold Sync: forget the connection and every list's base, so the next Sync
+// connects afresh. The list itself stays.
+async function disconnect() {
+  const conn = connection();
+  if (!conn) {
+    await ask({ title: "Disconnect", icon: "sync", message: "Sync isn't connected.", cancel: false });
+    return;
+  }
+  const ok = await ask({
+    title: "Disconnect",
+    icon: "sync",
+    message: `Stop syncing with ${conn.address}? This list stays on this device.`,
+  });
+  if (!ok) return;
+  remote.set("");
+  syncs.clear();
+  checklist.note("Disconnected.");
 }
 
 // Back from the sign-in page: keep the token, tidy the URL, and sync.

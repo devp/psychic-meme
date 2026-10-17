@@ -65,7 +65,7 @@
       <div class="desk-icons">
         <button type="button" data-cmd="send" data-icon="send"><span>Send List</span></button>
         <button type="button" data-cmd="receive" data-icon="receive"><span>Receive List…</span></button>
-        <button type="button" data-cmd="sync" data-icon="sync"><span>Sync</span><small>other devices</small></button>
+        <button type="button" data-cmd="sync" data-hold-cmd="disconnect" data-icon="sync"><span>Sync</span><small>other devices</small></button>
         <button type="button" data-cmd="edit" data-icon="edit"><span>Edit</span><small>tap a to-do</small></button>
       </div>
     </section>
@@ -171,7 +171,7 @@
     <li>This is all very intentional, and I hope it helps.</li>
     <li>Install it as an app. Android Chrome: <em>⋮</em> menu → <em>Add to Home screen</em> → <em>Install</em>.
         iPhone Safari: <em>Share</em> → <em>Add to Home Screen</em>. On iPhone the installed app starts empty; it doesn't share Safari's to-dos.</li>
-    <li>Works offline. Everything lives in this browser's localStorage. Nothing is sent anywhere, unless you connect <em>Sync</em> to your own <a href="https://remotestorage.io/" target="_blank" rel="noopener">remoteStorage</a>: then this list goes there, and your other devices sync from it.</li>
+    <li>Works offline. Everything lives in this browser's localStorage. Nothing is sent anywhere, unless you connect <em>Sync</em> to your own <a href="https://remotestorage.io/" target="_blank" rel="noopener">remoteStorage</a>: then this list goes there, and your other devices sync from it. Hold <em>Sync</em> to disconnect.</li>
   </ul>
   </section>
 

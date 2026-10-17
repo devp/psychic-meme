@@ -43,7 +43,7 @@ Single user, a few devices. Manual: a sync button. No CRDT, no ids, no clocks.
 - **Second-device onboarding:** q: can this be resolved when connecting to remoteStorage?
   - Mostly yes. Connecting is the onboarding: same address, sign in, and the first Sync on a device that's never synced asks This device / Other device (never-synced counts as dirty), so the new device can't clobber the list, and Other device brings it over.
   - Still open: on iOS the sign-in redirect leaves an installed app for Safari, and iOS keeps the two storages apart, so the token may land in Safari's copy. Untested; may need a paste-the-token fallback.
-  - Still open: no Disconnect. Switching accounts means Erase. A 401/403 drops the token and the next Sync reconnects.
+  - Hold Sync disconnects: it forgets the connection and every list's base, and keeps the list. A 401/403 drops just the token, and the next Sync reconnects.
 - **Feature budget:** if we max our menu as a 4x4 grid, there is one more slot under Record, we sould be fine.
   - Used it: Record is Send, Receive, Sync, Edit.
 

@@ -54,6 +54,8 @@ export function syncLedger(value) {
     },
     /** @param {string} id @param {string} etag */
     synced: (id, etag) => put(id, { base: etag, dirty: false }),
+    /** Forget every list's sync state, as if none had ever synced. */
+    clear: () => value.set(""),
   };
 }
 

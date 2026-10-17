@@ -83,8 +83,30 @@ test("sync, in a real browser", { skip: !chromium && "playwright not installed" 
     (await page.locator("#alert-dialog .dialog-buttons button:visible").allInnerTexts()).join() === "OK");
   await page.click('#alert-dialog button[value="ok"]');
 
-  await page.evaluate(() => localStorage.removeItem("forgotodo:remote"));
-  await page.reload({ waitUntil: "networkidle" });
+  // Hold Sync: Disconnect, after a confirm.
+  const holdSync = async () => {
+    await page.click("#title-btn");
+    await page.hover('[data-cmd="sync"]');
+    await page.mouse.down();
+    await page.waitForTimeout(2200);
+    await page.mouse.up();
+  };
+  await holdSync();
+  await ok("holding Sync asks to disconnect",
+    (await page.locator("#alert-title").innerText()) === "Disconnect" &&
+      (await page.locator("#alert-msg").innerText()).includes("me@storage.test"));
+  await page.click('#alert-dialog button[value="cancel"]');
+  await ok("Cancel stays connected", (await page.evaluate(() => localStorage.getItem("forgotodo:remote"))) !== "");
+  await holdSync();
+  await page.click('#alert-dialog button[value="ok"]');
+  await page.waitForFunction(() => document.querySelector(".count")?.textContent === "Disconnected.");
+  const stored = await page.evaluate(() => [localStorage.getItem("forgotodo:remote"), localStorage.getItem("forgotodo:sync")]);
+  await ok("Disconnect forgets the connection and the ledger", stored.join() === ",", stored.join());
+  await ok("and keeps the list", (await texts()).join() === "phone again");
+
   await sync();
   await ok("unconnected, Sync asks for an address", await page.locator("#connect-dialog").isVisible());
+  await page.click("#connect-cancel");
+  await holdSync();
+  await ok("unconnected, Disconnect says so", (await page.locator("#alert-msg").innerText()) === "Sync isn't connected.");
 });

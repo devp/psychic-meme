@@ -32,6 +32,8 @@ test("syncLedger: per list, dirty until synced", () => {
   assert.deepEqual(ledger.get("a"), { base: "v2", dirty: false });
   assert.deepEqual(ledger.get("b"), { base: "v1", dirty: true });
   assert.deepEqual(syncLedger(value("not json")).get("a"), { base: null, dirty: false });
+  ledger.clear();
+  assert.deepEqual(ledger.get("b"), { base: null, dirty: false });
 });
 
 /**
