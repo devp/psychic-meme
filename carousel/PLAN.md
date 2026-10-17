@@ -1,102 +1,84 @@
 # carousel: sending a card to each other
 
-Dev and Laura only. The goals, in order: the fewest lines of code, nothing new to host beyond what carousel already deploys on, and a push notification you actually see. The notification can be lossy, because the inbox isn't.
+Dev and Laura, with trust assumed and data that doesn't last long. The goal is the simplest thing that stands on what we already need: an existing remoteStorage provider (5apps), a shared token, and a convention. There's no server of our own and no push yet.
 
 ## The shape
 
-One Cloudflare Worker, deployed with carousel's static assets, plus Workers KV. The Worker holds:
-- who's who
-- each person's push subscription
-- who may send to whom
-- an inbox of sent cards
+Each device can play two roles:
 
-Every disposable record has an expiry, so state cleans itself up instead of piling up.
+- **Sink** (optional): my own inbox, `carousel/inbox/` in my 5apps storage. Having one means connecting my 5apps account.
+- **Sender**: a list of other people's inboxes. No account needed.
 
-Push needs server-side state anyway, for the subscriptions. Once that exists, the inbox is just a few more keys in the same store.
+Sending and receiving are separate permissions. To receive from someone, you give them your sink. They don't have to give you theirs.
 
-## Identity
+## Sink
 
-- On first use the device makes a random `{id, secret}` and keeps it in localStorage. It also copies it to the Cache API, because sw.js can't read localStorage.
-- The server stores only a hash of the secret. Every route checks the id and secret.
-- The push subscription is a field on the user. The app re-sends it on every launch and on `pushsubscriptionchange`, because subscriptions rotate and iOS expires them.
-- The VAPID key is the server's own key. It is not anyone's identity.
-- If iOS clears the app's storage, its identity goes with it: re-pair.
+- **Connect:** reuse FTD's client, `forgotodo/lib/remotestorage.js` on `feature/sync-to-remoteServer-6apps` (`discover`, `authorizeURL`, `fromRedirect`), with scope `carousel:rw`.
+- **iOS fallback:** an installed app's sign-in redirect probably comes back in Safari, whose storage is separate. So connect in any browser, even a desktop one, and paste `{href, token}` into the app. FTD needs this path too.
+- **Share:** Options > **let someone send to me** shows a string to copy: `carousel:<href>#<token>`.
+  - A QR code is fine on Android.
+  - On iOS, paste it instead: a scanned QR code opens Safari.
+- **Drain:** on launch and on `visibilitychange`:
+  1. `GET carousel/inbox/` to get the folder listing.
+  2. GET each item and run it through `add()` in `app.js` (silent on duplicates). Set `from`, and make the note the card's `comment`.
+  3. DELETE the item.
+- **Client additions:** `list(path)` and `del(path)` alongside `get`/`put`, about 15 lines, plus a drain of about 25.
 
-## KV
+## Sender
 
-```
-u:<id>             {secretHash, name, sub, allows: [ids]}
-p:<code>           {id}                         expires after 10 min
-i:<to>:<itemId>    {url, text, note, from, sentAt}   expires after 30 days
-```
+- **Add a target:** Options > **send to someone**: paste their string and give it a name.
+  - Stored as `targets: [{name, href, token}]`, a `persistedJson` in `state.js`.
+  - Each target has a **remove** button.
+- **Send:** a button on the card, plus a `p` key binding. For each target, a plain fetch, with no remoteStorage client involved:
 
-`allows` is who may send to *me*. That's the only list `send` checks.
+  ```
+  PUT <href>/carousel/inbox/<sentAt>-<random>.json
+  Authorization: Bearer <token>
+  If-None-Match: *
+  {url, text, note, from, sentAt}
+  ```
 
-## Routes
+- **After sending:** the card is marked read (`patchCard(id, { readAt: Date.now() })`), and a toast says "sent to Laura".
+- **Revoked target:** a 401 or 403 means the token was revoked. Say so, and offer to remove the target.
+- **Size:** about 15 lines for sending, plus about 30 for the Options UI.
 
-| route | does |
-|---|---|
-| `POST /register` | creates `u:<id>` |
-| `PUT /sub` | stores my push subscription |
-| `POST /pair` | returns a short code, e.g. `K7M-2QP` |
-| `POST /pair/<code>` | adds each person to the other's `allows`, deletes the code |
-| `DELETE /allow/<id>` | stops `<id>` sending to me. My side only |
-| `POST /send` | writes `i:` for everyone whose `allows` includes me, then pushes each of them |
-| `GET /inbox` | my unacknowledged items |
-| `DELETE /inbox/<itemId>` | the acknowledgement |
+## Conventions
 
-## Push
+These hold by agreement, not enforcement:
+- Inbox files have unique names, `<sentAt>-<random>`, and are written create-only.
+- Only the reader deletes them.
+- Senders don't touch anything outside `inbox/`.
 
-- **No payload.** That skips web push's payload encryption, which is most of the code in any web-push library. What's left is a VAPID ES256 JWT, signed with WebCrypto in about 30 lines. The push only exists because push services don't send CORS headers, so the browser can't reach them directly.
-- **sw.js `push`:** fetches `/inbox` with the cached secret, then shows a single notification with a fixed `tag` that replaces the previous one instead of stacking: "Laura: <title>", or "3 new".
-- **Re-nudging:** anything not acknowledged shows up again in every later notification.
-- **Daily cron:** a Cloudflare Cron Trigger lists the `i:` keys, groups them by recipient, and sends one empty push to each person who has items waiting. That's about 10 lines plus `triggers.crons` in the wrangler config. `list` is fine at two users.
-- **sw.js `notificationclick`:** focuses or opens the app. The app drains `/inbox` through `add()` in `app.js`, then DELETEs each item. The service worker never writes cards itself.
-- KV is eventually consistent, so an item you've already acknowledged can come back for up to a minute. `add()` already skips duplicate URLs; for inbox items it should do that silently.
-- iOS delivers web push only to home-screen PWAs (16.4+), and carousel already is one.
+A misbehaving client could do more, since the token is `carousel:rw` for the whole `/carousel/` folder. We accept that.
 
-## Pairing and revoking
+## Revoking
 
-- **Pair:** Options > **pair** shows a code that's valid for 10 minutes. The other phone types it in. Making the code and entering it are the two consents, so there's no confirmation round-trip.
-- **Why no QR code:** scanning one on an iPhone opens Safari, which doesn't share storage with the home-screen app.
-- **Revoke:** Options lists the people you're paired with, each with a **remove** button. Removing someone only edits *your* `allows`. They can no longer send to you; your sends to them are their list's business. Re-pair to undo.
+- The reader revokes the token in the 5apps panel, reconnects, and re-shares with whoever should still be able to send. Worst case: set it up again.
+- If the shared token is the same one the reader's own device uses, revoking also signs that device out. Accepted.
+- **To check:** does authorizing a second time give a separate token that can be revoked on its own? If so, mint one just for sharing.
 
-## Send
+## Notes
 
-- A **send** button on the card, next to edit, plus a `p` key binding.
-- It goes to everyone you're paired with, so there's no picker.
-- It marks the card read: `patchCard(id, { readAt: Date.now() })`.
-- It carries the sender's comment as `note`. On the receiving side, the note becomes the new card's `comment`, so it shows where comments already show, next to "from Laura". The receiver can edit it like any comment.
-- The toast says "sent to Laura". On the receiving side, cards land in the unread lane with `from` set, and `people` gains the name.
+- A shared token can read everything under `/carousel/`. If each person's own deck ever syncs, give it a separate module (e.g. `carousel-deck`) so shared tokens can't reach it.
+- No push: new cards show up when the app opens or comes to the foreground.
+- 5apps still labels its storage beta, and the remoteStorage spec is still an Internet Draft.
+- **Before reusing FTD's client, fix two bugs in its sync** (they matter for FTD; carousel only needs the client part):
+  - A pull re-adds every item with a new id.
+  - Edits made while a push is in flight get marked clean without being sent.
 
-## State (client)
+## Later: a doorbell
 
-- `state.js`:
-  - `me`: `persistedValue`, the display name.
-  - `identity`: `persistedJson`, holding `{id, secret}`.
-- Card: an optional `sentAt`. `from` already exists.
-
-## Deploy
-
-- The Worker script becomes `main` next to the static assets in carousel's wrangler config, along with a KV binding and `triggers.crons`.
-- Add a `VAPID_PRIVATE` secret. The public key goes in the client.
-- Check whether `.github/workflows/deploy.yml` needs to know about `main`. Today it deploys assets only.
-- KV's free tier allows 1k writes a day, which is plenty.
-
-## Rough size
-
-| piece | lines |
-|---|---|
-| Worker: routes, auth, KV | ~90 |
-| Worker: VAPID push and cron | ~40 |
-| client: register, subscribe, send, drain | ~50 |
-| client: pairing and revoking in Options | ~30 |
-| sw.js `push` and `notificationclick` | ~20 |
-| **total** | **~230** |
+A push with no payload, rung by a small Cloudflare Worker that holds the VAPID key, possibly shared with taklifter.
+- The Worker stores each person's push subscription.
+- After a PUT, the sender asks the Worker to ring the recipient.
+- sw.js shows "something new", and opening the app drains the inbox as usual.
+- A daily cron could re-nudge for anything still waiting.
+- The inbox stays on 5apps either way.
 
 ## Not chosen
 
-- **remoteStorage (5apps), one shared account:** no access for a second user, so it would mean sharing the token through a pairing link, porting the FTD client, and depending on a service still labelled beta. And push would need a server anyway.
+- **Worker + KV inbox (plan v2):** a server of our own, with auth, to own and run.
+- **Self-hosted rs-worker:** needs a domain on Cloudflare plus Access.
 - **Push with the card as payload:** needs payload encryption, and the card is lost if the notification is dismissed.
-- **ntfy.sh:** the public server keeps messages for only 12 hours by default.
-- **"Send as link" through `navigator.share`:** about 30 lines and no backend. But on iOS the link opens in Safari, which doesn't share storage with the home-screen app. It could still be added later as an extra.
+- **ntfy.sh:** messages are kept for only 12 hours by default.
+- **Plain links through `navigator.share`:** on iOS they open in Safari, not the installed app.
