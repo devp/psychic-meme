@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, mode, font, icons, fit, deskclock, flash, split, lists, eraseAll } from "./state.js";
+import { theme, mode, font, icons, fit, deskclock, flash, split, lists } from "./state.js";
 import { Checklist, SETUP_STEPS } from "./components/checklist.js";
 import { toMarkdown, fromMarkdown } from "./lib/markdown.js";
 import { FORGOTTEN, dayKey, forgetChanges, fastForwardChanges, isForgotten, isSnoozed, retryOf, withTier } from "./lib/forget.js";
