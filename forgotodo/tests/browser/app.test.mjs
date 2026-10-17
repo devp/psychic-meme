@@ -106,8 +106,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("title tab opens the desktop", await page.locator("#desktop").isVisible());
   await ok("every command is an icon with its name",
     JSON.stringify(await page.locator("#desktop .desk-icons span").allInnerTexts()) ===
-      JSON.stringify(["Send List", "Receive List…", "Edit", "Sweep…", "Look Ahead", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Themes…", "Options…", "Help…", "About…"]) &&
-      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 14);
+      JSON.stringify(["Send List", "Receive List…", "Sync", "Edit", "Sweep…", "Look Ahead", "Recycle…", "Forget", "Remember", "Shake Up", "Fast Forward…", "Themes…", "Options…", "Help…", "About…"]) &&
+      (await page.locator("#desktop .desk-icons button svg.icon").count()) === 15);
   await ok("desktop groups by category",
     (await page.locator("#desktop h2").allInnerTexts()).join() === "Record,Organize,System");
   const clock = await page.locator("#title-btn").innerText();

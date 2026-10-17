@@ -17,6 +17,7 @@ const ASSETS = [
   "lib/organize.js",
   "lib/remotestorage.js",
   "lib/store.js",
+  "lib/sync.js",
   "lib/viewport.js",
   "components/checklist.js",
   "components/update-toast.js",
