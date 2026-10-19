@@ -1,15 +1,22 @@
 // This app's state, in one place. Components import from here directly.
 
 import { persistedValue, persistedJson, recordStore } from "./lib/store.js";
-import { cleanText } from "./lib/deck.js";
+import { cleanText, READ } from "./lib/deck.js";
 
 // localStorage key prefix, from <meta name="app-ns"> in index.html.
 const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
 
 export const theme = persistedValue(NS + ":theme", "dulles");
 
-/** The lane being browsed; "" is all unread. */
+/** The lane being browsed; "" is every lane. */
 export const lane = persistedValue(NS + ":lane", "");
+/** Whether lanes show their "unread" or "read" cards. */
+export const show = persistedValue(NS + ":show", "unread");
+// Read used to be a lane of its own.
+if (lane.get() === READ) {
+  lane.set("");
+  show.set("read");
+}
 /** @type {ReturnType<typeof persistedJson<string[]>>} */
 export const lanes = persistedJson(NS + ":lanes", /** @type {string[]} */ ([]));
 /** Who sent a link. Same pick-or-create list as lanes. */

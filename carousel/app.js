@@ -81,6 +81,7 @@ document.addEventListener("keydown", (e) => {
     Enter: () => card && deckEl.fire("read", card),
     e: () => card && deckEl.fire("edit", card),
     s: () => deckEl.spin(),
+    r: () => deckEl.toggleShow(),
   };
   if (keys[e.key]) {
     e.preventDefault();
