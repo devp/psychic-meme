@@ -67,9 +67,10 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 
   // noembed.com stands in for the title lookup; never hit the network.
-  await ctx.route("https://noembed.com/**", (r) => r.fulfill({ contentType: "application/json", body: '{"title":"Fetched Title"}' }));
+  let noembed = '{"title":"Fetched Title"}';
+  await ctx.route("https://noembed.com/**", (r) => r.fulfill({ contentType: "application/json", body: noembed }));
   // The embed players: answer with a stub so the iframe has something to load.
-  await ctx.route((u) => /(youtube-nocookie|instagram|facebook)\.com$/.test(u.hostname), (r) => r.fulfill({ contentType: "text/html", body: "<p>embed</p>" }));
+  await ctx.route((u) => /(youtube-nocookie|instagram|facebook|example)\.com$/.test(u.hostname), (r) => r.fulfill({ contentType: "text/html", body: "<p>embed</p>" }));
 
   const ls = (k) => page.evaluate((k) => localStorage.getItem(k), `${appNs}:${k}`);
   const cardsNow = async () => JSON.parse((await ls("deck:records")) ?? "[]")[0]?.items ?? [];
@@ -154,25 +155,29 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.fill('.editor textarea[name="description"]', "renamed");
   await page.click(".editor .btn.primary");
   await ok("edit saves description", (await desc()) === "renamed");
-  await ok("new lane appears after unread and read", (await page.locator(".lane-chip").count()) === 3);
+  await ok("new lane appears after all", (await page.locator(".lane-chip.lane").count()) === 2);
 
-  const chip = () => page.locator('.lane-chip[aria-pressed="true"]').innerText();
-  await drag(0, -120);
-  await ok("swipe up: the read lane", (await chip()).startsWith("read") && (await desc()) === "third", await chip());
+  const chip = () => page.locator('.lane-chip.lane[aria-pressed="true"]').innerText();
   await drag(0, -120);
   await ok("swipe up: next lane", (await chip()).startsWith("music"));
   await ok("lane filters", (await pos()) === "1 / 1" && (await desc()) === "renamed");
   await drag(0, 120);
-  await drag(0, 120);
-  await ok("swipe down: back to unread", (await chip()).startsWith("unread") && (await pos()) === "2 / 2", await pos());
+  await ok("swipe down: back to all", (await chip()).startsWith("all") && (await pos()) === "2 / 2", await pos());
 
   await drag(0, 0, 700);
   await page.fill('.editor textarea[name="description"]', "not this");
   await page.click('.editor .btn.close');
   await ok("cancel discards", (await desc()) === "renamed");
 
-  // The read lane: un-mark from the card, re-mark from the editor, un-mark again.
-  await page.locator(".lane-chip", { hasText: "read" }).filter({ hasNotText: "unread" }).click();
+  // The read toggle: every lane's read cards. Un-mark from the card, re-mark
+  // from the editor, un-mark again.
+  const toggle = (/** @type {string} */ v) => page.locator(".show-toggle .lane-chip", { hasText: new RegExp(`^${v}$`) });
+  await toggle("read").click();
+  await ok("read toggle: all lanes' read cards", (await desc()) === "third" && (await pos()) === "1 / 1", await pos());
+  await ok("…and it persists", (await ls("show")) === "read");
+  await drag(0, -120);
+  await ok("read toggle: per lane", (await chip()).startsWith("music") && (await pos()) === "0 / 0", await pos());
+  await drag(0, 120);
   await page.click(".card .btn.unread");
   await ok("mark unread button clears readAt", (await cardsNow())[2].readAt === null);
   await ok("…and the card stays until we move", (await desc()) === "third" && !(await page.locator(".card .read-tag").count()));
@@ -181,7 +186,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click(".editor .btn.primary");
   await ok("editor marks read again", typeof (await cardsNow())[2].readAt === "number");
   await page.click(".card .btn.unread");
-  await page.locator(".lane-chip", { hasText: "unread" }).click();
+  await toggle("unread").click();
   await ok("mark unread puts it back in the deck", (await pos()).endsWith("/ 3"), await pos());
 
   // --- spin ----------------------------------------------------------------------
@@ -204,6 +209,36 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="santa-monica"]', "aria-checked")) === "true");
   await page.click("#settings-close");
   await ok("storage keys use the app-ns meta", (await ls("theme")) === "santa-monica");
+
+  // --- title retries -------------------------------------------------------
+  const cardAt = async (/** @type {string} */ url) => (await cardsNow()).find((c) => c.url === url);
+  noembed = "{}"; // the lookup comes back with nothing
+  await page.goto(URL + "?url=" + encodeURIComponent("https://example.com/later"), { waitUntil: "networkidle" });
+  const tried = await cardAt("https://example.com/later");
+  await ok("title: nothing found leaves it blank", tried?.description === "" && typeof tried?.titleTriedAt === "number");
+  noembed = '{"title":"Later Title"}';
+  await page.reload({ waitUntil: "networkidle" });
+  await ok("title: no retry within a day", (await cardAt("https://example.com/later"))?.description === "");
+  await page.evaluate(([key, url]) => {
+    const records = JSON.parse(localStorage.getItem(key) ?? "[]");
+    records[0].items.find((/** @type {any} */ c) => c.url === url).titleTriedAt = 0;
+    localStorage.setItem(key, JSON.stringify(records));
+  }, [`${appNs}:deck:records`, "https://example.com/later"]);
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(150);
+  await ok("title: retried on launch a day on", (await cardAt("https://example.com/later"))?.description === "Later Title");
+
+  noembed = "{}";
+  await page.goto(URL + "?url=" + encodeURIComponent("https://example.com/open"), { waitUntil: "networkidle" });
+  noembed = '{"title":"Open Title"}';
+  await page.evaluate(async (url) => {
+    const deck = /** @type {any} */ (document.querySelector("cr-deck"));
+    const records = JSON.parse(localStorage.getItem(`${document.querySelector('meta[name="app-ns"]')?.getAttribute("content")}:deck:records`) ?? "[]");
+    deck.fire("read", records[0].items.find((/** @type {any} */ c) => c.url === url));
+  }, "https://example.com/open");
+  await page.waitForTimeout(150);
+  await ok("title: retried on open", (await cardAt("https://example.com/open"))?.description === "Open Title");
+  await page.click(".reader .close");
 
   // --- service worker ------------------------------------------------------
   const swState = await page.evaluate(async () => {

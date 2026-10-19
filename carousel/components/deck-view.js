@@ -1,6 +1,6 @@
 import { LitElement, html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
-import { cards, deck, lane, lanes, positions, setComment, patchCard } from "../state.js";
+import { cards, deck, lane, lanes, show, positions, setComment, patchCard } from "../state.js";
 import { laneCards, READ, resolve, wrap, spin, hostOf, platformOf } from "../lib/deck.js";
 
 /** @typedef {import("../lib/deck.js").Card} Card */
@@ -8,13 +8,16 @@ import { laneCards, READ, resolve, wrap, spin, hostOf, platformOf } from "../lib
 const SWIPE = 50; // px before a drag counts as a swipe
 const HOLD = 550; // ms before a press counts as a long press
 const LABELS = { youtube: "video", instagram: "gram", facebook: "fb", other: "link" };
-/** The two lanes always there, ahead of the user's own. */
-const BUILTIN = ["", READ];
+/** The lane always there, ahead of the user's own. */
+const BUILTIN = [""];
 /** @param {string} l */
-const laneName = (l) => (l === "" ? "unread" : l === READ ? "read" : l);
+const laneName = (l) => (l === "" ? "all" : l);
+const reading = () => show.get() === "read";
+/** Where a lane's position is saved: one per lane per view. @param {string} l */
+const posKey = (l) => (reading() ? READ + l : l);
 
 /**
- * The deck: lane strip, the current card, prev/next. Fires `read` and `edit`
+ * The deck: unread/read toggle, lane strip, the current card, prev/next. Fires `read` and `edit`
  * (detail: the card) for app.js to handle.
  *
  * Gestures on the card: swipe left/right moves through the lane, swipe up/down
@@ -45,21 +48,21 @@ export class DeckView extends LitElement {
     super.connectedCallback();
     const refresh = () => this._tick++;
     // warn-ok: subscribe-no-teardown -- this element is never removed
-    for (const s of [lane, lanes, positions, deck]) s.subscribe(refresh);
+    for (const s of [lane, lanes, show, positions, deck]) s.subscribe(refresh);
   }
 
   /** The lane's cards and where we are in them. */
   view() {
     const l = lane.get();
-    const list = laneCards(cards(), l, this.keepId);
-    const index = resolve(list, positions.get()[l]);
+    const list = laneCards(cards(), l, reading(), this.keepId);
+    const index = resolve(list, positions.get()[posKey(l)]);
     return { list, index, card: list[index] ?? null };
   }
 
   /** @param {Card} card */
   remember(card) {
     this.keepId = card.id;
-    positions.set({ ...positions.get(), [lane.get()]: { id: card.id, at: card.addedAt } });
+    positions.set({ ...positions.get(), [posKey(lane.get())]: { id: card.id, at: card.addedAt } });
   }
 
   /** @param {number} delta */
@@ -82,6 +85,14 @@ export class DeckView extends LitElement {
     this._dir = delta > 0 ? "up" : "down";
     this.keepId = null;
     lane.set(name);
+    this._tick++;
+  }
+
+  /** Flip every lane between its unread and read cards. */
+  toggleShow() {
+    this._dir = "flip";
+    this.keepId = null;
+    show.set(reading() ? "unread" : "read");
     this._tick++;
   }
 
@@ -178,12 +189,19 @@ export class DeckView extends LitElement {
     if (card) this.keepId = card.id;
     const all = cards();
     const current = lane.get();
-    const count = (/** @type {string} */ l) => laneCards(all, l).length;
+    const read = reading();
+    const count = (/** @type {string} */ l) => laneCards(all, l, read).length;
 
     return html`
       <nav class="lanes" aria-label="Lanes">
+        <span class="show-toggle" role="group" aria-label="Show">
+          ${["unread", "read"].map(
+            (v) => html`<button type="button" class="lane-chip" aria-pressed=${String(show.get() === v)}
+              @click=${() => show.get() !== v && this.toggleShow()}>${v}</button>`
+          )}
+        </span>
         ${[...BUILTIN, ...lanes.get()].map(
-          (l) => html`<button type="button" class="lane-chip" aria-pressed=${String(l === current)} @click=${() => this.pickLane(l)}>
+          (l) => html`<button type="button" class="lane-chip lane" aria-pressed=${String(l === current)} @click=${() => this.pickLane(l)}>
             ${laneName(l)} <span class="n">${count(l)}</span>
           </button>`
         )}
@@ -197,8 +215,8 @@ export class DeckView extends LitElement {
           ? repeat([card], (c) => c.id, (c) => this.renderCard(c, index, list.length))
           : html`<div class="empty window">
               <div class="titlebar"><span>${laneName(current)}</span></div>
-              <p>${current === READ ? "Nothing read yet." : "Nothing unread here."}</p>
-              <p class="dim">Share a link to carousel from any app${current ? ", or swipe to another lane" : ""}.</p>
+              <p>${read ? "Nothing read here yet." : "Nothing unread here."}</p>
+              <p class="dim">${read ? "Cards land here once you've read them" : "Share a link to carousel from any app"}${current ? ", or swipe to another lane" : ""}.</p>
             </div>`}
       </div>
 

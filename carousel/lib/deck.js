@@ -11,6 +11,7 @@
  * @property {number|null} readAt
  * @property {string|null} lane
  * @property {string|null} from
+ * @property {number|null} [titleTriedAt] last title lookup, for cards still without a description
  */
 
 /** @typedef {"youtube"|"instagram"|"facebook"|"other"} Platform */
@@ -123,24 +124,23 @@ export function embedUrl(url) {
   return null;
 }
 
-/** The lane of everything read. A sentinel, so no user lane can collide. */
+/** Prefixes a lane's position key in the read view. A sentinel, so no user lane can collide. */
 export const READ = "\u0000read";
 
 /**
- * The cards a lane shows, oldest first: unread ones in the lane, plus
- * `keepId` even if read, so a card doesn't vanish while you're looking at it.
- * Lane "" is everything unread; READ is everything read, and keeps `keepId`
- * the same way once marked unread.
+ * The cards a lane shows, oldest first: the lane's unread cards, or its read
+ * ones when `read`, plus `keepId` either way, so a card doesn't vanish while
+ * you're looking at it. Lane "" is every lane.
  *
  * @param {Card[]} cards
  * @param {string} lane
+ * @param {boolean} [read]
  * @param {string|null} [keepId]
  * @returns {Card[]}
  */
-export function laneCards(cards, lane, keepId = null) {
-  if (lane === READ) return cards.filter((c) => c.readAt || c.id === keepId).sort((a, b) => a.addedAt - b.addedAt);
+export function laneCards(cards, lane, read = false, keepId = null) {
   return cards
-    .filter((c) => (!c.readAt || c.id === keepId) && (lane === "" || c.lane === lane))
+    .filter((c) => ((read ? !!c.readAt : !c.readAt) || c.id === keepId) && (lane === "" || c.lane === lane))
     .sort((a, b) => a.addedAt - b.addedAt);
 }
 

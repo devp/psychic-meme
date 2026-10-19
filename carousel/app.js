@@ -30,8 +30,29 @@ function add(link) {
   if (dupe) return toast(dupe.readAt ? "already in the deck (read)" : "already in the deck");
   const card = addCard(link);
   toast("added: " + (link.description || hostOf(link.url)));
-  if (!link.description) fetchTitle(card.url).then((title) => title && patchCard(card.id, { description: title }));
+  if (!link.description) lookUpTitle(card);
 }
+
+/**
+ * Fill in a card's description from its title, if it's still blank by then.
+ * @param {Card} card
+ */
+async function lookUpTitle(card) {
+  patchCard(card.id, { titleTriedAt: Date.now() });
+  const title = await fetchTitle(card.url);
+  if (title && !cards().find((c) => c.id === card.id)?.description) patchCard(card.id, { description: title });
+}
+
+// Retry cards still without a title -- shared offline, or the lookup had
+// nothing then -- once a day each, on launch and when the network comes back.
+// Opening one (below) retries it right away.
+const DAY = 86400_000;
+async function retryTitles() {
+  if (!navigator.onLine) return;
+  const due = cards().filter((c) => !c.description && Date.now() - (c.titleTriedAt ?? 0) > DAY);
+  for (const c of due) await lookUpTitle(c);
+}
+window.addEventListener("online", retryTitles);
 
 /**
  * The page title, via noembed.com: a public oEmbed proxy that sends CORS
@@ -54,12 +75,14 @@ async function fetchTitle(url) {
 const shared = parseShare(new URLSearchParams(location.search));
 if (location.search) history.replaceState(null, "", location.pathname);
 if (shared) add(shared);
+retryTitles();
 
 // ---- reading --------------------------------------------------------------
 
 deckEl.addEventListener("read", (e) => {
   const card = /** @type {Card} */ (/** @type {CustomEvent} */ (e).detail);
   if (!card.readAt) patchCard(card.id, { readAt: Date.now() });
+  if (!card.description) lookUpTitle(card);
   const src = frameUrl(card.url, modes.get()[platformOf(card.url)] ?? "page");
   if (src) reader.show(src, card.url, card.description || hostOf(card.url));
   else window.open(card.url, "_blank", "noopener");
@@ -81,6 +104,7 @@ document.addEventListener("keydown", (e) => {
     Enter: () => card && deckEl.fire("read", card),
     e: () => card && deckEl.fire("edit", card),
     s: () => deckEl.spin(),
+    r: () => deckEl.toggleShow(),
   };
   if (keys[e.key]) {
     e.preventDefault();
