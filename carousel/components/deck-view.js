@@ -20,8 +20,9 @@ const posKey = (l) => (reading() ? READ + l : l);
  * The deck: unread/read toggle, lane strip, the current card, prev/next. Fires `read` and `edit`
  * (detail: the card) for app.js to handle.
  *
- * Gestures on the card: swipe left/right moves through the lane, swipe up/down
- * changes lane, tap reads, long press edits.
+ * Gestures: swipe left/right anywhere on the stage moves through the lane,
+ * swipe up/down changes lane. On the card itself, tap reads and long press
+ * edits.
  */
 export class DeckView extends LitElement {
   static properties = { _tick: { state: true }, _dir: { state: true } };
@@ -38,7 +39,7 @@ export class DeckView extends LitElement {
     /** The card on screen. laneCards keeps it even once read, so it doesn't vanish under you. */
     /** @type {string|null} */
     this.keepId = null;
-    /** @type {{ x: number, y: number, timer: number, held: boolean, onControl: boolean } | null} */
+    /** @type {{ x: number, y: number, timer: number, held: boolean, onCard: boolean, onControl: boolean } | null} */
     this.press = null;
     /** @type {number|undefined} */
     this.commentTimer = undefined;
@@ -126,17 +127,21 @@ export class DeckView extends LitElement {
   down(e) {
     // On the comment box a swipe still swipes, but a tap or hold is the box's.
     const onControl = e.target instanceof Element && !!e.target.closest("textarea, button, a, input, select");
-    const card = this.current();
+    // Taps and holds count on the card, not the space around it.
+    const onCard = e.target instanceof Element && !!e.target.closest(".card");
     this.press = {
       x: e.clientX,
       y: e.clientY,
       held: false,
+      onCard,
       onControl,
+      // A hold buzzes now but edits on release: an editor opened under a
+      // finger still down catches the phone's own long press, which selects
+      // a word in it.
       timer: window.setTimeout(() => {
-        if (!this.press || !card || onControl) return;
+        if (!this.press || !onCard || onControl) return;
         this.press.held = true;
         navigator.vibrate?.(15);
-        this.fire("edit", card);
       }, HOLD),
     };
   }
@@ -153,15 +158,20 @@ export class DeckView extends LitElement {
     this.press = null;
     if (!p) return;
     clearTimeout(p.timer);
-    if (p.held) return;
     const dx = e.clientX - p.x;
     const dy = e.clientY - p.y;
+    const still = Math.abs(dx) < 10 && Math.abs(dy) < 10;
+    const card = this.current();
+    if (p.held) {
+      if (still && card) {
+        window.getSelection()?.removeAllRanges();
+        this.fire("edit", card);
+      }
+      return;
+    }
     if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy)) this.step(dx < 0 ? 1 : -1);
     else if (Math.abs(dy) > SWIPE) this.changeLane(dy < 0 ? 1 : -1);
-    else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && !p.onControl) {
-      const card = this.current();
-      if (card) this.fire("read", card);
-    }
+    else if (still && p.onCard && !p.onControl && card) this.fire("read", card);
   }
 
   cancel() {

@@ -131,6 +131,9 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("blank comment saves as null", (await cardsNow())[2].comment === null);
 
   // --- reading -----------------------------------------------------------------
+  const stage = await box();
+  await page.mouse.click(stage.x + 5, stage.y + stage.height / 2);
+  await ok("tap beside the card doesn't read", !(await page.locator(".reader[open]").count()));
   await drag(0, 0);
   await ok("tap: reader opens", await page.locator(".reader[open]").isVisible());
   const src = await page.locator(".reader iframe").getAttribute("src");
@@ -147,7 +150,13 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("…and it doesn't come round again", (await desc()) !== "third" && (await pos()) === "2 / 2");
 
   // --- edit, lanes -------------------------------------------------------------
-  await drag(0, 0, 700);
+  const d = (await page.locator(".card .desc").boundingBox()) ?? stage;
+  await page.mouse.move(d.x + d.width / 2, d.y + d.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(700);
+  await ok("long press: no editor while still held", !(await page.locator(".editor[open]").count()));
+  await page.mouse.up();
+  await page.waitForTimeout(60);
   await ok("long press opens the editor", await page.locator(".editor[open]").isVisible());
   await ok("long press doesn't read", !(await page.locator(".reader[open]").count()));
   await page.selectOption('.editor select[name="lane"]', { label: "new lane…" });
