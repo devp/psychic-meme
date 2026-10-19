@@ -11,6 +11,7 @@
  * @property {number|null} readAt
  * @property {string|null} lane
  * @property {string|null} from
+ * @property {number|null} [titleTriedAt] last title lookup, for cards still without a description
  */
 
 /** @typedef {"youtube"|"instagram"|"facebook"|"other"} Platform */

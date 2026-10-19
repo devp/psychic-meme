@@ -27,7 +27,8 @@ export const positions = persistedJson(NS + ":positions", /** @type {Record<stri
 export const modes = persistedJson(NS + ":modes", /** @type {Record<string, import("./lib/deck.js").RenderMode>} */ ({
   youtube: "embed",
   instagram: "embed",
-  facebook: "embed",
+  // FB's embed players refuse the share links its app hands out (share/p/…).
+  facebook: "open",
 }));
 
 // The deck is one record in a recordStore; its items are the cards.
