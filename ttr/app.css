@@ -1,128 +1,171 @@
-/* This app's own styles. Replace freely. */
+/* This app's own styles. */
 
-/* ---- checklist ---- */
-.count,
-.panel-note { margin: 0 0 12px; color: var(--fg-dim); font-size: 13px; }
+.dim { color: var(--fg-dim); }
+.small { font-size: 13px; }
+.error { color: var(--danger); }
+.applied { color: var(--ok); font-size: 22px; font-weight: 700; }
+.tagline::before { content: var(--tagline); font-weight: 400; font-size: 13px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; flex: 1; text-align: center; }
 
-.checklist { list-style: none; margin: 0 0 16px; padding: 0; }
-
-.checklist li {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  background: var(--bg-alt);
+/* ---- buttons ---- */
+.btn {
+  padding: 8px 14px;
+  background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: calc(var(--radius) * 0.75);
+  color: var(--fg);
 }
-.checklist li.done span { color: var(--fg-dim); text-decoration: line-through; }
+.btn.small { padding: 5px 10px; font-size: 13px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn:disabled { opacity: 0.4; cursor: default; }
 
-.checklist label {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  flex: 1;
-  cursor: pointer;
-  min-width: 0;
-}
-.checklist input[type="checkbox"] {
-  margin: 3px 0 0;
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
-  flex-shrink: 0;
-}
-.checklist span { overflow-wrap: anywhere; }
-
-.checklist button[data-remove] {
-  background: none;
-  border: 0;
-  color: var(--fg-dim);
-  font-size: 20px;
-  line-height: 1;
-  padding: 0 4px;
-  flex-shrink: 0;
-}
-.checklist button[data-remove]:hover { color: var(--accent); }
-
-.add-row { display: flex; gap: 8px; }
-
-.add-row input {
-  flex: 1;
-  min-width: 0;
+/* ---- setup ---- */
+.setup { display: flex; flex-direction: column; gap: 12px; max-width: 30rem; }
+.setup h2 { margin: 0; font-family: var(--font-title); }
+.setup p { margin: 0; }
+.setup input, .settings textarea {
+  width: 100%;
   padding: 10px 12px;
   font: inherit;
   font-size: 16px; /* < 16px makes iOS zoom on focus */
   color: var(--fg);
   background: var(--bg-raised);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: calc(var(--radius) * 0.75);
 }
-.add-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.settings textarea { font-family: var(--font-mono); font-size: 16px; resize: vertical; margin-bottom: 8px; }
 
-.add-row button {
-  padding: 10px 16px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  border: 0;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-/* ---- append-log ---- */
-append-log {
-  display: block;
-  max-height: 60vh;
-  overflow-y: auto;
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+/* ---- picker ---- */
+ttr-picker { gap: 12px; }
+.targets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.target {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 12px;
+  padding: 18px 16px;
+  text-align: left;
   background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
-append-log:empty::after {
-  content: "Nothing yet. Tick something in the list tab.";
-  display: block;
-  padding: 14px;
-  color: var(--fg-dim);
-  font-size: 13px;
-}
-.log-entry {
+.target-name { font-family: var(--font-title); font-size: 20px; font-weight: 700; }
+.target-query { grid-row: 2; font-family: var(--font-mono); font-size: 12px; }
+.target-count { grid-row: 1 / 3; grid-column: 2; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+ttr-picker > .btn { align-self: flex-start; }
+
+/* ---- session ---- */
+.panel.session { padding: 0; overflow: hidden; }
+.session-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.session-bar strong { font-family: var(--font-title); }
+
+.progress {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 0;
+  flex-shrink: 0;
+}
+.progress .btn:first-child { justify-self: start; }
+.progress .btn:last-child { justify-self: end; }
+.progress .count { font-variant-numeric: tabular-nums; color: var(--fg-dim); }
+
+.card {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 12px;
+  padding: 18px 16px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.card .where { font-size: 13px; }
+.card .content { margin: 6px 0 12px; font-family: var(--font-title); font-size: 22px; line-height: 1.3; overflow-wrap: anywhere; }
+.card .desc { margin: 12px 0 0; overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
   font-size: 13px;
-  overflow-wrap: anywhere;
 }
-.log-entry:last-child { border-bottom: 0; }
-.log-entry time { color: var(--fg-dim); margin-right: 8px; }
+.badge.late { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+.badge.recur { font-weight: 700; }
+.session > .error { margin: 0 12px; }
 
-/* ---- prose ---- */
-.prose { max-width: 60ch; }
-.prose h2 { font-size: 15px; margin: 20px 0 8px; }
-.prose h2:first-child { margin-top: 0; }
-.prose p, .prose li { color: var(--fg-dim); }
-.prose code {
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 1px 5px;
-  font-family: var(--font-mono);
-  font-size: 0.9em;
+/* The thumb zone: everything decisive sits at the bottom. */
+.controls { flex-shrink: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.verbs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.verbs[data-n="1"], .verbs[data-n="3"] > :first-child, .verbs[data-n="5"] > :first-child { grid-column: 1 / -1; }
+.tray { display: flex; gap: 8px; margin: 0; }
+.tray > * { flex: 1; }
+
+.verb {
+  --v: var(--accent);
+  min-height: 64px;
+  padding: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--bg-raised);
   color: var(--fg);
+  border: 2px solid var(--v);
+  border-radius: var(--radius);
 }
-.prose ul { padding-left: 20px; }
-.prose li { margin-bottom: 6px; }
+.verb.small { min-height: 52px; font-size: 16px; }
+.verb[aria-pressed="true"], .tray .verb { background: var(--v); color: var(--bg); }
+.verb.apply { min-height: 72px; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+[data-verb="done"] { --v: var(--verb-done); }
+[data-verb="date"] { --v: var(--verb-date); }
+[data-verb="watch"] { --v: var(--verb-watch); }
+[data-verb="agenda"] { --v: var(--verb-agenda); }
+[data-verb="tomorrow"] { --v: var(--verb-tomorrow); }
+[data-verb="unpin"] { --v: var(--verb-unpin); }
+[data-verb="kill"] { --v: var(--verb-kill); }
 
-/* ---- list-summary ---- */
-.summary { list-style: none; margin: 0; padding: 0; }
-.summary li {
+/* ---- summary / result ---- */
+.summary { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; }
+.summary h3 { margin: 12px 0 6px; font-size: 15px; font-family: var(--font-title); }
+.summary ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.drop {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   padding: 10px 12px;
-  margin-bottom: 6px;
+  text-align: left;
   background: var(--bg-alt);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  cursor: pointer;
-  overflow-wrap: anywhere;
+  border-radius: calc(var(--radius) * 0.75);
 }
-.summary li:hover { border-color: var(--accent); }
-pizza-list-summary[empty] .summary { display: none; }
+.drop span:first-child { overflow-wrap: anywhere; }
+.drop .x { color: var(--fg-dim); }
+.failed { padding: 8px 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+
+/* ---- spinner ---- */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- judgement ----
+   Hidden unless a theme turns it on (ddr). Rendered fresh per decision, so
+   the animation replays each time. */
+.judge { display: none; }

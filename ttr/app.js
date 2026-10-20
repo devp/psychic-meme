@@ -2,77 +2,57 @@
 // lib -- this is the file you edit first, so it should be readable top to
 // bottom with no indirection.
 
-import { html } from "lit";
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, font, tab, lists, activity } from "./state.js";
-import { Tabs } from "./components/tabs.js";
-import { Checklist, SETUP_STEPS } from "./components/checklist.js";
-import { AppendLog } from "./components/append-log.js";
-import { ListSummary } from "./components/list-summary.js";
+import { theme, token, config, getConfig } from "./state.js";
+import { DEFAULT_CONFIG, withDefaults, addBucket } from "./lib/triage.js";
+import { TokenSetup } from "./components/setup.js";
+import { TargetPicker } from "./components/picker.js";
+import { TriageSession } from "./components/session.js";
 import { UpdateToast } from "./components/update-toast.js";
 
-// Components read their state from state.js, so defining them is the whole of
-// it -- nothing to inject, nothing to sequence.
-customElements.define("pizza-tabs", Tabs);
-customElements.define("pizza-checklist", Checklist);
-customElements.define("append-log", AppendLog);
-customElements.define("pizza-list-summary", ListSummary);
+customElements.define("ttr-setup", TokenSetup);
+customElements.define("ttr-picker", TargetPicker);
+customElements.define("ttr-session", TriageSession);
 customElements.define("update-toast", UpdateToast);
 
-// First run: seed the checklist with its own setup instructions.
-// A plain worked example of create() + append() -- read it, then delete it.
-if (lists.getAll().length === 0) {
-  const seeded = lists.ensureActive();
-  lists.rename(seeded.id, "Make this yours");
-  SETUP_STEPS.forEach((step) => lists.append(seeded.id, step));
-} else {
-  lists.ensureActive();
+const setup = /** @type {TokenSetup} */ (document.querySelector("ttr-setup"));
+const picker = /** @type {TargetPicker} */ (document.querySelector("ttr-picker"));
+const session = /** @type {TriageSession} */ (document.querySelector("ttr-session"));
+
+// ---- screens --------------------------------------------------------------
+// setup -> picker <-> session. Which one shows is in memory only: a relaunch
+// always lands on the picker (or setup, without a token).
+
+/** @param {"setup"|"picker"|"session"} name */
+function show(name) {
+  setup.hidden = name !== "setup";
+  picker.hidden = name !== "picker";
+  session.hidden = name !== "session";
+  if (name === "picker") picker.refresh();
 }
 
-// ---- the travelling component ---------------------------------------------
-// append-log knows nothing about this app, so it's fed by property. Note the
-// renderItem returns a Lit template, so interpolated text is escaped by construction.
+setup.addEventListener("done", () => show("picker"));
+picker.addEventListener("pick", (e) => {
+  show("session");
+  session.start(/** @type {CustomEvent} */ (e).detail, { reuse: true });
+});
+session.addEventListener("exit", () => show("picker"));
 
-const logEl = /** @type {AppendLog} */ (document.getElementById("activity-log"));
-logEl.renderItem = (/** @type {any} */ item) =>
-  html`<div class="log-entry">
-    <time>${new Date(item.at).toLocaleTimeString()}</time> ${item.text}
-  </div>`;
+show(token.get() ? "picker" : "setup");
 
-const activityRecord = activity.ensureActive();
-const paintLog = () => {
-  logEl.items = activity.get(activityRecord.id)?.items ?? [];
-};
-activity.subscribe(paintLog);
-paintLog();
-
-document.getElementById("clear-log")?.addEventListener("click", () => {
-  activity.clearItems(activityRecord.id);
+// Back on the picker after a trip underground: recount.
+window.addEventListener("online", () => {
+  if (!picker.hidden) picker.refresh();
 });
 
-// ---- shell glue -----------------------------------------------------------
-// Theme, font and tab are just persisted scalars with a subscriber each. No
-// lib needed; this is the whole of it.
+// ---- options --------------------------------------------------------------
 
 theme.subscribe((v) => {
   document.documentElement.setAttribute("data-theme", v);
   syncChecked("[data-set-theme]", "data-set-theme", v);
-});
-
-font.subscribe((v) => {
-  document.documentElement.setAttribute("data-font", v);
-  syncChecked("[data-set-font]", "data-set-font", v);
-});
-
-tab.subscribe((v) => {
-  document.querySelectorAll(".panel").forEach((p) => {
-    p.classList.toggle("active", p.getAttribute("data-panel") === v);
-  });
-  document.querySelectorAll("pizza-tabs [data-tab]").forEach((b) => {
-    const on = b.getAttribute("data-tab") === v;
-    b.classList.toggle("active", on);
-    b.setAttribute("aria-selected", String(on));
-  });
+  // theme-color follows the theme's background, for the phone's status bar.
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  if (bg) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg);
 });
 
 /**
@@ -87,17 +67,46 @@ function syncChecked(selector, attr, value) {
 }
 
 document.addEventListener("click", (e) => {
-  const el = e.target instanceof Element ? e.target : null;
-  if (!el) return;
-  const t = el.closest("[data-set-theme]");
+  const t = e.target instanceof Element ? e.target.closest("[data-set-theme]") : null;
   if (t) theme.set(t.getAttribute("data-set-theme") ?? "dusk");
-  const f = el.closest("[data-set-font]");
-  if (f) font.set(f.getAttribute("data-set-font") ?? "mono");
 });
 
 const settings = /** @type {HTMLDialogElement} */ (document.getElementById("settings-dialog"));
-document.getElementById("settings-btn")?.addEventListener("click", () => settings.showModal());
+const configText = /** @type {HTMLTextAreaElement} */ (document.getElementById("config-text"));
+const configNote = /** @type {HTMLElement} */ (document.getElementById("config-note"));
+
+document.getElementById("settings-btn")?.addEventListener("click", () => {
+  configText.value = JSON.stringify(getConfig(), null, 2);
+  configNote.textContent = "";
+  settings.showModal();
+});
 document.getElementById("settings-close")?.addEventListener("click", () => settings.close());
+
+document.getElementById("token-btn")?.addEventListener("click", () => {
+  settings.close();
+  show("setup");
+});
+
+document.getElementById("config-save")?.addEventListener("click", () => {
+  try {
+    const next = withDefaults(JSON.parse(configText.value));
+    // Fail here rather than mid-session.
+    [...next.dateBuckets, ...next.watchBuckets].forEach((b) => addBucket("2026-01-01", b));
+    if (!next.targets.every((t) => t && typeof t.name === "string" && typeof t.query === "string" && Array.isArray(t.verbs))) {
+      throw new Error("each target needs name, query and verbs");
+    }
+    config.set(next);
+    configNote.textContent = "saved";
+    if (!picker.hidden) picker.refresh();
+  } catch (e) {
+    configNote.textContent = e instanceof Error ? e.message : String(e);
+  }
+});
+
+document.getElementById("config-reset")?.addEventListener("click", () => {
+  configText.value = JSON.stringify(DEFAULT_CONFIG, null, 2);
+  configNote.textContent = "not saved yet";
+});
 
 // Share: the QR page (misc/qr/) encodes whatever ?q= holds.
 const shareLink = /** @type {HTMLAnchorElement | null} */ (document.getElementById("share-link"));
@@ -122,6 +131,9 @@ if ("serviceWorker" in navigator) {
   if (document.readyState === "complete") register();
   else window.addEventListener("load", register, { once: true });
 
-  // Updates: the toast checks for them on every launch and resume.
-  document.body.append(new UpdateToast());
+  // Updates: the toast checks for them on every launch and resume. Not
+  // mid-session: a reload would drop the queued decisions.
+  const updates = new UpdateToast();
+  updates.idle = () => session.hidden && !document.querySelector("dialog[open]");
+  document.body.append(updates);
 }
