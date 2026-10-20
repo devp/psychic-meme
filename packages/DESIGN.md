@@ -1,11 +1,29 @@
 # fennel-laserswords: design (draft)
 
-This is reusable code for the Fennel community. It makes a touch-first structural editor and a
-browser REPL that click together, and [pizza-repl-fennel](../pizza-repl-fennel) is the demo.
-It grew out of [sexp-spike](../sexp-spike), which settled the interaction model: tap to focus a
-form, tap again to widen, structural edits, inline eval, and templates with holes.
+A touch-first structural editor for Fennel and a browser REPL that click together, with
+[pizza-repl-fennel](../pizza-repl-fennel) as the demo. It grew out of
+[sexp-spike](../sexp-spike), which settled the interaction model: tap to focus a form, tap again
+to widen, structural edits, inline eval, and templates with holes.
 
 Status: **draft for review.** No code has been extracted yet. Open questions are at the end.
+
+## Provenance and boundaries
+
+The spike, and the first draft of this document, were written with an LLM (Claude), working
+with Dev. Fennel's [contributing guidelines](https://github.com/bakpakin/Fennel/blob/main/CONTRIBUTING.md)
+ask that no LLM-generated patches, issues, comments or other material be submitted to the
+project, and state that the authors don't consent to LLM use of Fennel's code. This project
+respects that:
+
+- **Nothing LLM-written goes to the Fennel project.** That means no patches, tickets,
+  mailing-list or chat posts, and no offers to fennel-lang.org, including text posted under a
+  person's name.
+- **Fennel's sources and docs are not given to LLMs.** Where this design depends on Fennel's
+  API, it links to Fennel's own documentation instead of restating it.
+- **The reusable libraries are for Dev to write.** Anything meant to be shared with Fennel
+  users is hand-written, with this document and the spike as the spec. LLM help stays in
+  conversation and in the parts of pizza-repl-fennel that aren't shared. (Open question 0.)
+- **Provenance is stated wherever it applies.** LLM-assisted files say so, in a README or NOTICE.
 
 ## Goals
 
@@ -16,8 +34,8 @@ Status: **draft for review.** No code has been extracted yet. Open questions are
   "no JavaScript" all keep working.
 - **No build step and no framework.** Plain ES modules, vendorable by copying, and MIT licensed
   like Fennel and Fengari.
-- **Fennel-aware from Fennel itself.** Form knowledge comes from `fennel.syntax()`, not from
-  hand-kept lists.
+- **Fennel-aware from Fennel itself.** Form knowledge comes from `fennel.syntax()` (see
+  "Describe Fennel syntax" in Fennel's `api.md`), not from hand-kept lists.
 
 Non-goals for now: other Lisps, syntax highlighting beyond node kinds, a full IDE, and
 multi-file projects.
@@ -34,7 +52,8 @@ The editor and the REPL never import each other. A small `connect(editor, repl)`
 shipped with the editor, joins them through events, so any object with the REPL's
 `eval()` shape works.
 
-They live in `psychic-meme/packages/` while the API settles, and move to their own repo(s) after.
+They live in `psychic-meme/packages/` while the API settles. Whether they ever move to their own
+repo(s) depends on how they're written (Provenance, above).
 
 ---
 
@@ -89,10 +108,11 @@ nav.parent / nav.child / nav.prev / nav.next (src, focus) → Range
 apply(src, changes) → string
 ```
 
-The change-list shape is borrowed from [paredit.js](https://github.com/rksm/paredit.js) (MIT,
-dormant since 2022). It lets a host apply small splices, so native undo and the selection
-survive. The reader and ops are new code, because paredit.js reads Clojure, edits around a
-caret, and has no idea of a focused node or of holes.
+The change-list idea comes from [paredit.js](https://github.com/rksm/paredit.js) (MIT, dormant
+since 2022), whose editor ops return a list of changes plus a new caret position. It lets a host
+apply small splices, so native undo and the selection survive. The reader and ops need to be
+new: paredit.js reads Clojure, edits around a caret, and has no idea of a focused node or of
+holes.
 
 ### Holes and templates
 
@@ -106,16 +126,18 @@ Templates are derived from syntax data, with curated overrides:
 
 ```js
 import { syntax, template } from "fennel-laserswords";
-template("each", syntax)  // "(each [▢bindings…] ▢body…)"   binding-form? + body-form?
-template("fn", syntax)    // "(fn ▢name [▢args…] ▢body…)"   override: define? + arglist
+template("each", syntax)  // "(each [▢bindings…] ▢body…)"
+template("fn", syntax)    // "(fn ▢name [▢args…] ▢body…)"   curated override
 ```
 
-`syntax` is a JSON snapshot of `fennel.syntax()` from the Fennel version we test against (1.6.1).
-The REPL package can refresh it from a live engine, which picks up user macros.
+`syntax` is a JSON snapshot of what `fennel.syntax()` returns for the Fennel version we test
+against (1.6.1). It's produced by running that function in an engine, not by copying Fennel's
+source. The REPL package can refresh it live, which picks up user macros. Which flags decide
+binding vectors and body holes follows Fennel's documentation of that function.
 
 ### Later
 
-- `reindent(src, range, syntax)` using `body-form?`, matching fnlfmt's two-space bodies.
+- `reindent(src, range, syntax)`: two-space bodies for body forms, aligned arguments for calls.
 - Multi-select (a run of siblings).
 - Comments attached to the node that follows them.
 
@@ -180,8 +202,9 @@ repl.dispose();
 
 - **Fennel's own REPL semantics.** It drives `fennel.repl` in a coroutine, as `lang.js` does
   today, so locals persist and `*1`, `,doc` and the like behave as Fennel defines them.
-- **Structured results.** Values come from `onValues` (`fennel.view` strings) and output from a
-  `print` captured through `env`, not a global override. Error kinds come from `onError`.
+- **Structured results.** Values, printed output, and the error kind are reported separately,
+  using the options Fennel documents for `fennel.repl` ("Start a configurable repl" in its
+  `api.md`). Printing is captured without replacing the global `print`.
 - **Always async**, even on Fengari, so a Web Worker adapter can be added without changing
   callers. In worker mode, interrupting a runaway loop means terminating and restarting the
   worker.
@@ -208,18 +231,26 @@ repl.dispose();
 2. REPL: extract from `lang.js`, add structured results, keep `tests/lang.test.mjs` passing.
 3. Editor element, then rebuild the spike page as about 20 lines over 1 + 2 + 3 to prove the fit.
 4. Switch pizza-repl-fennel over.
-5. Publish: repo, npm, and an announcement on Fennel's list or forum.
+5. If and when the libraries are hand-written: publish them in their author's own words. Any
+   mention on Fennel's channels follows their rules for human-authored material.
 
 ## Open questions
 
+0. **Who writes what.** These are the options:
+   - **(a)** Dev hand-writes all three packages from this spec.
+   - **(b)** Dev hand-writes the shared packages (core, REPL), and the LLM helps only with
+     pizza-repl-fennel around them.
+   - **(c)** Everything stays LLM-assisted and personal: kept in psychic-meme with provenance
+     stated, and not promoted to Fennel's community.
+
+   The draft leans toward (a) or (b).
 1. **Focus model.** Ranges (recommended, above) or node paths.
 2. **The hole marker.** `▢` reads well, but it's hard to type on a desktop keyboard. An
    alternative is `_?name`, which is ASCII, still a valid symbol, and unlikely in real code.
 3. **Shadow DOM or light DOM** for the editor's node view. Shadow DOM isolates its styles;
    light DOM is easier for hosts to restyle.
 4. **Built-in action bar on by default, or headless by default** with the bar as an opt-in part.
-5. **Where it's published.** GitHub (where psychic-meme is) or sourcehut (where Fennel lives),
-   and whether to offer the REPL package to fennel-lang.org's in-browser REPL. We couldn't
-   read that site's REPL code during the survey: sr.ht wasn't reachable.
+5. **Where it's published**, if it's published: GitHub (where psychic-meme is) or sourcehut
+   (where Fennel lives). This depends on question 0.
 6. **Fennel version policy.** One syntax snapshot per supported Fennel release, or only the
    latest.

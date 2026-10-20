@@ -18,3 +18,6 @@ v3: a **file | repl** flip over one shared interpreter and log. The REPL line is
 and "→ file" keeps an entry. Holes ending in `…` repeat (args, body) until an empty ⏎. You can
 restart the REPL or "eval fresh" (restart, then the file alone), and each form's result is struck
 through once you edit that form. Case 7 shows the image remembering a deleted function.
+
+Provenance: written with an LLM (Claude), working with Dev. Not for submission to the Fennel
+project; see [packages/DESIGN.md](../packages/DESIGN.md#provenance-and-boundaries).
