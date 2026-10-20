@@ -1,5 +1,7 @@
 # carousel: sending a card to each other
 
+> Fork: [`../carousel-service/PLAN.md`](../carousel-service/PLAN.md) replaces the 5apps inbox with a minimal Worker inbox of our own.
+
 Dev and Laura, with trust assumed and data that doesn't last long. The goal is the simplest thing that stands on what we already need: an existing remoteStorage provider (5apps), a shared token, and a convention. There's no server of our own and no push yet.
 
 ## The shape
