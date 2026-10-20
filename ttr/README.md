@@ -6,6 +6,8 @@ reorganizing them.
 
 Live at `ttr.dzza.workers.dev` (deployed by `.github/workflows/deploy.yml`).
 
+Themes: dusk, paper, **ddr** (neon cabinet: arrows, PERFECT!!/GREAT!/BOO judgements, combo count) and **subway** (signage; each verb a line bullet, Agenda rides the 7).
+
 ## Use
 
 1. Paste a Todoist API token (Settings → Integrations → Developer). It's

@@ -262,7 +262,24 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.click("#settings-btn");
   await page.click('[data-set-theme="paper"]');
   await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "paper");
+  await page.click('[data-set-theme="ddr"]');
   await page.click("#settings-close");
+  await page.locator(".target", { hasText: "Today" }).click();
+  await page.locator(".card").waitFor();
+  await page.click("text=skip ›");
+  await ok("ddr: a decision flashes its judgement", (await page.locator(".judge-word").innerText()) === "BOO");
+  await page.click("text=start over");
+  await page.click("text=discard 1 decisions?");
+  await page.click("text=‹ targets");
+  await page.click("#settings-btn");
+  await page.click('[data-set-theme="dusk"]');
+  await page.click("#settings-close");
+  await page.locator(".target", { hasText: "Today" }).click();
+  await page.locator(".card").waitFor();
+  await page.click("text=skip ›");
+  await ok("other themes hide it", !(await page.locator(".judge").isVisible()));
+  await page.click("text=‹ targets");
+  await page.click("text=discard 1?");
 
   // --- config --------------------------------------------------------------------
   await page.click("#settings-btn");

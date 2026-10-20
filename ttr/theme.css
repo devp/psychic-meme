@@ -55,3 +55,191 @@
   --radius: 12px;
   --tagline: "task task resolution";
 }
+
+/* ddr -- a rhythm-game cabinet at 1am: neon on black, arrows, judgements.
+   Each decision flashes PERFECT!! / GREAT! / BOO and counts a combo. */
+:root[data-theme="ddr"] {
+  --bg: #07021a;
+  --bg-alt: rgb(20 8 48 / 0.85);
+  --bg-raised: #160a38;
+  --fg: #f4f0ff;
+  --fg-dim: #9a8cc9;
+  --accent: #ff2bd6;
+  --accent-ink: #07021a;
+  --border: #3a1f7a;
+  --danger: #ff4d6d;
+  --ok: #a6ff00;
+  --verb-done: #a6ff00;
+  --verb-date: #ff2bd6;
+  --verb-watch: #b46bff;
+  --verb-agenda: #00e5ff;
+  --verb-tomorrow: #ffe600;
+  --verb-unpin: #ff9f1c;
+  --verb-kill: #ff3b30;
+  --font-title: "Arial Black", "Helvetica Neue", Impact, sans-serif;
+  --radius: 6px;
+  --tagline: "task task revolution";
+}
+
+/* subway -- signage for the commute it's used on: black, white Helvetica,
+   each verb a line bullet. Agenda rides the 7. */
+:root[data-theme="subway"] {
+  --bg: #000000;
+  --bg-alt: #111111;
+  --bg-raised: #1c1c1c;
+  --fg: #ffffff;
+  --fg-dim: #a7a9ac;
+  --accent: #ffffff;
+  --accent-ink: #000000;
+  --border: #333333;
+  --danger: #ee352e;
+  --ok: #00933c;
+  --verb-done: #00933c;
+  --verb-date: #0039a6;
+  --verb-watch: #ff6319;
+  --verb-agenda: #b933ad;
+  --verb-tomorrow: #fccc0a;
+  --verb-unpin: #a7a9ac;
+  --verb-kill: #ee352e;
+  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-title: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --radius: 4px;
+  --tagline: "stand clear of the closing doors";
+}
+
+/* ---- theme extras ----
+   The few things a theme needs beyond tokens. Scoped to its data-theme, so
+   deleting a theme is deleting its blocks. */
+
+/* ddr */
+[data-theme="ddr"] body {
+  background:
+    radial-gradient(ellipse at 50% 120%, rgb(255 43 214 / 0.35), transparent 60%),
+    radial-gradient(ellipse at 50% -20%, rgb(0 229 255 / 0.25), transparent 55%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 40px),
+    var(--bg);
+}
+[data-theme="ddr"] .app-header { background: transparent; border-bottom: 2px solid var(--accent); box-shadow: 0 0 14px var(--accent); }
+[data-theme="ddr"] .app-header h1,
+[data-theme="ddr"] .card .content,
+[data-theme="ddr"] .target-name,
+[data-theme="ddr"] .verb { font-family: var(--font-title); font-style: italic; text-transform: uppercase; letter-spacing: 0.02em; }
+[data-theme="ddr"] .app-header h1 { color: #fff; text-shadow: 0 0 8px var(--accent), 0 0 2px #fff; }
+[data-theme="ddr"] .card,
+[data-theme="ddr"] .target { border: 2px solid #00e5ff; box-shadow: 0 0 12px rgb(0 229 255 / 0.5), inset 0 0 24px rgb(0 229 255 / 0.12); }
+[data-theme="ddr"] .target-count,
+[data-theme="ddr"] .progress .count {
+  font-family: var(--font-title);
+  font-style: italic;
+  color: #ffe600;
+  text-shadow: 0 0 8px rgb(255 230 0 / 0.7);
+}
+[data-theme="ddr"] .verb {
+  background: rgb(7 2 26 / 0.8);
+  color: #fff;
+  box-shadow: 0 0 10px var(--v), inset 0 0 12px color-mix(in srgb, var(--v) 35%, transparent);
+  text-shadow: 0 0 6px var(--v);
+}
+[data-theme="ddr"] .verb[aria-pressed="true"],
+[data-theme="ddr"] .tray .verb { background: var(--v); color: var(--bg); text-shadow: none; }
+[data-theme="ddr"] .verbs .verb:nth-child(4n + 1)::before { content: "◄ "; }
+[data-theme="ddr"] .verbs .verb:nth-child(4n + 2)::before { content: "▼ "; }
+[data-theme="ddr"] .verbs .verb:nth-child(4n + 3)::before { content: "▲ "; }
+[data-theme="ddr"] .verbs .verb:nth-child(4n + 4)::before { content: "► "; }
+[data-theme="ddr"] .verb.apply {
+  border: 0;
+  color: #07021a;
+  text-shadow: none;
+  background: linear-gradient(90deg, #ff2bd6, #ffe600, #a6ff00, #00e5ff, #b46bff);
+  box-shadow: 0 0 18px rgb(255 43 214 / 0.6);
+}
+[data-theme="ddr"] .applied { font-family: var(--font-title); font-style: italic; text-shadow: 0 0 10px var(--ok); }
+[data-theme="ddr"] .spinner { border-color: #ff2bd6 #00e5ff #a6ff00 #ffe600; }
+
+[data-theme="ddr"] .judge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  pointer-events: none;
+  z-index: 2;
+  animation: judge 700ms ease-out forwards;
+}
+.judge-word {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: 44px;
+  line-height: 1;
+  background: linear-gradient(180deg, #fff 0%, #ffe600 45%, #ff2bd6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 8px rgb(255 43 214 / 0.8));
+}
+.judge-combo {
+  font-family: var(--font-title);
+  font-style: italic;
+  font-size: 20px;
+  color: #00e5ff;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px #00e5ff;
+}
+@keyframes judge {
+  0% { transform: scale(1.5); opacity: 0; }
+  15% { transform: scale(1); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(-18px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="ddr"] .judge { animation: judge-still 700ms forwards; }
+  @keyframes judge-still { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+}
+
+/* subway */
+[data-theme="subway"] .app-header { background: #000; border-bottom: 4px solid #fff; }
+[data-theme="subway"] .app-header h1 { font-size: 18px; font-weight: 700; }
+[data-theme="subway"] .card,
+[data-theme="subway"] .target { border: 0; border-top: 3px solid #fff; border-radius: 0; background: #000; }
+[data-theme="subway"] .card .content,
+[data-theme="subway"] .target-name { font-weight: 700; letter-spacing: -0.01em; }
+[data-theme="subway"] .verb,
+[data-theme="subway"] .tray .verb,
+[data-theme="subway"] .verb[aria-pressed="true"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+  text-align: left;
+  border: 0;
+  background: var(--bg-alt);
+  color: #fff;
+}
+[data-theme="subway"] .verb[aria-pressed="true"] { outline: 3px solid var(--v); outline-offset: -3px; }
+[data-theme="subway"] .verb::before {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--v);
+  color: #fff;
+  font-size: 18px;
+}
+[data-theme="subway"] .tray .verb { justify-content: center; background: var(--v); }
+[data-theme="subway"] .tray .verb[data-verb="tomorrow"],
+[data-theme="subway"] .tray .verb[data-verb="unpin"] { color: #000; }
+[data-theme="subway"] .tray .verb::before { content: none !important; }
+[data-theme="subway"] .verb[data-verb="done"]::before { content: "✓"; }
+[data-theme="subway"] .verb[data-verb="date"]::before { content: "D"; }
+[data-theme="subway"] .verb[data-verb="watch"]::before { content: "W"; }
+[data-theme="subway"] .verb[data-verb="agenda"]::before { content: "7"; }
+[data-theme="subway"] .verb[data-verb="tomorrow"]::before { content: "T"; color: #000; }
+[data-theme="subway"] .verb[data-verb="unpin"]::before { content: "U"; color: #000; }
+[data-theme="subway"] .verb[data-verb="kill"]::before { content: "✕"; }
+[data-theme="subway"] .verb:not([data-verb])::before { content: none; }
+[data-theme="subway"] .verb.apply { justify-content: center; background: #00933c; }
+[data-theme="subway"] .badge { border-radius: 2px; }
