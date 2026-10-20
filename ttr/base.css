@@ -1,4 +1,4 @@
-/* Shell: reset, layout, header, tabs, panels, settings dialog.
+/* Shell: reset, layout, header, panels, settings dialog.
    Theme-agnostic; colours come from theme.css tokens. */
 
 /* ---- base ---- */
@@ -48,42 +48,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .icon-btn:hover { color: var(--fg); background: var(--bg-raised); }
 
-/* ---- tabs ---- */
-.tabs {
-  display: flex;
-  gap: 2px;
-  padding: 6px 10px;
-  background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  flex-shrink: 0;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar { display: none; }
-
-.tab {
-  background: none;
-  border: 0;
-  padding: 7px 14px;
-  border-radius: 8px;
-  color: var(--fg-dim);
-  white-space: nowrap;
-  font-size: 14px;
-}
-.tab.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-
 /* ---- panels ---- */
 .panels { flex: 1; min-height: 0; position: relative; }
 
 .panel {
-  display: none;
+  display: flex;
+  flex-direction: column;
   position: absolute;
   inset: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: 16px;
 }
-.panel.active { display: block; }
+.panel[hidden] { display: none; }
 
 /* ---- settings dialog ---- */
 .settings {

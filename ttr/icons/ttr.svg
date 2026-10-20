@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- One card, one check: a task resolved. Maskable: the art stays inside the
+       central 80% safe zone. -->
+  <rect width="512" height="512" fill="#12141a"/>
+  <rect x="136" y="116" width="240" height="280" rx="28" fill="#20242f" stroke="#7dd3a8" stroke-width="14"/>
+  <path d="M196 262 l44 44 l84 -96" fill="none" stroke="#7dd3a8" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

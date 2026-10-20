@@ -18,6 +18,7 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
 - pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel), [prolog](pizza-repl-prolog)
 - [mermaid-utils](mermaid-utils)
 - [prompts-library](prompts-library)
+- [ttr](ttr) -- task task resolution: clear an overfull Todoist list one card at a time, one tap per decision, nothing sent until Apply
 - [tak-board](tak-board) -- `<tak-board>` web component: renders a Tak position from TPS, using TPS-Ninja. Drop-in single file
 - `misc`
   - [15-minute-task-triage.html](./misc/15-minute-task-triage.html)
