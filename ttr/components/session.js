@@ -2,7 +2,19 @@ import { LitElement, html, nothing } from "lit";
 import { repeat } from "lit/directives/repeat.js";
 import { getConfig, placesCache } from "../state.js";
 import { snapshot, apply } from "../remote.js";
-import { Session, decide, verbsFor, verbLabel, summarize, overdueDays, isRecurring, localDate } from "../lib/triage.js";
+import {
+  Session,
+  decide,
+  verbsFor,
+  verbLabel,
+  summarize,
+  overdueDays,
+  isRecurring,
+  localDate,
+  addBucket,
+  shortDate,
+  breakdownLines,
+} from "../lib/triage.js";
 
 /** @typedef {import("../lib/triage.js").Task} Task */
 /** @typedef {import("../lib/triage.js").Target} Target */
@@ -16,6 +28,8 @@ const JUDGE = /** @type {Record<Verb, string>} */ ({
   date: "GREAT!",
   watch: "GREAT!",
   agenda: "GREAT!",
+  switch: "GREAT!",
+  breakdown: "BREAKDOWN!!",
   tomorrow: "GOOD",
   unpin: "GOOD",
   skip: "BOO",
@@ -37,6 +51,8 @@ export class TriageSession extends LitElement {
     _result: { state: true },
     _judge: { state: true },
     _tick: { state: true },
+    _draft: { state: true },
+    _endSeries: { state: true },
   };
 
   createRenderRoot() {
@@ -52,8 +68,12 @@ export class TriageSession extends LitElement {
     /** @type {"loading"|"error"|"triage"|"applying"|"done"} */
     this._phase = "loading";
     this._error = "";
-    /** Second row open under the verbs: "date" | "watch" | "agenda" | "". */
+    /** Second row open under the verbs: "date" | "watch" | "agenda" | "switch" | "breakdown" | "". */
     this._tray = "";
+    /** Breakdown's text, one task per line. */
+    this._draft = "";
+    /** Breakdown on a recurring task: end the series too. */
+    this._endSeries = false;
     /** A button waiting for its confirming second tap. */
     this._armed = "";
     /** @type {Awaited<ReturnType<typeof apply>>|null} */
@@ -82,6 +102,8 @@ export class TriageSession extends LitElement {
     this._tray = "";
     this._armed = "";
     this._error = "";
+    this._draft = "";
+    this._endSeries = false;
     this._phase = "loading";
     const run = ++this._run;
     this._abort?.abort();
@@ -148,14 +170,18 @@ export class TriageSession extends LitElement {
     const s = this.session;
     const task = s?.current;
     if (!s || !task) return;
-    if ((verb === "date" || verb === "watch" || verb === "agenda") && !arg) {
+    if (["date", "watch", "agenda", "switch", "breakdown"].includes(verb) && !arg) {
       this._tray = this._tray === verb ? "" : verb;
+      this._armed = "";
+      if (this._tray === "breakdown") this.updateComplete.then(() => this.querySelector("textarea")?.focus());
       return;
     }
+    const endSeries = verb === "breakdown" && this._endSeries && isRecurring(task);
     if (verb === "kill" && this._armed !== "kill") return this.arm("kill");
+    if (endSeries && this._armed !== "breakdown") return this.arm("breakdown");
     let d;
     try {
-      d = decide(task, verb, arg, { today: localDate(), places: placesCache.get(), config: getConfig() });
+      d = decide(task, verb, arg, { today: localDate(), places: placesCache.get(), config: getConfig(), endSeries });
     } catch (e) {
       this._error = e instanceof Error ? e.message : String(e);
       return;
@@ -164,13 +190,19 @@ export class TriageSession extends LitElement {
     this._error = "";
     this._tray = "";
     this._armed = "";
+    this._draft = "";
+    this._endSeries = false;
     this._judge = { text: JUDGE[verb], combo: combo(s.decisions), n: (this._judge?.n ?? 0) + 1 };
     this._tick++;
   }
 
   undo() {
-    if (!this.session?.undo()) return;
-    this._tray = "";
+    const d = this.session?.undo();
+    if (!d) return;
+    // An undone Breakdown comes back as typed, to fix rather than retype.
+    this._draft = d.lines?.join("\n") ?? "";
+    this._endSeries = d.label === "Breakdown + kill series";
+    this._tray = d.lines ? "breakdown" : "";
     this._armed = "";
     this._judge = null;
     this._error = "";
@@ -276,19 +308,72 @@ export class TriageSession extends LitElement {
   /** @param {Task} task */
   renderTray(task) {
     const config = getConfig();
+    const where = placesCache.get();
     const v = /** @type {Verb} */ (this._tray);
     if (!v) return nothing;
-    /** @type {{ arg: string, label: string }[]} */
+    if (v === "breakdown") return this.renderBreakdown(task);
+    const today = localDate();
+    /** @type {{ arg: string, label: string, sub?: string }[]} */
     let opts;
     if (v === "agenda") {
-      opts = placesCache.get().agendaSections.map((s) => ({ arg: s.id, label: s.name }));
+      opts = where.agendaSections.map((s) => ({ arg: s.id, label: s.name }));
       if (!opts.length) return html`<p class="tray error">no sections in a "${config.agendaProject}" project (yet?)</p>`;
+    } else if (v === "switch") {
+      opts = (where.switchProjects ?? []).map((p) => ({ arg: p.id, label: p.name }));
+      if (!opts.length) return html`<p class="tray error">none of ${config.switchProjects.join(", ")} found</p>`;
     } else {
-      if (v === "watch" && !placesCache.get().watchProjectId) return html`<p class="tray error">no "${config.watchProject}" project found</p>`;
-      opts = (v === "watch" ? config.watchBuckets : config.dateBuckets).map((b) => ({ arg: b, label: b }));
+      if (v === "watch" && !where.watchProjectId) return html`<p class="tray error">no "${config.watchProject}" project found</p>`;
+      // Each bucket says the day it lands on, minus the weekday.
+      opts = (v === "watch" ? config.watchBuckets : config.dateBuckets).map((b) => ({
+        arg: b,
+        label: b,
+        sub: shortDate(addBucket(today, b), today).replace(/^\w+, /, ""),
+      }));
     }
+    const dated = v === "date" || v === "watch";
     return html`<div class="tray" data-verb=${v} role="group" aria-label=${verbLabel(v, task)}>
-      ${opts.map((o) => html`<button type="button" class="verb small" data-verb=${v} @click=${() => this.choose(v, o.arg)}>${o.label}</button>`)}
+      ${opts.map(
+        (o) => html`<button type="button" class="verb small" data-verb=${v} @click=${() => this.choose(v, o.arg)}>
+          ${o.label}${o.sub ? html`<small>${o.sub}</small>` : nothing}
+        </button>`
+      )}
+      ${dated
+        ? html`<label class="verb small pick" data-verb=${v}>
+            pick…
+            <input type="date" min=${today} aria-label="pick a day"
+              @click=${(/** @type {Event} */ e) => showPicker(/** @type {HTMLInputElement} */ (e.currentTarget))}
+              @change=${(/** @type {Event} */ e) => {
+                const day = /** @type {HTMLInputElement} */ (e.currentTarget).value;
+                if (day) this.choose(v, day);
+              }} />
+          </label>`
+        : nothing}
+    </div>`;
+  }
+
+  /** @param {Task} task */
+  renderBreakdown(task) {
+    const n = breakdownLines(this._draft).length;
+    const recurring = isRecurring(task);
+    const go = this._armed === "breakdown" ? "tap again: kill series" : n ? `Breakdown → ${n}` : "Breakdown";
+    return html`<div class="tray breakdown" data-verb="breakdown">
+      <textarea rows="4" aria-label="new tasks" placeholder=${"one task per line\n(or ; between them)"} .value=${this._draft}
+        @input=${(/** @type {Event} */ e) => {
+          this._draft = /** @type {HTMLTextAreaElement} */ (e.currentTarget).value;
+          this._armed = "";
+        }}></textarea>
+      <div class="breakdown-go">
+        ${recurring
+          ? html`<label class="end-series"><input type="checkbox" .checked=${this._endSeries}
+              @change=${(/** @type {Event} */ e) => {
+                this._endSeries = /** @type {HTMLInputElement} */ (e.currentTarget).checked;
+                this._armed = "";
+              }} /> end the series</label>`
+          : nothing}
+        <button type="button" class="verb small" data-verb=${this._endSeries && recurring ? "kill" : "breakdown"} ?disabled=${!n}
+          @click=${() => this.choose("breakdown", this._draft)}>${go}</button>
+      </div>
+      <p class="dim hint">into Inbox, then ${!recurring ? "closes this one" : this._endSeries ? "deletes the series" : "closes this one; the series goes on"}</p>
     </div>`;
   }
 
@@ -317,7 +402,7 @@ export class TriageSession extends LitElement {
             <ul>
               ${g.decisions.map(
                 (d) => html`<li><button type="button" class="drop" @click=${() => this.drop(d)} aria-label=${`drop: ${d.task.content}`}>
-                  <span>${plain(d.task.content)}</span><span class="x" aria-hidden="true">✕</span>
+                  <span>${plain(d.task.content)}${lines(d)}</span><span class="x" aria-hidden="true">✕</span>
                 </button></li>`
               )}
             </ul>
@@ -342,7 +427,7 @@ export class TriageSession extends LitElement {
           ? html`<section>
               <h3 class="error">${r.failed.length} failed</h3>
               <ul>
-                ${r.failed.map((f) => html`<li class="failed"><strong>${plain(f.decision.task.content)}</strong> <span class="dim">${f.decision.label}: ${f.reason}</span></li>`)}
+                ${r.failed.map((f) => html`<li class="failed"><strong>${plain(f.decision.task.content)}</strong> <span class="dim">${f.decision.label}: ${f.reason}</span>${lines(f.decision)}</li>`)}
               </ul>
             </section>`
           : nothing}
@@ -355,6 +440,22 @@ export class TriageSession extends LitElement {
       </div>
     `;
   }
+}
+
+/**
+ * Breakdown's new tasks under the one they replace.
+ * @param {Decision} d
+ */
+const lines = (d) => (d.lines ? html`<ul class="lines">${d.lines.map((l) => html`<li>${l}</li>`)}</ul>` : nothing);
+
+/**
+ * The native picker, where tapping the field alone doesn't open it (desktop).
+ * @param {HTMLInputElement} input
+ */
+function showPicker(input) {
+  try {
+    input.showPicker();
+  } catch {}
 }
 
 /**

@@ -29,13 +29,14 @@
  * @property {string[]} watchBuckets
  * @property {string} agendaProject project name; its sections are the Agenda buttons
  * @property {string} watchProject project name
+ * @property {string[]} switchProjects project names Switch offers, e.g. "Menus"
  * @property {string} pinLabel label name, no @
  * @property {string} apiBase a proxy goes here if CORS ever blocks the real one
  */
 
-/** @typedef {"date"|"watch"|"agenda"|"tomorrow"|"unpin"|"done"|"kill"|"skip"} Verb */
+/** @typedef {"date"|"watch"|"agenda"|"switch"|"breakdown"|"tomorrow"|"unpin"|"done"|"kill"|"skip"} Verb */
 
-/** @typedef {{ type: string, uuid: string, args: Record<string, any> }} Command */
+/** @typedef {{ type: string, uuid: string, temp_id?: string, args: Record<string, any> }} Command */
 
 /**
  * One tap on one card. Skips are decisions too, with no commands, so Undo
@@ -45,19 +46,21 @@
  * @property {Verb} verb
  * @property {string} label what the summary groups by, e.g. "Date +1w"
  * @property {Command[]} commands
+ * @property {string[]} [lines] Breakdown's new tasks, for the summary
  */
 
 /** @type {Config} */
 export const DEFAULT_CONFIG = {
   targets: [
-    { name: "Today", query: "today | overdue", verbs: ["date", "agenda", "tomorrow", "done"] },
-    { name: "Pins", query: "@pin", verbs: ["unpin", "date", "agenda", "done"] },
-    { name: "Inbox", query: "#Inbox & no date", verbs: ["watch", "agenda", "tomorrow", "done"] },
+    { name: "Today", query: "today | overdue", verbs: ["date", "tomorrow", "breakdown", "switch", "agenda", "done"] },
+    { name: "Pins", query: "@pin", verbs: ["unpin", "date", "breakdown", "switch", "agenda", "done"] },
+    { name: "Inbox", query: "#Inbox & no date", verbs: ["watch", "agenda", "breakdown", "switch", "tomorrow", "done"] },
   ],
   dateBuckets: ["+1w", "+2w", "+1mo", "+3mo"],
   watchBuckets: ["+1w", "+2w", "+1mo", "+3mo"],
   agendaProject: "Agenda",
   watchProject: "Watchlist",
+  switchProjects: ["Agenda", "Watchlist", "Menus"],
   pinLabel: "pin",
   apiBase: "https://api.todoist.com/api/v1",
 };
@@ -107,6 +110,29 @@ export function addBucket(today, bucket) {
   const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
   first.setUTCDate(Math.min(d, last));
   return first.toISOString().slice(0, 10);
+}
+
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * A bucket counted from today, or a day picked outright (YYYY-MM-DD).
+ * @param {string} today
+ * @param {string} arg
+ */
+export function resolveDate(today, arg) {
+  return YMD.test(arg) ? arg : addBucket(today, arg);
+}
+
+/**
+ * "Thu, Oct 29" (with the year when it isn't this one's).
+ * @param {string} ymd
+ * @param {string} [today]
+ */
+export function shortDate(ymd, today = ymd) {
+  /** @type {Intl.DateTimeFormatOptions} */
+  const opts = { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" };
+  if (ymd.slice(0, 4) !== today.slice(0, 4)) opts.year = "numeric";
+  return new Date(toUtc(ymd)).toLocaleDateString("en-US", opts);
 }
 
 /**
@@ -162,7 +188,7 @@ export function verbsFor(task, target, config) {
  */
 export function verbLabel(verb, task) {
   if (verb === "done" && isRecurring(task)) return "Done (this one)";
-  return { date: "Date", watch: "Watch", agenda: "Agenda", tomorrow: "Tomorrow", unpin: "Unpin", done: "Done", kill: "Kill series", skip: "Skip" }[verb];
+  return { date: "Date", watch: "Watch", agenda: "Agenda", switch: "Switch", breakdown: "Breakdown", tomorrow: "Tomorrow", unpin: "Unpin", done: "Done", kill: "Kill series", skip: "Skip" }[verb];
 }
 
 /**
@@ -170,7 +196,24 @@ export function verbLabel(verb, task) {
  * @typedef {Object} Places
  * @property {string|null} watchProjectId
  * @property {{ id: string, name: string }[]} agendaSections
+ * @property {string|null} [inboxProjectId] where Breakdown's tasks go
+ * @property {{ id: string, name: string }[]} [switchProjects] the ones that exist, in config order
  */
+
+/** Sync takes 100 commands a request, and a decision never splits. */
+const MAX_LINES = 99;
+
+/**
+ * Breakdown's text as tasks: one per line, or split on semicolons. Not on
+ * commas, which task text is full of.
+ * @param {string} text
+ */
+export function breakdownLines(text) {
+  return text
+    .split(/[\n;]/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
 
 /**
  * Turn a tap into a decision with its Sync commands. Commands get their UUIDs
@@ -178,18 +221,22 @@ export function verbLabel(verb, task) {
  *
  * @param {Task} task
  * @param {Verb} verb
- * @param {string} arg bucket for date/watch, section id for agenda, else ""
- * @param {{ today: string, places: Places, config: Config, uuid?: () => string }} ctx
+ * @param {string} arg bucket or YYYY-MM-DD for date/watch, section id for
+ *   agenda, project id for switch, the typed text for breakdown, else ""
+ * @param {{ today: string, places: Places, config: Config, endSeries?: boolean, uuid?: () => string }} ctx
+ *   endSeries: Breakdown on a recurring task deletes it instead of closing this one
  * @returns {Decision}
  */
-export function decide(task, verb, arg, { today, places, config, uuid = () => crypto.randomUUID() }) {
+export function decide(task, verb, arg, { today, places, config, endSeries = false, uuid = () => crypto.randomUUID() }) {
   const id = task.id;
   /** @type {(type: string, args: Record<string, any>) => Command} */
   const cmd = (type, args) => ({ type, uuid: uuid(), args: { id, ...args } });
   const tomorrow = () => addBucket(today, "+1d");
+  // Buckets group in the summary by name; a picked day by the day.
+  const when = () => (YMD.test(arg) ? `→ ${shortDate(arg, today)}` : arg);
   switch (verb) {
     case "date":
-      return { task, verb, label: `Date ${arg}`, commands: [cmd("item_update", { due: { date: addBucket(today, arg) } })] };
+      return { task, verb, label: `Date ${when()}`, commands: [cmd("item_update", { due: { date: resolveDate(today, arg) } })] };
     case "tomorrow":
       return { task, verb, label: "Tomorrow", commands: [cmd("item_update", { due: { date: tomorrow() } })] };
     case "watch":
@@ -197,10 +244,10 @@ export function decide(task, verb, arg, { today, places, config, uuid = () => cr
       return {
         task,
         verb,
-        label: `Watch ${arg}`,
+        label: `Watch ${when()}`,
         commands: [
           cmd("item_move", { project_id: places.watchProjectId }),
-          cmd("item_update", { due: { date: addBucket(today, arg) } }),
+          cmd("item_update", { due: { date: resolveDate(today, arg) } }),
         ],
       };
     case "agenda": {
@@ -210,6 +257,32 @@ export function decide(task, verb, arg, { today, places, config, uuid = () => cr
       // Clearing the due date would end a recurring task's series too.
       if (task.due && !isRecurring(task)) commands.push(cmd("item_update", { due: null }));
       return { task, verb, label: `Agenda → ${section.name}`, commands };
+    }
+    case "switch": {
+      // No section and no date: weekly review sorts it from there.
+      const project = (places.switchProjects ?? []).find((p) => p.id === arg);
+      if (!project) throw new Error(`no project ${arg} to switch to`);
+      const commands = [cmd("item_move", { project_id: project.id })];
+      if (task.due && !isRecurring(task)) commands.push(cmd("item_update", { due: null }));
+      return { task, verb, label: `Switch → ${project.name}`, commands };
+    }
+    case "breakdown": {
+      const lines = breakdownLines(arg);
+      if (!lines.length) throw new Error("nothing to break it down into");
+      if (lines.length > MAX_LINES) throw new Error(`at most ${MAX_LINES} tasks at once`);
+      if (!places.inboxProjectId) throw new Error("no Inbox project found");
+      const inbox = places.inboxProjectId;
+      // Adds first, so a failed close leaves both rather than neither.
+      /** @type {Command[]} */
+      const commands = lines.map((content) => ({
+        type: "item_add",
+        uuid: uuid(),
+        temp_id: uuid(),
+        args: { content, project_id: inbox, description: `from: ${task.content}` },
+      }));
+      const kill = endSeries && isRecurring(task);
+      commands.push(cmd(kill ? "item_delete" : "item_close", {}));
+      return { task, verb, label: kill ? "Breakdown + kill series" : "Breakdown", commands, lines };
     }
     case "unpin":
       return {

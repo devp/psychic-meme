@@ -93,8 +93,8 @@ export function todoist(base, token, fetchFn = (...a) => fetch(...a)) {
 }
 
 /**
- * Agenda's sections and Watchlist's id, by name.
- * @param {{ id: string, name: string }[]} projects
+ * Agenda's sections, Watchlist's and Inbox's ids, and Switch's projects, by name.
+ * @param {{ id: string, name: string, inbox_project?: boolean }[]} projects
  * @param {{ id: string, name: string, project_id: string, section_order?: number }[]} sections
  * @param {import("./triage.js").Config} config
  * @returns {import("./triage.js").Places & { projectNames: Record<string, string>, sectionNames: Record<string, string> }}
@@ -102,8 +102,15 @@ export function todoist(base, token, fetchFn = (...a) => fetch(...a)) {
 export function places(projects, sections, config) {
   const byName = (/** @type {string} */ n) => projects.find((p) => p.name.toLowerCase() === n.toLowerCase())?.id ?? null;
   const agendaId = byName(config.agendaProject);
+  // "Menu" finds "Menus" and the other way round.
+  const loosely = (/** @type {string} */ n) => byName(n) ?? byName(n.endsWith("s") ? n.slice(0, -1) : n + "s");
   return {
     watchProjectId: byName(config.watchProject),
+    inboxProjectId: projects.find((p) => p.inbox_project)?.id ?? byName("Inbox"),
+    switchProjects: (config.switchProjects ?? []).flatMap((n) => {
+      const id = loosely(n);
+      return id ? [{ id, name: projects.find((p) => p.id === id)?.name ?? n }] : [];
+    }),
     agendaSections: sections
       .filter((s) => s.project_id === agendaId)
       .sort((a, b) => (a.section_order ?? 0) - (b.section_order ?? 0))

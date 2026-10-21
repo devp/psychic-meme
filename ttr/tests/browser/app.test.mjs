@@ -41,12 +41,15 @@ function serve() {
 
 const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const day = (offset) => localDate(new Date(Date.now() + offset * 86400_000));
+const fmt = (ymd, opts) => new Date(`${ymd}T00:00:00Z`).toLocaleDateString("en-US", { ...opts, timeZone: "UTC" });
 
 const PROJECTS = [
-  { id: "pIn", name: "Inbox" },
+  { id: "pIn", name: "Inbox", inbox_project: true },
   { id: "pHome", name: "Home" },
   { id: "pAg", name: "Agenda" },
   { id: "pW", name: "Watchlist" },
+  { id: "pHab", name: "Habits Workshop" },
+  { id: "pM", name: "Menus", parent_id: "pHab" },
 ];
 const SECTIONS = [
   { id: "sSchool", name: "School", project_id: "pAg", section_order: 2 },
@@ -156,7 +159,8 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("progress", (await count()) === "1 / 4");
 
   await verb("Date").click();
-  await ok("Date opens buckets", (await page.locator(".tray .verb").allInnerTexts()).join(" ") === "+1w +2w +1mo +3mo");
+  const chips = (await page.locator(".tray .verb").allInnerTexts()).map((t) => t.split("\n")[0].trim());
+  await ok("Date opens buckets, then pick", chips.join(" ") === "+1w +2w +1mo +3mo pick…", chips.join(" "));
   await page.locator(".tray .verb", { hasText: "+2w" }).click();
   await tick();
   await ok("a bucket decides and advances", (await count()) === "2 / 4");
@@ -170,7 +174,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   // recurring
   await ok("recurring badge", await page.locator(".badge.recur").isVisible());
   const rverbs = await page.locator(".verbs .verb").allInnerTexts();
-  await ok("recurring: no Date/Tomorrow, Done (this one), Kill series", rverbs.join("|") === "Agenda|Done (this one)|Kill series", rverbs.join("|"));
+  await ok("recurring: no Date/Tomorrow, Done (this one), Kill series", rverbs.join("|") === "Breakdown|Switch|Agenda|Done (this one)|Kill series", rverbs.join("|"));
   await verb("Kill series").click();
   await ok("Kill series asks first", (await count()) === "3 / 4" && (await verb("tap again").isVisible()));
   await page.click("text=skip ›");
@@ -241,10 +245,71 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("back to targets", await page.locator("ttr-picker").isVisible());
   await ok("start over sent nothing", api.syncs.length === before + 1);
 
+  // --- pick a day, Switch, Breakdown ---------------------------------------------
+  await page.locator(".target", { hasText: "Today" }).click();
+  await page.locator(".card").waitFor();
+  await verb("Date").click();
+  const wk = fmt(day(7), { month: "short", day: "numeric" });
+  await ok("a bucket says the day it lands on", (await page.locator(".tray .verb", { hasText: "+1w" }).innerText()).includes(wk), wk);
+  await page.locator(".tray input[type=date]").fill(day(10));
+  await tick();
+  await ok("a picked day decides and advances", (await count()) === "2 / 4");
+
+  await verb("Switch").click();
+  await ok("Switch offers its projects", (await page.locator(".tray .verb").allInnerTexts()).join(" ") === "Agenda Watchlist Menus");
+  await page.locator(".tray .verb", { hasText: "Menus" }).click();
+  await tick();
+
+  await verb("Breakdown").click();
+  await ok("Breakdown focuses its box", (await page.evaluate(() => document.activeElement?.tagName)) === "TEXTAREA");
+  const go = page.locator(".breakdown-go .verb");
+  await ok("nothing typed, nothing to break into", await go.isDisabled());
+  await page.fill(".breakdown textarea", "check soil; buy fertilizer");
+  await ok("counts as you type", (await go.innerText()) === "Breakdown → 2");
+  await page.check(".end-series input");
+  await go.click();
+  await ok("ending the series asks first", (await go.innerText()) === "tap again: kill series" && (await count()) === "3 / 4");
+  await page.uncheck(".end-series input");
+  await go.click();
+  await tick();
+  await ok("Breakdown advances", (await count()) === "4 / 4");
+  await page.click("text=↶ undo");
+  await tick();
+  await ok("undo brings the text back", (await page.inputValue(".breakdown textarea")) === "check soil\nbuy fertilizer");
+  await go.click();
+  await tick();
+
+  await verb("Breakdown").click();
+  await page.fill(".breakdown textarea", "renew online\nphoto at CVS");
+  await ok("no series, no checkbox", !(await page.locator(".end-series").count()));
+  await go.click();
+  await tick();
+
+  const g2 = await page.locator(".summary h3").allInnerTexts();
+  const picked = fmt(day(10), { weekday: "short", month: "short", day: "numeric" });
+  await ok("summary: picked day, Switch, Breakdown", g2.join("|") === `Date → ${picked} (1)|Switch → Menus (1)|Breakdown (2)`, g2.join("|"));
+  await ok("summary lists the new tasks", (await page.locator(".drop .lines li").allInnerTexts()).join("|") === "check soil|buy fertilizer|renew online|photo at CVS");
+  await page.click(".verb.apply");
+  await page.locator(".summary .applied").waitFor();
+  const cmds = api.syncs.at(-1);
+  await ok(
+    "commands in order",
+    cmds.map((c) => `${c.type}:${c.args.id ?? c.args.content}`).join(" ") ===
+      "item_update:t3 item_move:t1 item_update:t1 item_add:check soil item_add:buy fertilizer item_close:t2 item_add:renew online item_add:photo at CVS item_close:t4",
+    cmds.map((c) => `${c.type}:${c.args.id ?? c.args.content}`).join(" ")
+  );
+  await ok("picked day sent", JSON.stringify(cmds[0].args.due) === JSON.stringify({ date: day(10) }));
+  await ok("Switch moves with no section, clears the date", cmds[1].args.project_id === "pM" && !("section_id" in cmds[1].args) && cmds[2].args.due === null);
+  const add = cmds[3];
+  await ok("adds go to Inbox and say where from", add.args.project_id === "pIn" && add.args.description === "from: Water plants" && /^[0-9a-f-]{36}$/.test(add.temp_id));
+  await ok("applied count", (await page.locator(".summary .applied").innerText()) === "✓ 3 applied");
+  await ok("a failed Breakdown shows its tasks", (await page.locator(".failed").innerText()).includes("photo at CVS"));
+  await page.click("text=targets");
+
   // --- pins: unpin --------------------------------------------------------------
   await page.locator(".target", { hasText: "Pins" }).click();
   await page.locator(".card").waitFor();
-  await ok("Pins verbs", (await page.locator(".verbs .verb").allInnerTexts()).join("|") === "Unpin|Date|Agenda|Done");
+  await ok("Pins verbs", (await page.locator(".verbs .verb").allInnerTexts()).join("|") === "Unpin|Date|Breakdown|Switch|Agenda|Done");
   await verb("Unpin").click();
   await page.click(".verb.apply");
   await page.locator(".summary .applied").waitFor();
