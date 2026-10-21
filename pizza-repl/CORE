@@ -1,0 +1,45 @@
+# Files every pizza-repl-<lang> keeps identical to the skeleton: the REPL
+# shell. scripts/sync.sh (pizza-starter's, linked) merges skeleton changes to
+# these into an app; everything else is the language's. Paths are relative to
+# app/.
+#
+# index.html differs in one line per app, its app-ns meta. sync's 3-way merge
+# keeps it.
+
+# from pizza-starter's CORE
+.gitignore
+.node-version
+pnpm-workspace.yaml
+sw.js
+components/update-toast.js
+lib/viewport.js
+scripts/check-sw.mjs
+scripts/dev-vendor.sh
+scripts/install-hooks.sh
+scripts/warnings.sh
+tests/warnings.test.mjs
+vendor/lit.js
+vendor/lit.LICENSE.txt
+
+# the REPL shell
+index.html
+app.js
+app.css
+base.css
+theme.css
+state.js
+jsconfig.json
+justfile
+icons/repl.svg
+components/append-log.js
+components/doc-view.js
+components/session-list.js
+components/tabs.js
+lib/export.js
+lib/load-script.js
+lib/store.js
+vendor/marked.min.js
+vendor/marked.LICENSE.md
+tests/store.test.mjs
+tests/plugin.test.mjs
+tests/browser/app.test.mjs

@@ -1,0 +1,1 @@
+../../pizza-starter/scripts/sync.sh

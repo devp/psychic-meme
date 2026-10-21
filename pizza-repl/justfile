@@ -1,0 +1,22 @@
+# Tasks about the REPL skeleton. The skeleton's own tasks are in app/justfile.
+# The scripts are pizza-starter's (scripts/ links to them), run against
+# pizza-repl/app and pizza-repl/CORE.
+
+default:
+    @just --list
+
+# Copy app/ (as committed) to <dest>, stamped with STARTER. <name> defaults to basename of <dest>: use pizza-repl-<lang>.
+new-app dest name="":
+    scripts/new-app.sh {{dest}} {{name}}
+
+# Diff <app> against its last skeleton stamp: what the skeleton and the app each changed since. Default --stat.
+drift app *args:
+    scripts/drift.sh {{app}} {{args}}
+
+# Merge skeleton changes to CORE files into <app> and stamp STARTER-LAST-UPDATED. Conflicts are left as markers.
+sync app:
+    scripts/sync.sh {{app}}
+
+# sync every pizza-repl-* beside this one.
+sync-all:
+    for d in ../pizza-repl-*/; do scripts/sync.sh "$(basename "$d")" || exit 1; done

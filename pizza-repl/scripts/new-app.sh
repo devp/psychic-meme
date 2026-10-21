@@ -1,0 +1,1 @@
+../../pizza-starter/scripts/new-app.sh
