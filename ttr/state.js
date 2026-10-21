@@ -24,6 +24,8 @@ export const getConfig = () => withDefaults(config.get());
 export const placesCache = persistedJson(NS + ":places", {
   watchProjectId: /** @type {string|null} */ (null),
   agendaSections: /** @type {{ id: string, name: string }[]} */ ([]),
+  inboxProjectId: /** @type {string|null} */ (null),
+  switchProjects: /** @type {{ id: string, name: string }[]} */ ([]),
   projectNames: /** @type {Record<string, string>} */ ({}),
   sectionNames: /** @type {Record<string, string>} */ ({}),
 });

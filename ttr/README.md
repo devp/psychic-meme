@@ -25,9 +25,11 @@ Killing the app does too, and changes nothing in Todoist.
 
 | Verb | Sends |
 |---|---|
-| Date `+1w` … | `item_update` due date, counted from today |
-| Watch `+1w` … | `item_move` to Watchlist, then `item_update` due date |
+| Date `+1w` … / pick… | `item_update` due date, counted from today or picked |
+| Watch `+1w` … / pick… | `item_move` to Watchlist, then `item_update` due date |
 | Agenda → section | `item_move` to that section, then clears the due date |
+| Switch → project | `item_move` to Agenda, Watchlist or Menus (no section), then clears the due date |
+| Breakdown | `item_add` per line into Inbox (description `from: <original>`), then `item_close` |
 | Tomorrow | `item_update` due tomorrow |
 | Unpin | `item_update` labels without `pin` |
 | Done | `item_close` (recoverable, unlike delete) |
@@ -35,13 +37,19 @@ Killing the app does too, and changes nothing in Todoist.
 
 Recurring tasks (↻) never get a due date written, since that would overwrite
 the recurrence: no Date, Tomorrow or Watch; Done reads **Done (this one)**;
-Agenda moves the task but keeps its due date.
+Agenda and Switch move the task but keep its due date; Breakdown closes this
+one and leaves the series, unless **end the series** is ticked (two taps,
+then `item_delete`).
+
+Breakdown takes one task per line, or `;` between them; never commas, which
+task text is full of. One line is a reword. Undo brings the text back.
 
 ## Config
 
 Options → Targets (JSON): targets (name, Todoist filter query, verbs), the
-Date and Watch buckets (`+3d`, `+1w`, `+1mo`, `+1y`), and the names of the
-Agenda and Watchlist projects and the pin label. Missing keys fall back to the
+Date and Watch buckets (`+3d`, `+1w`, `+1mo`, `+1y`), the names of the
+Agenda and Watchlist projects, Switch's projects (`switchProjects`; "Menu"
+finds "Menus" and back), and the pin label. Missing keys fall back to the
 defaults in `lib/triage.js`. `apiBase` is there in case browser calls ever get
 blocked and need a proxy.
 

@@ -95,6 +95,9 @@ document.getElementById("config-save")?.addEventListener("click", () => {
     if (!next.targets.every((t) => t && typeof t.name === "string" && typeof t.query === "string" && Array.isArray(t.verbs))) {
       throw new Error("each target needs name, query and verbs");
     }
+    if (!Array.isArray(next.switchProjects) || !next.switchProjects.every((n) => typeof n === "string")) {
+      throw new Error("switchProjects is a list of project names");
+    }
     config.set(next);
     configNote.textContent = "saved";
     if (!picker.hidden) picker.refresh();

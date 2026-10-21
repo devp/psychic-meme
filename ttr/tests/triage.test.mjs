@@ -4,6 +4,9 @@ import {
   DEFAULT_CONFIG,
   withDefaults,
   addBucket,
+  resolveDate,
+  shortDate,
+  breakdownLines,
   overdueDays,
   sortTasks,
   verbsFor,
@@ -24,6 +27,11 @@ const where = {
     { id: "sL", name: "Laura" },
     { id: "sS", name: "School" },
   ],
+  inboxProjectId: "pIn",
+  switchProjects: [
+    { id: "pA", name: "Agenda" },
+    { id: "pM", name: "Menus" },
+  ],
 };
 let n = 0;
 const ctx = { today: "2026-10-20", places: where, config, uuid: () => "u" + ++n };
@@ -42,6 +50,26 @@ test("addBucket", () => {
   assert.equal(addBucket("2028-02-29", "+1y"), "2029-02-28");
   assert.equal(addBucket("2026-12-31", "+1d"), "2027-01-01");
   assert.throws(() => addBucket("2026-10-20", "next week"));
+});
+
+test("resolveDate: a bucket, or a picked day as is", () => {
+  assert.equal(resolveDate("2026-10-20", "+1w"), "2026-10-27");
+  assert.equal(resolveDate("2026-10-20", "2026-11-05"), "2026-11-05");
+  assert.throws(() => resolveDate("2026-10-20", "Nov 5"));
+});
+
+test("shortDate: weekday, and the year only when it's another one", () => {
+  assert.equal(shortDate("2026-10-29", "2026-10-20"), "Thu, Oct 29");
+  assert.equal(shortDate("2027-01-20", "2026-10-20"), "Wed, Jan 20, 2027");
+});
+
+test("breakdownLines: lines or semicolons, never commas", () => {
+  assert.deepEqual(breakdownLines("call plumber, ask about Tuesday\n\n  buy filter ; book Sat "), [
+    "call plumber, ask about Tuesday",
+    "buy filter",
+    "book Sat",
+  ]);
+  assert.deepEqual(breakdownLines(" ;\n "), []);
 });
 
 test("overdueDays: date or datetime, never negative", () => {
@@ -64,13 +92,13 @@ test("sortTasks: overdue first, oldest first, else API order", () => {
 });
 
 test("verbsFor: the target's verbs", () => {
-  assert.deepEqual(verbsFor(task({}), today, config), ["date", "agenda", "tomorrow", "done"]);
-  assert.deepEqual(verbsFor(task({}), inbox, config), ["watch", "agenda", "tomorrow", "done"]);
+  assert.deepEqual(verbsFor(task({}), today, config), ["date", "tomorrow", "breakdown", "switch", "agenda", "done"]);
+  assert.deepEqual(verbsFor(task({}), inbox, config), ["watch", "agenda", "breakdown", "switch", "tomorrow", "done"]);
 });
 
 test("verbsFor: Unpin only on pinned tasks", () => {
-  assert.deepEqual(verbsFor(task({ labels: ["pin"] }), pins, config), ["unpin", "date", "agenda", "done"]);
-  assert.deepEqual(verbsFor(task({ labels: [] }), pins, config), ["date", "agenda", "done"]);
+  assert.deepEqual(verbsFor(task({ labels: ["pin"] }), pins, config), ["unpin", "date", "breakdown", "switch", "agenda", "done"]);
+  assert.deepEqual(verbsFor(task({ labels: [] }), pins, config), ["date", "breakdown", "switch", "agenda", "done"]);
 });
 
 test("verbsFor: recurring tasks never get a date, and get Kill series", () => {
@@ -96,6 +124,12 @@ test("decide: each verb's Sync commands", () => {
     { type: "item_move", args: { id: "x", section_id: "sL" } },
     { type: "item_update", args: { id: "x", due: null } },
   ]);
+  assert.deepEqual(cmds("date", "2026-11-05"), [{ type: "item_update", args: { id: "x", due: { date: "2026-11-05" } } }]);
+  assert.deepEqual(cmds("watch", "2026-12-01")[1], { type: "item_update", args: { id: "x", due: { date: "2026-12-01" } } });
+  assert.deepEqual(cmds("switch", "pM"), [
+    { type: "item_move", args: { id: "x", project_id: "pM" } },
+    { type: "item_update", args: { id: "x", due: null } },
+  ]);
   assert.deepEqual(cmds("unpin"), [{ type: "item_update", args: { id: "x", labels: ["home"] } }]);
   assert.deepEqual(cmds("done"), [{ type: "item_close", args: { id: "x" } }]);
   assert.deepEqual(cmds("kill"), [{ type: "item_delete", args: { id: "x" } }]);
@@ -106,6 +140,50 @@ test("decide: labels for the summary", () => {
   assert.equal(decide(task({}), "date", "+1w", ctx).label, "Date +1w");
   assert.equal(decide(task({}), "agenda", "sS", ctx).label, "Agenda → School");
   assert.equal(decide(recurring, "done", "", ctx).label, "Done (this one)");
+  assert.equal(decide(task({}), "date", "2026-11-05", ctx).label, "Date → Thu, Nov 5");
+  assert.equal(decide(task({}), "watch", "2026-11-05", ctx).label, "Watch → Thu, Nov 5");
+  assert.equal(decide(task({}), "switch", "pM", ctx).label, "Switch → Menus");
+});
+
+test("decide: Switch keeps a recurring task's due, and skips the clear when undated", () => {
+  assert.deepEqual(decide(recurring, "switch", "pA", ctx).commands.map((c) => c.type), ["item_move"]);
+  assert.deepEqual(decide(task({}), "switch", "pA", ctx).commands.map((c) => c.type), ["item_move"]);
+  assert.throws(() => decide(task({}), "switch", "nope", ctx));
+});
+
+test("decide: Breakdown adds to Inbox with where it came from, then closes", () => {
+  const d = decide(task({ id: "x", content: "sort out the car" }), "breakdown", "call DMV\nbook inspection; find title", ctx);
+  assert.equal(d.label, "Breakdown");
+  assert.deepEqual(d.lines, ["call DMV", "book inspection", "find title"]);
+  assert.deepEqual(
+    d.commands.map(({ type, args }) => ({ type, args })),
+    [
+      ...["call DMV", "book inspection", "find title"].map((content) => ({
+        type: "item_add",
+        args: { content, project_id: "pIn", description: "from: sort out the car" },
+      })),
+      { type: "item_close", args: { id: "x" } },
+    ]
+  );
+  const adds = d.commands.slice(0, 3);
+  assert.ok(adds.every((c) => c.temp_id && c.temp_id !== c.uuid), "adds get a temp_id");
+  assert.ok(adds.every((c) => !("id" in c.args)), "adds don't carry the original's id");
+});
+
+test("decide: Breakdown on a recurring task closes this one, or ends the series when asked", () => {
+  const types = (/** @type {boolean} */ endSeries) => decide(recurring, "breakdown", "a; b", { ...ctx, endSeries }).commands.map((c) => c.type);
+  assert.deepEqual(types(false), ["item_add", "item_add", "item_close"]);
+  assert.deepEqual(types(true), ["item_add", "item_add", "item_delete"]);
+  assert.equal(decide(recurring, "breakdown", "a", { ...ctx, endSeries: true }).label, "Breakdown + kill series");
+  assert.deepEqual(decide(task({}), "breakdown", "a", { ...ctx, endSeries: true }).commands.at(-1)?.type, "item_close", "only recurring tasks have a series");
+});
+
+test("decide: Breakdown refuses nothing, too much, or no Inbox", () => {
+  assert.throws(() => decide(task({}), "breakdown", " ; \n", ctx));
+  assert.throws(() => decide(task({}), "breakdown", Array(100).fill("x").join("\n"), ctx));
+  assert.throws(() => decide(task({}), "breakdown", "a", { ...ctx, places: { ...where, inboxProjectId: null } }));
+  const big = decide(task({}), "breakdown", Array(99).fill("x").join("\n"), ctx);
+  assert.deepEqual(batches([decide(task({ id: "y" }), "done", "", ctx), big]).map((b) => b.length), [1, 1], "a full one rides alone");
 });
 
 test("decide: Agenda leaves a recurring task's due alone, and skips the clear when undated", () => {
@@ -115,7 +193,7 @@ test("decide: Agenda leaves a recurring task's due alone, and skips the clear wh
 
 test("decide: no recurring decision ever sends a due", () => {
   for (const v of verbsFor(recurring, today, config)) {
-    const arg = v === "agenda" ? "sL" : "";
+    const arg = { agenda: "sL", switch: "pM", breakdown: "a; b" }[/** @type {string} */ (v)] ?? "";
     for (const c of decide(recurring, v, arg, ctx).commands) assert.ok(!("due" in c.args), `${v}: ${JSON.stringify(c)}`);
   }
 });
@@ -213,9 +291,10 @@ test("withDefaults fills what a hand-edited config leaves out", () => {
 test("places: by name, sections in order", () => {
   const p = places(
     [
-      { id: "p1", name: "Inbox" },
+      { id: "p1", name: "Inbox", inbox_project: true },
       { id: "pA", name: "agenda" },
       { id: "pW", name: "Watchlist" },
+      { id: "pM", name: "Menu" },
     ],
     [
       { id: "s2", name: "School", project_id: "pA", section_order: 2 },
@@ -225,6 +304,12 @@ test("places: by name, sections in order", () => {
     config
   );
   assert.equal(p.watchProjectId, "pW");
+  assert.equal(p.inboxProjectId, "p1");
+  assert.deepEqual(p.switchProjects, [
+    { id: "pA", name: "agenda" },
+    { id: "pW", name: "Watchlist" },
+    { id: "pM", name: "Menu" },
+  ], "Menus finds Menu");
   assert.deepEqual(p.agendaSections, [
     { id: "s1", name: "Laura" },
     { id: "s2", name: "School" },

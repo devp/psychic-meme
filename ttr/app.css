@@ -112,6 +112,28 @@ ttr-picker > .btn { align-self: flex-start; }
 .verbs[data-n="1"], .verbs[data-n="3"] > :first-child, .verbs[data-n="5"] > :first-child { grid-column: 1 / -1; }
 .tray { display: flex; gap: 8px; margin: 0; }
 .tray > * { flex: 1; }
+.tray .verb small { display: block; font-size: 12px; font-weight: 500; opacity: 0.8; }
+.tray .pick { position: relative; display: grid; place-items: center; }
+/* The real date input covers the chip, so a tap opens the phone's own picker. */
+.tray .pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.tray.breakdown { flex-direction: column; }
+.breakdown textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  color: var(--fg);
+  background: var(--bg-raised);
+  border: 2px solid var(--verb-breakdown);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+.breakdown-go { display: flex; gap: 8px; align-items: center; }
+.breakdown-go .verb { flex: 1; }
+.breakdown-go .verb:disabled { opacity: 0.4; }
+.end-series { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+.breakdown .hint { margin: 0; font-size: 13px; }
+.drop .lines, .failed .lines { margin: 4px 0 0; padding-left: 1.2em; list-style: "→ "; display: block; color: var(--fg-dim); font-size: 14px; }
 
 .verb {
   --v: var(--accent);
@@ -131,6 +153,8 @@ ttr-picker > .btn { align-self: flex-start; }
 [data-verb="date"] { --v: var(--verb-date); }
 [data-verb="watch"] { --v: var(--verb-watch); }
 [data-verb="agenda"] { --v: var(--verb-agenda); }
+[data-verb="switch"] { --v: var(--verb-switch); }
+[data-verb="breakdown"] { --v: var(--verb-breakdown); }
 [data-verb="tomorrow"] { --v: var(--verb-tomorrow); }
 [data-verb="unpin"] { --v: var(--verb-unpin); }
 [data-verb="kill"] { --v: var(--verb-kill); }

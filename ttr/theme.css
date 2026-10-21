@@ -22,6 +22,8 @@
   --verb-date: #8fb4ff;
   --verb-watch: #c9a6ff;
   --verb-agenda: #ffcf7d;
+  --verb-switch: #a8d672;
+  --verb-breakdown: #ff9fc8;
   --verb-tomorrow: #7fd8e8;
   --verb-unpin: #b8bccb;
   --verb-kill: #ff7b7b;
@@ -42,6 +44,8 @@
   --verb-date: #2d5fa8;
   --verb-watch: #6b46a8;
   --verb-agenda: #a8701e;
+  --verb-switch: #4f7a1f;
+  --verb-breakdown: #a83a6b;
   --verb-tomorrow: #1f7f8c;
   --verb-unpin: #7a7263;
   --verb-kill: #b42318;
@@ -73,6 +77,8 @@
   --verb-date: #ff2bd6;
   --verb-watch: #b46bff;
   --verb-agenda: #00e5ff;
+  --verb-switch: #4d7cff;
+  --verb-breakdown: #ff6a00;
   --verb-tomorrow: #ffe600;
   --verb-unpin: #ff9f1c;
   --verb-kill: #ff3b30;
@@ -82,7 +88,7 @@
 }
 
 /* subway -- signage for the commute it's used on: black, white Helvetica,
-   each verb a line bullet. Agenda rides the 7. */
+   each verb a line bullet. Agenda rides the 7, Switch is the shuttle. */
 :root[data-theme="subway"] {
   --bg: #000000;
   --bg-alt: #111111;
@@ -98,6 +104,8 @@
   --verb-date: #0039a6;
   --verb-watch: #ff6319;
   --verb-agenda: #b933ad;
+  --verb-switch: #808183;
+  --verb-breakdown: #996633;
   --verb-tomorrow: #fccc0a;
   --verb-unpin: #a7a9ac;
   --verb-kill: #ee352e;
@@ -237,6 +245,8 @@
 [data-theme="subway"] .verb[data-verb="date"]::before { content: "D"; }
 [data-theme="subway"] .verb[data-verb="watch"]::before { content: "W"; }
 [data-theme="subway"] .verb[data-verb="agenda"]::before { content: "7"; }
+[data-theme="subway"] .verb[data-verb="switch"]::before { content: "S"; }
+[data-theme="subway"] .verb[data-verb="breakdown"]::before { content: "B"; }
 [data-theme="subway"] .verb[data-verb="tomorrow"]::before { content: "T"; color: #000; }
 [data-theme="subway"] .verb[data-verb="unpin"]::before { content: "U"; color: #000; }
 [data-theme="subway"] .verb[data-verb="kill"]::before { content: "✕"; }
