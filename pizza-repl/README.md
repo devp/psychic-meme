@@ -66,13 +66,23 @@ One ES module. It may top-level `await` (to load its engine); `app.js` waits for
 | `replayCaveat(inputs)` | lines to warn with atop an export that won't replay faithfully (lil's `_`), or `[]` |
 | `complete(source, caret)` | *optional*. `{from, items}`: candidates that replace `source.slice(from, caret)`, or `null`. With it, a strip of chips shows above the key row, Tab completes, and Options gets an on/off |
 
-The engine: a classic script that defines globals is loaded with `lib/load-script.js`, guarded so
-tests can preload it in node:
+**The engine** can be JS, WebAssembly, or anything an engine reads. `lang.js` loads it at top
+level with `lib/engine.js`, from `vendor/`:
 
-```js
-import { loadScript } from "./lib/load-script.js";
-globalThis.fengari ?? (await loadScript(new URL("vendor/fengari-web.js", import.meta.url)));
-```
+| Ships as | Load with |
+|---|---|
+| a classic script that defines globals (UMD, lil.js) | `globalThis.x ?? (await loadScript(url))`. Guarded: `tests/load-lang.mjs` runs it in node first |
+| an ES module | `await import("./vendor/engine.mjs")`. Nothing extra |
+| `.wasm` | `const { instance } = await loadWasm(url, imports)`. Streams when served as `application/wasm` |
+| JS glue + `.wasm` (Emscripten and the like) | the glue as either of the first two; it fetches its own `.wasm` |
+| source or data the engine reads (Fennel's `fennel.lua`, a stdlib image) | `await fetchText(url)`, `await fetchBytes(url)` |
+
+`url` is `new URL("vendor/…", import.meta.url)`. The fetching helpers read `file:` URLs from disk,
+so the same `lang.js` loads under node for the unit tests. Every file goes in `sw-assets.js`, or
+it's missing offline: that includes whatever a glue script fetches by itself. `just warnings`
+checks `vendor/*.wasm`; add other kinds to `scripts/warnings.local.sh` (fennel adds `*.lua`).
+
+Mind the size: the point is a thing you install and use on the subway (see PLAN.md's rubric).
 
 **(2) Shortcuts**, two kinds:
 

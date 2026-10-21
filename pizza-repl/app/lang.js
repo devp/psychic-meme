@@ -4,9 +4,10 @@
 //
 // The skeleton's own language is the one the browser already has: JavaScript,
 // via indirect eval, so it runs with nothing vendored. A real port loads its
-// engine here, e.g.
+// engine here -- a classic script, an ES module, WebAssembly, or files the
+// engine reads -- with lib/engine.js, e.g.
 //
-//   import { loadScript } from "./lib/load-script.js";
+//   import { loadScript } from "./lib/engine.js";
 //   globalThis.lmenv ?? (await loadScript(new URL("vendor/lil.js", import.meta.url)));
 
 // ---- identity ---------------------------------------------------------------

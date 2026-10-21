@@ -36,10 +36,12 @@ components/doc-view.js
 components/session-list.js
 components/tabs.js
 lib/export.js
-lib/load-script.js
+lib/engine.js
 lib/store.js
 vendor/marked.min.js
 vendor/marked.LICENSE.md
 tests/store.test.mjs
 tests/plugin.test.mjs
+tests/engine.test.mjs
+tests/fixtures/add.wasm
 tests/browser/app.test.mjs
