@@ -12,7 +12,7 @@
 // in a Lua coroutine whose readChunk yields back here; each evaluate() resumes
 // it with one entry and collects what it printed until it asks for more.
 
-import { loadScript } from "./lib/load-script.js";
+import { loadScript, fetchText } from "./lib/engine.js";
 
 /** @type {any} fengari-web's global, untyped */
 const fengari =
@@ -123,7 +123,7 @@ function check(status, what) {
   if (status !== lua.LUA_OK) throw new Error(`${what}: ${lua.lua_tojsstring(L, -1)}`);
 }
 
-const fennelSource = await (await fetch(new URL("vendor/fennel.lua", import.meta.url))).text();
+const fennelSource = await fetchText(new URL("vendor/fennel.lua", import.meta.url));
 check(lauxlib.luaL_loadbuffer(L, to_luastring(fennelSource), null, to_luastring("@vendor/fennel.lua")), "load fennel");
 check(lua.lua_pcall(L, 0, 1, 0), "run fennel");
 check(lauxlib.luaL_loadstring(L, to_luastring(BOOT)), "load boot");

@@ -8,7 +8,7 @@
 // (js/repl.js in JohnEarnest/Decker) does it, minus the filesystem/OS bindings
 // that don't exist in a browser (read, write, dir, shell, exit, import, newdeck).
 
-import { loadScript } from "./lib/load-script.js";
+import { loadScript } from "./lib/engine.js";
 
 /** @type {any} lil.js's globals, untyped */
 const lil = globalThis;

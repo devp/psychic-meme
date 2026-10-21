@@ -35,7 +35,8 @@ file table; in short:
   (`evaluate(source) -> {text, isError}`, synchronous; `comment`,
   `hasUnterminated`, `replayCaveat`; optional `complete`), shortcuts (`keys`,
   `commands`), and docs (`docs`, `preprocessDoc`). It loads its own engine
-  (`lib/load-script.js`) and may top-level await; app.js waits for it.
+  (`lib/engine.js`: JS, WebAssembly, or files it reads) and may top-level
+  await; app.js waits for it.
 - `vendor/` engine files, `docs/`, `NOTICE.md`, `README.md`.
 - `index.html`: only the app-ns line.
 - `sw-assets.js`, `manifest.webmanifest`, `package.json` name.

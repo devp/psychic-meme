@@ -13,7 +13,7 @@ const ASSETS = [
   "lib/store.js",
   "lib/viewport.js",
   "lib/export.js",
-  "lib/load-script.js",
+  "lib/engine.js",
   "components/append-log.js",
   "components/tabs.js",
   "components/doc-view.js",

@@ -16,7 +16,7 @@
 // setTimeout. So queries never go through it: nextAnswer() is Tau's own search
 // loop, run synchronously.
 
-import { loadScript } from "./lib/load-script.js";
+import { loadScript } from "./lib/engine.js";
 
 /** @type {any} vendor/tau-prolog.js's global, untyped */
 const pl =

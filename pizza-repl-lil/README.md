@@ -39,7 +39,7 @@ its README has the `lang.js` contract.
 | `lang.js` | the plugin: evaluate, comment prefix, unterminated-input scan, `_` export caveat; key row and ⋯ commands; the docs list and their preprocessing; About text |
 | `app.js` | wiring: REPL, sessions, docs, settings, offline |
 | `lib/export.js` | a session as replay-safe commented source |
-| `lib/load-script.js` | loads `vendor/lil.js`, a classic script, from `lang.js` |
+| `lib/engine.js` | loads `vendor/lil.js`, a classic script, from `lang.js` |
 | `components/doc-view.js` | vendored markdown, rendered on first open, with a heading index |
 | `components/session-list.js` | the log tab's list |
 | `components/append-log.js`, `tabs.js`, `lib/` | from the starter |

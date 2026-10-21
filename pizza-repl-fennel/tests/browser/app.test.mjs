@@ -18,6 +18,7 @@ const TYPES = {
   ".svg": "image/svg+xml",
   ".md": "text/markdown",
   ".webmanifest": "application/manifest+json",
+  ".wasm": "application/wasm",
 };
 
 // Path (as requested, e.g. "/app.css") -> body to serve instead of the file,
@@ -114,6 +115,16 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.press("#input", "Shift+Enter");
   await ok("Shift-Enter doesn't run", (await results()).length === 4);
   await page.fill("#input", "");
+
+  // --- engines: lib/engine.js over http -----------------------------------
+  const engine = await page.evaluate(async () => {
+    const { loadWasm, fetchBytes } = await import("./lib/engine.js");
+    const url = new URL("tests/fixtures/add.wasm", location.href);
+    const streamed = /** @type {any} */ ((await loadWasm(url)).instance.exports).add(2, 3);
+    return { streamed, bytes: (await fetchBytes(url)).length };
+  });
+  await ok("a wasm engine loads, streamed", engine.streamed === 5, JSON.stringify(engine));
+  await ok("fetchBytes reads an engine file", engine.bytes > 8);
 
   // --- copy caret ----------------------------------------------------------
   await page.locator("#output .copy-caret").first().click();
