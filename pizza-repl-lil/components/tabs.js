@@ -3,6 +3,8 @@ import { tab } from "../state.js";
 /**
  * Tab strip, one tab per `.panel[data-panel]` in the page; `data-label` overrides
  * the label. Renders once; the `tab` subscriber in app.js marks the active one.
+ * Tapping the tab that's already active fires `reselect` (detail: its id)
+ * instead -- the docs tab opens its menu that way.
  */
 export class Tabs extends HTMLElement {
   connectedCallback() {
@@ -15,7 +17,10 @@ export class Tabs extends HTMLElement {
       button.setAttribute("role", "tab");
       button.dataset.tab = id;
       button.textContent = panel.getAttribute("data-label") ?? id;
-      button.addEventListener("click", () => tab.set(id));
+      button.addEventListener("click", () => {
+        if (tab.get() === id) this.dispatchEvent(new CustomEvent("reselect", { detail: id }));
+        else tab.set(id);
+      });
       this.append(button);
     }
   }

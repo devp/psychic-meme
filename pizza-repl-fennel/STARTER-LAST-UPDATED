@@ -1,5 +1,5 @@
-from: pizza-starter/app
+from: pizza-repl/app
 remote: https://github.com/devp/psychic-meme
-commit: de2963a3840b944d6861c1fa6c981fc3de5d8002
-tree: 09f082e06f86bbe62d09b8c776f517b3f2d37cc5
-updated: 2026-10-17
+commit: 9a121de5a774a0b2ec2431a423045d25ca7e4668
+tree: 3e29ec35524b4069e159b0b642f3186482b18597
+updated: 2026-10-21

@@ -1,9 +1,10 @@
-// Everything about the language, in one place. The rest of the app is the
-// same REPL shell in every pizza-repl-<lang>; swapping this file (plus
-// vendor/ and docs/) is the port.
+// Everything about the language, in one place: the plugin. The rest of the
+// app is the same REPL shell in every pizza-repl-<lang> (../pizza-repl, whose
+// README has the contract); swapping this file (plus vendor/ and docs/) is the
+// port.
 //
 // Fennel: vendor/fennel.lua, the Fennel compiler, running on Fengari (a Lua 5.3
-// VM in JS, vendor/fengari-web.js, a classic script loaded by index.html).
+// VM in JS, vendor/fengari-web.js, a classic script loaded below).
 //
 // Rather than eval each entry on its own, this drives Fennel's own REPL, so its
 // semantics come for free: locals persist between entries, *1 *2 *3 hold recent
@@ -11,16 +12,48 @@
 // in a Lua coroutine whose readChunk yields back here; each evaluate() resumes
 // it with one entry and collects what it printed until it asks for more.
 
+import { loadScript } from "./lib/load-script.js";
+
 /** @type {any} fengari-web's global, untyped */
-const fengari = /** @type {any} */ (globalThis).fengari;
+const fengari =
+  /** @type {any} */ (globalThis).fengari ??
+  (await loadScript(new URL("vendor/fengari-web.js", import.meta.url)), /** @type {any} */ (globalThis).fengari);
 
 export const name = "fennel";
 export const comment = ";;";
 export const placeholder = "(+ 1 2)";
-/** Shortcuts always behind the key row's ⋯ button, ahead of any custom ones; each is pasted into the input as-is. */
-export const commands = [",doc"];
 export const greeting =
-  "Fennel REPL — try (+ 1 2) or (print :hi). ,help lists REPL commands. Reference tabs above; the log tab keeps your sessions.";
+  "Fennel REPL — try (+ 1 2) or (print :hi). ,help lists REPL commands. Docs tab above; the log tab keeps your sessions.";
+export const about = `
+  <p>A REPL for pizza rats: <strong>Fennel</strong>, in your pocket, offline.</p>
+  <p>
+    Fennel is by Calvin Rose and contributors — see
+    <a href="https://fennel-lang.org/" target="_blank" rel="noopener">fennel-lang.org</a>.
+    It runs here on <a href="https://fengari.io/" target="_blank" rel="noopener">Fengari</a>.
+    This is an unofficial REPL, not affiliated with either project.
+  </p>`;
+
+/** The key row; ⋯ goes in the middle. */
+export const keys = ["(", "[", "{", "}", "]", ")"];
+/** Behind ⋯, ahead of any custom ones; each is pasted into the input as-is. */
+export const commands = [",doc"];
+
+/**
+ * The docs tab's menu. Ids are the old per-doc tab names, so a stored tab still opens its doc.
+ * @type {{id: string, label?: string, src: string, note?: string}[]}
+ */
+export const docs = [
+  { id: "reference", src: "docs/reference.md" },
+  { id: "tutorial", src: "docs/tutorial.md" },
+  {
+    id: "lua",
+    src: "docs/lua-primer.md",
+    note: `Heads up: this runs on Fengari, Lua 5.3 in the browser, with no filesystem: no
+      <code>io</code> library, no <code>os.execute</code>, and <code>require</code> can't
+      load files.`,
+  },
+  { id: "learnx", src: "docs/learnxinyminutes.md" },
+];
 
 const BOOT = `
 local fennel = ...

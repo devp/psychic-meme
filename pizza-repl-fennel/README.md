@@ -20,16 +20,17 @@ Built on [pizza-starter](../pizza-starter) (see `STARTER`). Sibling: [pizza-repl
 ,help
 ```
 
-Tabs: `reference`, `tutorial`, and `lua` (the Lua primer) are Fennel's own docs; `learnx` is
+Docs share one tab, showing the last one read; tap it again to switch. `reference`, `tutorial`,
+and `lua` (the Lua primer) are Fennel's own; `learnx` is
 [Learn X in Y minutes](https://learnxinyminutes.com/fennel/)' Fennel page. The round
-button on a doc tab jumps to a section. `log` keeps sessions: rename, delete, or copy one as
+button jumps to a section. `log` keeps sessions: rename, delete, or copy one as
 commented Fennel that pastes back in and reruns.
 
 ## Layout
 
 The language is `lang.js` + `vendor/fengari-web.js` + `vendor/fennel.lua` + `docs/`. Everything
-else is the REPL shell, identical to [pizza-repl-lil](../pizza-repl-lil)'s; `diff -r` shows the
-seam. See that README for the file table.
+else is the REPL shell from [pizza-repl](../pizza-repl) (see `STARTER-LAST-UPDATED`), whose
+README has the `lang.js` contract and the file table.
 
 `lang.js` drives Fennel's own `fennel.repl` in a Lua coroutine: `readChunk` yields back to JS,
 and each entry resumes it. So REPL semantics (locals, `*1`, `,doc`) are Fennel's, not

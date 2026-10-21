@@ -23,21 +23,23 @@ on greet name do "hi ", name end
 greet["world"]
 ```
 
-Tabs: `lil` and `quickref` are the language reference; `cli` is Earnest's Lilt docs (background
-only); `decker` is the platform Lil normally runs inside. The round button on a doc tab jumps to
-a section — an installed app has no find-in-page. `log` keeps sessions: rename, delete, or copy
+Docs share one tab, showing the last one read; tap it again to switch. `lil` and `quickref` are
+the language reference; `cli` is Earnest's Lilt docs (background only); `decker` is the platform
+Lil normally runs inside. The round button jumps to a section — an installed app has no find-in-page. `log` keeps sessions: rename, delete, or copy
 one as commented lil that pastes back in and reruns.
 
 ## Layout
 
-The language is `lang.js` + `vendor/lil.js` + `docs/`. Everything else is the REPL shell, the
-same in every `pizza-repl-<lang>`; `diff -r` against a sibling shows exactly the seam.
+The language is `lang.js` + `vendor/lil.js` + `docs/`. Everything else is the REPL shell from
+[pizza-repl](../pizza-repl) (see `STARTER-LAST-UPDATED`), the same in every `pizza-repl-<lang>`;
+its README has the `lang.js` contract.
 
 | File | What |
 |---|---|
-| `lang.js` | evaluate, comment prefix, unterminated-input scan, `_` export caveat, doc preprocessing |
+| `lang.js` | the plugin: evaluate, comment prefix, unterminated-input scan, `_` export caveat; key row and ⋯ commands; the docs list and their preprocessing; About text |
 | `app.js` | wiring: REPL, sessions, docs, settings, offline |
 | `lib/export.js` | a session as replay-safe commented source |
+| `lib/load-script.js` | loads `vendor/lil.js`, a classic script, from `lang.js` |
 | `components/doc-view.js` | vendored markdown, rendered on first open, with a heading index |
 | `components/session-list.js` | the log tab's list |
 | `components/append-log.js`, `tabs.js`, `lib/` | from the starter |

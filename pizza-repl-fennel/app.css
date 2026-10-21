@@ -67,6 +67,8 @@
 
 .key-row {
   display: flex;
+  min-height: 51px; /* filled once lang.js loads; don't jump */
+  box-sizing: border-box;
   gap: 6px;
   padding: 8px 14px 0;
   background: var(--bg-alt);
@@ -82,9 +84,10 @@
   font-size: 18px;
   font-weight: 700;
 }
-.key-row .k-paren { background: var(--k-paren); }
-.key-row .k-bracket { background: var(--k-bracket); }
-.key-row .k-brace { background: var(--k-brace); }
+/* By distance from the edge, so mirrored keys match whatever they are. */
+.key-row .k-1 { background: var(--k-paren); }
+.key-row .k-2 { background: var(--k-bracket); }
+.key-row .k-3 { background: var(--k-brace); }
 .key-row .k-more { background: var(--fg-dim); }
 .key-row + .input-row { border-top: 0; }
 
@@ -138,6 +141,32 @@ doc-view a { color: var(--accent); }
 doc-view blockquote { margin: 0.8em 0; padding: 0.2em 0.9em; border-left: 3px solid var(--accent); color: var(--fg-dim); }
 doc-view img { max-width: 100%; }
 .doc-note { max-width: 68ch; margin: 0 auto 12px; }
+.doc-page[hidden] { display: none; }
+
+/* The docs tab names the doc it shows; ▾ says it opens a menu when tapped again. */
+.tab .caret { margin-left: 4px; font-size: 0.8em; opacity: 0.75; }
+.doc-menu {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.25);
+}
+.doc-menu[hidden] { display: none; }
+.doc-chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 14px;
+}
+.doc-chip[aria-current="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 
 .fab {
   position: fixed;

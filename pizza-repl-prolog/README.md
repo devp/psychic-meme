@@ -19,15 +19,15 @@ anc(X, Y) :- parent(X, Z), anc(Z, Y).
 ```
 
 An entry is read like a Prolog file: clauses join the program, `?-` runs a query, `;` asks it
-for more. Tabs: `guide` (this REPL's conventions), `learn` (Learn X in Y minutes' Prolog page,
-itself a program you can paste in), and `builtins` (every predicate it starts with). `log`
-keeps sessions: rename, delete, or copy one as a Prolog file that pastes back in and reruns.
+for more. Docs (one tab; tap it again to switch): `guide` (this REPL's conventions), `learn`
+(Learn X in Y minutes' Prolog page, itself a program you can paste in), and `builtins` (every
+predicate it starts with). `log` keeps sessions: rename, delete, or copy one as a Prolog file that pastes back in and reruns.
 
 ## Layout
 
 The language is `lang.js` + `vendor/tau-prolog.js` + `docs/`. Everything else is the REPL
-shell, identical to [pizza-repl-lil](../pizza-repl-lil)'s; `diff -r` shows the seam. See that
-README for the file table.
+shell from [pizza-repl](../pizza-repl) (see `STARTER-LAST-UPDATED`), whose README has the
+`lang.js` contract and the file table.
 
 `lang.js` splits each entry into clauses with Tau's own tokenizer. Runs of program clauses are
 consulted per paragraph, so re-entering a predicate replaces it and an export (entries

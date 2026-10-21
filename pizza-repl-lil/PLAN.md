@@ -27,18 +27,21 @@ a website with no reusable source is a worse fit than its runtime suggests.
 
 ## The seam
 
-A port is a copy of a sibling app with the language layer swapped. Only these
-differ between pizza-repl-lil and pizza-repl-fennel (`diff -r` to check):
+A port is `just new-app pizza-repl-<lang>` in [pizza-repl](../pizza-repl) with
+the language layer swapped. Its README has the full `lang.js` contract and the
+file table; in short:
 
-- `lang.js`: `name`, `comment`, `placeholder`, `greeting`,
-  `evaluate(source) -> {text, isError}` (synchronous), `hasUnterminated`,
-  `replayCaveat`, `preprocessDoc`. An engine that loads async can top-level
-  await in here; app.js waits for it.
+- `lang.js`: identity (`name`, `placeholder`, `greeting`, `about`), evaluation
+  (`evaluate(source) -> {text, isError}`, synchronous; `comment`,
+  `hasUnterminated`, `replayCaveat`; optional `complete`), shortcuts (`keys`,
+  `commands`), and docs (`docs`, `preprocessDoc`). It loads its own engine
+  (`lib/load-script.js`) and may top-level await; app.js waits for it.
 - `vendor/` engine files, `docs/`, `NOTICE.md`, `README.md`.
-- `index.html`: title, app-ns, doc tabs, about text, the engine's `<script>`.
-- `sw.js` `ASSETS`, `manifest.webmanifest`, `package.json` name.
+- `index.html`: only the app-ns line.
+- `sw-assets.js`, `manifest.webmanifest`, `package.json` name.
 - Tests: `tests/lang.test.mjs`, `tests/export.test.mjs`, `tests/load-lang.mjs`
-  (runs the engine in node), and the `LANG` block atop `tests/browser/app.test.mjs`.
+  (runs the engine in node), and `tests/browser/lang-case.mjs`.
+  `tests/plugin.test.mjs` checks the contract.
 
 ## Rubric
 
@@ -110,8 +113,8 @@ of `->` and `|>`.
 
 ## Sequencing
 
-Fennel went first, not oK: it established the seam above. Next: copy
-pizza-repl-fennel (or -lil, whichever engine is closer), swap the layer.
+Fennel went first, not oK: it established the seam above, since extracted
+into pizza-repl. Next: `just new-app` there, swap the layer.
 Tau Prolog and Forth are the interesting ones (new paradigms, cheap), Kiki is
 gated on licence, SCI and OCaml are the size-risk pair.
 

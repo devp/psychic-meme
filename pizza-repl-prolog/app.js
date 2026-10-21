@@ -2,12 +2,13 @@
 // lib -- this is the file you edit first, so it should be readable top to
 // bottom with no indirection.
 //
-// Nothing in here knows the language: that's all lang.js.
+// Nothing in here knows the language: that's all lang.js, the plugin. See
+// ../README.md (in pizza-repl/) for what it exports.
 
 import { html } from "lit";
 import { syncAppHeight, autoGrow, submitOnEnter } from "./lib/viewport.js";
 import { exportSession } from "./lib/export.js";
-import { theme, font, tab, caretAction, commandsPref, sessions } from "./state.js";
+import { theme, font, tab, doc, caretAction, suggestPref, commandsPref, sessions } from "./state.js";
 import * as lang from "./lang.js";
 import { Tabs } from "./components/tabs.js";
 import { AppendLog } from "./components/append-log.js";
@@ -33,6 +34,8 @@ const form = /** @type {HTMLFormElement} */ (byId("input-form"));
 const input = /** @type {HTMLTextAreaElement} */ (byId("input"));
 input.placeholder = lang.placeholder;
 output.dataset.empty = lang.greeting;
+// warn-ok: innerhtml-assign -- lang.js's own text, not user input
+byId("about-lang").innerHTML = lang.about;
 
 const activeId = () => sessions.ensureActive().id;
 
@@ -55,6 +58,7 @@ const renderEntry = (live) => (/** @type {Entry} */ e) =>
           if (action !== "copy" && input.value.trim() === "") {
             input.value = e.input;
             autoGrow(input);
+            suggest();
           }
         }}>&gt;</button>
       <span class="prompt-text">${e.input}</span>
@@ -82,6 +86,7 @@ form.addEventListener("submit", (e) => {
   sessions.append(activeId(), { input: source, output: text, isError });
   input.value = "";
   autoGrow(input);
+  suggest();
   input.focus();
   // Your own entry is always followed, even if you'd scrolled up to read.
   output.updateComplete.then(() => (output.scrollTop = output.scrollHeight));
@@ -90,7 +95,7 @@ submitOnEnter(input, () => form.requestSubmit());
 input.addEventListener("input", () => autoGrow(input));
 // Tapping Run would move focus off the textarea and drop the keyboard.
 byId("run-btn").addEventListener("pointerdown", (e) => e.preventDefault());
-// Key row: brackets, plus a gray middle key that pops up the language's
+// Key row: lang.keys, plus a gray middle key that pops up the language's
 // command shortcuts. Tapping a key would move focus off the textarea and drop
 // the keyboard, so keep it there. Everything inserts at the caret (replacing any
 // selection).
@@ -99,23 +104,115 @@ const insertAtCaret = (text) => {
   input.focus();
   input.setRangeText(text, input.selectionStart, input.selectionEnd, "end");
   autoGrow(input);
+  suggest();
 };
-byId("key-row").addEventListener("pointerdown", (e) => e.preventDefault());
-byId("key-row").addEventListener("click", (e) => {
+const keyRow = byId("key-row");
+{
+  const half = Math.ceil(lang.keys.length / 2);
+  /** @param {string} key @param {number} i */
+  const keyButton = (key, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.ins = key;
+    // Pairs share a color: 1 at the edges, inward from there.
+    b.className = `k-${(Math.min(i, lang.keys.length - 1 - i) % 3) + 1}`;
+    b.setAttribute("aria-label", "Insert " + key);
+    b.textContent = key;
+    return b;
+  };
+  const more = document.createElement("button");
+  more.type = "button";
+  more.id = "commands-btn";
+  more.className = "k-more";
+  more.setAttribute("aria-label", "Command shortcuts");
+  more.setAttribute("aria-haspopup", "dialog");
+  more.textContent = "⋯";
+  const keys = lang.keys.map(keyButton);
+  keyRow.replaceChildren(...keys.slice(0, half), more, ...keys.slice(half));
+}
+keyRow.addEventListener("pointerdown", (e) => e.preventDefault());
+keyRow.addEventListener("click", (e) => {
   const b = /** @type {HTMLElement} */ (e.target).closest("button[data-ins]");
   if (b instanceof HTMLElement) insertAtCaret(b.dataset.ins ?? "");
 });
 
+// Completions: a strip of chips above the key row for the word at the caret,
+// from lang.complete() when the language has one. Tapping a chip replaces the
+// word; so does Tab on a keyboard when there's one candidate, else Tab extends
+// to their common prefix. The strip keeps its height while on, so the log
+// doesn't jump as you type.
+/** @type {((source: string, caret: number) => {from: number, items: string[]} | null) | undefined} */
+const complete = /** @type {any} */ (lang).complete;
+const MIN_CHARS = 2;
+const MAX_CHIPS = 20;
+const suggestRow = byId("suggest-row");
+/** @type {{from: number, items: string[]} | null} */
+let suggestion = null;
+
+function suggest() {
+  const caret = input.selectionStart;
+  const r = complete && suggestPref.get() === "on" && caret === input.selectionEnd ? complete(input.value, caret) : null;
+  suggestion = r && caret - r.from >= MIN_CHARS && r.items.length ? r : null;
+  suggestRow.replaceChildren(
+    ...(suggestion?.items.slice(0, MAX_CHIPS) ?? []).map((item) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "suggest-item";
+      b.textContent = item;
+      return b;
+    })
+  );
+  suggestRow.scrollLeft = 0;
+}
+
+/** @param {string} text replaces the word at the caret */
+function acceptSuggestion(text) {
+  if (!suggestion) return;
+  input.focus();
+  input.setRangeText(text, suggestion.from, input.selectionStart, "end");
+  autoGrow(input);
+  suggest();
+}
+
+if (complete) {
+  byId("suggest-section").hidden = false;
+  suggestPref.subscribe((v) => {
+    suggestRow.hidden = v !== "on";
+    syncChecked("[data-set-suggest]", "data-set-suggest", v);
+    suggest();
+  });
+  input.addEventListener("input", suggest);
+  document.addEventListener("selectionchange", () => document.activeElement === input && suggest());
+  suggestRow.addEventListener("pointerdown", (e) => e.preventDefault()); // keep the keyboard up
+  suggestRow.addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement} */ (e.target).closest(".suggest-item");
+    if (b) acceptSuggestion(b.textContent ?? "");
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || e.shiftKey || !suggestion) return;
+    e.preventDefault();
+    const { items } = suggestion;
+    acceptSuggestion(items.length === 1 ? items[0] : commonPrefix(items));
+  });
+}
+
+/** @param {string[]} items */
+function commonPrefix(items) {
+  let p = items[0];
+  for (const s of items) while (!s.startsWith(p)) p = p.slice(0, -1);
+  return p;
+}
+
 const commandsDialog = /** @type {HTMLDialogElement} */ (byId("commands-dialog"));
 const commandsList = byId("commands-list");
 const commandsField = /** @type {HTMLInputElement} */ (byId("commands-field"));
-commandsField.placeholder = lang.commands.join(", ");
+if (lang.commands.length) byId("commands-hint").textContent = `Comma-separated, listed after ${lang.commands.join("  ")}`;
 commandsField.addEventListener("input", () => commandsPref.set(commandsField.value));
 commandsPref.subscribe((v) => {
   if (commandsField.value !== v) commandsField.value = v;
   const custom = v.split(",").map((c) => c.trim()).filter(Boolean);
   commandsList.replaceChildren(
-    ...(custom.length ? custom : lang.commands).map((cmd) => {
+    ...[...lang.commands, ...custom].map((cmd) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "command-item";
@@ -140,6 +237,9 @@ byId("clear-output-btn").addEventListener("click", () => sessions.clearItems(act
 const sessionDialog = /** @type {HTMLDialogElement} */ (byId("session-dialog"));
 const sessionName = /** @type {HTMLInputElement} */ (byId("session-name"));
 const sessionView = /** @type {AppendLog} */ (byId("session-view"));
+const exportBtn = byId("session-export-btn");
+exportBtn.title = `Copy as ${lang.name}`;
+exportBtn.setAttribute("aria-label", `Copy as commented ${lang.name}`);
 sessionView.renderItem = renderEntry(false);
 sessionView.dataset.empty = "(empty)";
 /** @type {string|null} */
@@ -158,7 +258,7 @@ sessionName.addEventListener("change", () => {
   if (viewingId) sessions.rename(viewingId, sessionName.value.trim());
 });
 
-byId("session-export-btn").addEventListener("click", (e) => {
+exportBtn.addEventListener("click", (e) => {
   const s = viewingId && sessions.get(viewingId);
   if (!s) return;
   copyText(exportSession(/** @type {any} */ (s), lang), /** @type {HTMLElement} */ (e.currentTarget));
@@ -173,20 +273,118 @@ byId("session-delete-btn").addEventListener("click", () => {
 
 // ---- docs -----------------------------------------------------------------
 
-for (const doc of document.querySelectorAll("doc-view")) {
-  /** @type {DocView} */ (doc).preprocess = lang.preprocessDoc;
+// One tab for every doc in lang.docs. It shows the one you read last and is
+// labelled with it; tapping it again drops down the rest as chips. Each doc
+// keeps its own scroll position, which the shared panel would otherwise lose.
+const docsPanel = byId("docs-panel");
+const docMenu = byId("doc-menu");
+/** @type {Map<string, {page: HTMLElement, view: DocView, label: string, scroll: number}>} */
+const docPages = new Map();
+for (const d of lang.docs) {
+  const page = document.createElement("div");
+  page.className = "doc-page";
+  page.dataset.doc = d.id;
+  page.hidden = true;
+  if (d.note) {
+    const note = document.createElement("p");
+    note.className = "doc-note";
+    // warn-ok: innerhtml-assign -- lang.js's own text, not user input
+    note.innerHTML = d.note;
+    page.append(note);
+  }
+  const view = /** @type {DocView} */ (document.createElement("doc-view"));
+  view.setAttribute("src", d.src);
+  view.preprocess = lang.preprocessDoc;
+  page.append(view);
+  docsPanel.append(page);
+  docPages.set(d.id, { page, view, label: d.label ?? d.id, scroll: 0 });
+}
+const docsTab = () => document.querySelector('repl-tabs [data-tab="docs"]');
+if (docPages.size === 0) {
+  docsPanel.remove();
+  docsTab()?.remove();
 }
 
+// Older versions had a tab per doc, so a stored tab may be a doc's id.
+if (docPages.has(tab.get())) {
+  doc.set(tab.get());
+  tab.set("docs");
+} else if (!document.querySelector(`.panel[data-panel="${CSS.escape(tab.get())}"]`)) tab.set("repl");
+
+const currentDoc = () => (docPages.has(doc.get()) ? doc.get() : lang.docs[0]?.id ?? "");
+
 /** @returns {DocView|null} */
-const activeDoc = () => document.querySelector(".panel.active doc-view");
+const activeDoc = () => (tab.get() === "docs" ? docPages.get(currentDoc())?.view ?? null : null);
+
+const docMenuOpen = () => !docMenu.hidden;
+/** @param {boolean} open */
+function showDocMenu(open) {
+  docMenu.hidden = !open;
+  docsTab()?.setAttribute("aria-expanded", String(open));
+  if (open) /** @type {HTMLElement | null} */ (docMenu.querySelector('[aria-current="true"]'))?.focus();
+}
+for (const [id, { label }] of docPages) {
+  const chip = document.createElement("button");
+  chip.type = "button";
+  chip.className = "doc-chip";
+  chip.setAttribute("role", "menuitemradio");
+  chip.dataset.doc = id;
+  chip.textContent = label;
+  chip.addEventListener("click", () => {
+    showDocMenu(false);
+    doc.set(id);
+  });
+  docMenu.append(chip);
+}
+document.querySelector("repl-tabs")?.addEventListener("reselect", (e) => {
+  if (/** @type {CustomEvent<string>} */ (e).detail === "docs") showDocMenu(!docMenuOpen());
+});
+// Dismiss by tapping anywhere else, or Escape. The docs tab itself toggles.
+document.addEventListener("pointerdown", (e) => {
+  const t = /** @type {Element} */ (e.target);
+  if (docMenuOpen() && !docMenu.contains(t) && !t.closest?.('[data-tab="docs"]')) showDocMenu(false);
+});
+docMenu.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") showDocMenu(false);
+});
+
+/** Show the current doc, load it if it's new, and relabel the tab. */
+function paintDoc() {
+  const id = currentDoc();
+  for (const [key, p] of docPages) p.page.hidden = key !== id;
+  for (const chip of docMenu.querySelectorAll(".doc-chip")) {
+    chip.setAttribute("aria-current", String(/** @type {HTMLElement} */ (chip).dataset.doc === id));
+    chip.setAttribute("aria-checked", String(/** @type {HTMLElement} */ (chip).dataset.doc === id));
+  }
+  const p = docPages.get(id);
+  const t = docsTab();
+  if (t && p) {
+    const caret = document.createElement("span");
+    caret.className = "caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "▾";
+    t.replaceChildren(p.label, caret);
+    t.setAttribute("aria-haspopup", "menu");
+    t.setAttribute("aria-label", `Docs: ${p.label}. Tap again for the others`);
+  }
+  if (p && tab.get() === "docs") {
+    p.view.load();
+    docsPanel.scrollTop = p.scroll;
+  }
+}
+doc.subscribe(paintDoc);
+docsPanel.addEventListener("scroll", () => {
+  const p = tab.get() === "docs" && docPages.get(currentDoc());
+  if (p) p.scroll = docsPanel.scrollTop;
+});
 
 const docIndexBtn = byId("doc-index-btn");
 const docIndexDialog = /** @type {HTMLDialogElement} */ (byId("doc-index-dialog"));
 const docIndexList = byId("doc-index-list");
 
 docIndexBtn.addEventListener("click", () => {
-  const doc = activeDoc();
-  const items = doc?.headings ?? [];
+  const view = activeDoc();
+  const items = view?.headings ?? [];
   docIndexList.replaceChildren(
     ...items.map((item) => {
       const b = document.createElement("button");
@@ -195,7 +393,7 @@ docIndexBtn.addEventListener("click", () => {
       b.textContent = item.text;
       b.addEventListener("click", () => {
         // Long docs: jump, don't smooth-scroll the whole way.
-        doc?.querySelector("#" + CSS.escape(item.id))?.scrollIntoView({ block: "start" });
+        view?.querySelector("#" + CSS.escape(item.id))?.scrollIntoView({ block: "start" });
         docIndexDialog.close();
       });
       return b;
@@ -234,9 +432,9 @@ tab.subscribe((v) => {
     b.classList.toggle("active", on);
     b.setAttribute("aria-selected", String(on));
   });
-  const doc = activeDoc();
-  doc?.load();
-  docIndexBtn.hidden = !doc;
+  showDocMenu(false);
+  paintDoc();
+  docIndexBtn.hidden = !activeDoc();
   // Not on launch: focusing pops the phone keyboard over whatever you came back to.
   if (v === "repl" && !firstTab) input.focus();
   firstTab = false;
@@ -262,6 +460,8 @@ document.addEventListener("click", (e) => {
   if (f) font.set(f.getAttribute("data-set-font") ?? "mono");
   const c = el.closest("[data-set-caret]");
   if (c) caretAction.set(c.getAttribute("data-set-caret") ?? "both");
+  const sg = el.closest("[data-set-suggest]");
+  if (sg) suggestPref.set(sg.getAttribute("data-set-suggest") ?? "on");
   if (el.closest("[data-close]")) el.closest("dialog")?.close();
 });
 

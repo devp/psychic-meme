@@ -17,8 +17,13 @@ export const theme = persistedValue(NS + ":theme", "dusk");
 export const font = persistedValue(NS + ":font", "mono");
 // What tapping a log entry's caret does: "both" | "copy" | "fill".
 export const caretAction = persistedValue(NS + ":caret-action", "both");
-// Comma-separated command shortcuts; blank means the language's defaults.
+// Completion strip above the key row, for languages whose lang.js has complete(): "on" | "off".
+export const suggestPref = persistedValue(NS + ":suggest", "on");
+// Comma-separated command shortcuts, listed after the language's own.
 export const commandsPref = persistedValue(NS + ":commands", "");
+// "repl" | "docs" | "log". Older versions stored a doc's id here; app.js moves it to `doc`.
 export const tab = persistedValue(NS + ":tab", "repl");
+// The doc the docs tab shows: an id from lang.docs. Blank means the first.
+export const doc = persistedValue(NS + ":doc", "");
 // Each item is one REPL entry: { input, output, isError }.
 export const sessions = recordStore(NS + ":sessions");

@@ -1,18 +1,19 @@
 /**
- * A vendored markdown doc, rendered with vendor/marked.min.js (a classic
- * script, loaded by index.html) the first time `load()` is called -- the
- * big references cost nothing until their tab is opened.
+ * A vendored doc, rendered the first time `load()` is called -- the big
+ * references cost nothing until they're opened. Markdown goes through
+ * vendor/marked.min.js (a classic script, loaded by index.html); a src ending
+ * in .html is a fragment, used as-is.
  *
  * `headings` is a flat h2/h3 outline with stable ids, for a jump-to-section
  * list: an installed app has no browser chrome, so no find-in-page.
  *
- *   <doc-view src="docs/x.md"></doc-view>   el.preprocess = (md) => md
+ *   <doc-view src="docs/x.md"></doc-view>   el.preprocess = (text, src) => text
  */
 export class DocView extends HTMLElement {
   constructor() {
     super();
-    /** @type {(md: string) => string} */
-    this.preprocess = (md) => md;
+    /** @type {(text: string, src: string) => string} */
+    this.preprocess = (text) => text;
     /** @type {{id: string, text: string, level: number}[]} */
     this.headings = [];
     /** @type {Promise<void> | null} */
@@ -28,11 +29,12 @@ export class DocView extends HTMLElement {
   async _render() {
     this.replaceChildren(status("loading…"));
     try {
-      const res = await fetch(this.getAttribute("src") ?? "");
+      const src = this.getAttribute("src") ?? "";
+      const res = await fetch(src);
       if (!res.ok) throw new Error("HTTP " + res.status);
-      const md = await res.text();
+      const text = this.preprocess(await res.text(), src);
       // warn-ok: innerhtml-assign -- vendored docs, rendered by marked; not user input
-      this.innerHTML = /** @type {any} */ (globalThis).marked.parse(this.preprocess(md));
+      this.innerHTML = src.endsWith(".html") ? text : /** @type {any} */ (globalThis).marked.parse(text);
       this.headings = outline(this);
     } catch (err) {
       this._loading = null; // let a later visit retry

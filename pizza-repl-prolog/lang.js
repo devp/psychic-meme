@@ -1,9 +1,10 @@
-// Everything about the language, in one place. The rest of the app is the
-// same REPL shell in every pizza-repl-<lang>; swapping this file (plus
-// vendor/ and docs/) is the port.
+// Everything about the language, in one place: the plugin. The rest of the
+// app is the same REPL shell in every pizza-repl-<lang> (../pizza-repl, whose
+// README has the contract); swapping this file (plus vendor/ and docs/) is the
+// port.
 //
-// Prolog: Tau Prolog, vendor/tau-prolog.js, a classic script loaded by
-// index.html that defines the `pl` global.
+// Prolog: Tau Prolog, vendor/tau-prolog.js, a classic script loaded below
+// that defines the `pl` global.
 //
 // An entry is Prolog source, read like a file: clauses join the program,
 // `?- Goal.` runs a query, and `;` asks the last query for more answers. A
@@ -15,16 +16,45 @@
 // setTimeout. So queries never go through it: nextAnswer() is Tau's own search
 // loop, run synchronously.
 
+import { loadScript } from "./lib/load-script.js";
+
 /** @type {any} vendor/tau-prolog.js's global, untyped */
-const pl = /** @type {any} */ (globalThis).pl;
+const pl =
+  /** @type {any} */ (globalThis).pl ??
+  (await loadScript(new URL("vendor/tau-prolog.js", import.meta.url)), /** @type {any} */ (globalThis).pl);
 
 export const name = "prolog";
 export const comment = "%";
 export const placeholder = "?- X is 6 * 7.";
-/** Default shortcuts behind the key row's ⋯ button; each is pasted into the input as-is. */
+/** The key row; ⋯ goes in the middle. */
+export const keys = ["(", "[", "|", "_", "]", ")"];
+/** Behind ⋯, ahead of any custom ones; each is pasted into the input as-is. */
 export const commands = ["?-", ";"];
+export const about = `
+  <p>A REPL for pizza rats: <strong>Prolog</strong>, in your pocket, offline.</p>
+  <p>
+    It runs on <a href="http://tau-prolog.org/" target="_blank" rel="noopener">Tau Prolog</a>,
+    by José Antonio Riaza Valverde. This is an unofficial REPL, not affiliated with that project.
+  </p>`;
+
+/**
+ * The docs tab's menu. Ids are the old per-doc tab names, so a stored tab still opens its doc.
+ * @type {{id: string, label?: string, src: string, note?: string}[]}
+ */
+export const docs = [
+  { id: "guide", src: "docs/guide.md" },
+  {
+    id: "learn",
+    src: "docs/learn.md",
+    note: `From Learn X in Y minutes (learnxinyminutes.com/prolog, CC BY-SA 3.0).
+      It's a Prolog file: paste the whole block in as one entry to run it.
+      Written for SWI-Prolog, so a few answers differ here.`,
+  },
+  { id: "builtins", src: "docs/builtins.md" },
+];
+
 export const greeting =
-  "Prolog (Tau) — clauses join the program; ?- runs a query; ; asks for more answers. ?- and ; are under ⋯. The guide tab explains; the log tab keeps your sessions.";
+  "Prolog (Tau) — clauses join the program; ?- runs a query; ; asks for more answers. ?- and ; are under ⋯. The docs tab explains; the log tab keeps your sessions.";
 
 /** Inferences per entry before giving up; ~0.5s on a laptop. */
 const LIMIT = 1_000_000;
@@ -56,7 +86,7 @@ const LIBRARIES = ["lists", "format", "charsio", "random", "statistics"];
 // Tau lacks the usual prefix operator, so `:- dynamic foo/1.` wouldn't parse.
 consult([...LIBRARIES.map((m) => `:- use_module(library(${m})).`), ":- op(1150, fx, dynamic)."].join("\n"));
 
-// SWI-Prolog staples that tutorials (the learn tab among them) lean on and Tau
+// SWI-Prolog staples that tutorials (the learn doc among them) lean on and Tau
 // lacks. A module of their own keeps them out of `listing.`; importing it is
 // what use_module does for a library (vendor/tau-prolog.js:4563).
 consult(`:- module(compat, [writeln/1, print/1, plus/3, memberchk/2]).

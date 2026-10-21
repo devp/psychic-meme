@@ -6,9 +6,10 @@
      half is syncAppHeight() in lib/viewport.js. Neither works alone. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#12141a">
-<title>pizza-repl-lil</title>
-<!-- localStorage key prefix; state.js and the theme script below read it. -->
+<!-- The one line that differs between pizza-repl-<lang> apps: the app's name,
+     and its localStorage key prefix (state.js and the script below read it). -->
 <meta name="app-ns" content="pizza-repl-lil">
+<title>pizza-repl</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/repl.svg" type="image/svg+xml">
 <link rel="stylesheet" href="theme.css">
@@ -27,6 +28,7 @@
 (function () {
   try {
     var ns = document.querySelector('meta[name="app-ns"]').getAttribute("content");
+    document.title = ns;
     var t = localStorage.getItem(ns + ":theme");
     var f = localStorage.getItem(ns + ":font");
     if (t) document.documentElement.setAttribute("data-theme", t);
@@ -38,51 +40,31 @@
 <body>
 
 <header class="app-header">
-  <h1>pizza-repl-lil</h1>
+  <h1 id="app-title">pizza-repl</h1>
+  <script>document.getElementById("app-title").textContent = document.title;</script>
   <button id="settings-btn" class="icon-btn" type="button" aria-label="Options" aria-haspopup="dialog">∆</button>
 </header>
 
 <repl-tabs class="tabs"></repl-tabs>
 
 <main class="panels">
+  <!-- Drops down over the docs panel when its tab is tapped again. -->
+  <div id="doc-menu" class="doc-menu" role="menu" aria-label="Docs" hidden></div>
+
   <section class="panel repl-panel active" data-panel="repl">
     <append-log id="output" class="output"></append-log>
-    <div class="key-row" id="key-row">
-      <button type="button" data-ins="(" class="k-paren" aria-label="Insert (">(</button>
-      <button type="button" data-ins="[" class="k-bracket" aria-label="Insert [">[</button>
-      <button type="button" data-ins="{" class="k-brace" aria-label="Insert {">{</button>
-      <button type="button" id="commands-btn" class="k-more" aria-label="Command shortcuts" aria-haspopup="dialog">⋯</button>
-      <button type="button" data-ins="}" class="k-brace" aria-label="Insert }">}</button>
-      <button type="button" data-ins="]" class="k-bracket" aria-label="Insert ]">]</button>
-      <button type="button" data-ins=")" class="k-paren" aria-label="Insert )">)</button>
-    </div>
+    <div class="suggest-row" id="suggest-row" hidden aria-label="Completions"></div>
+    <!-- Filled from lang.keys, with the ⋯ (commands) key in the middle. -->
+    <div class="key-row" id="key-row"></div>
     <form class="input-row" id="input-form">
       <textarea id="input" rows="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
       <button type="submit" id="run-btn">Run</button>
     </form>
   </section>
 
-  <section class="panel" data-panel="lil">
-    <doc-view src="docs/lil.md"></doc-view>
-  </section>
-
-  <section class="panel" data-panel="quickref">
-    <doc-view src="docs/lilquickref.md"></doc-view>
-  </section>
-
-  <section class="panel" data-panel="cli">
-    <p class="doc-note">
-      Heads up: this documents <em>Lilt</em>, John Earnest's real command-line REPL for lil.
-      This app is a separate, unofficial thing — the filesystem and CLI bits below
-      (<code>-e</code>, <code>LIL_HOME</code>, <code>read</code>/<code>write</code>, <code>exit</code>)
-      don't exist here. It's included as background on the language.
-    </p>
-    <doc-view src="docs/lilt.md"></doc-view>
-  </section>
-
-  <section class="panel" data-panel="decker">
-    <doc-view src="docs/decker.md"></doc-view>
-  </section>
+  <!-- One tab for all of lang.docs. It shows the doc you last read; tap it
+       again for the menu of the others. -->
+  <section class="panel" data-panel="docs" id="docs-panel"></section>
 
   <section class="panel" data-panel="log">
     <div class="add-row">
@@ -109,7 +91,7 @@
 <dialog id="session-dialog" class="settings session-dialog">
   <div class="session-dialog-header">
     <input id="session-name" type="text" placeholder="Untitled session" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Session name">
-    <button type="button" id="session-export-btn" class="icon-btn" aria-label="Copy as commented lil" title="Copy as lil">📋</button>
+    <button type="button" id="session-export-btn" class="icon-btn" aria-label="Copy as commented source" title="Copy as source">📋</button>
     <button type="button" id="session-delete-btn" class="icon-btn" aria-label="Delete session">🗑</button>
   </div>
   <append-log id="session-view" class="output"></append-log>
@@ -145,10 +127,19 @@
     </div>
   </section>
 
+  <section id="suggest-section" hidden>
+    <h3>Completions while typing</h3>
+    <div class="swatches" role="radiogroup" aria-label="Completions while typing">
+      <button type="button" class="swatch" role="radio" data-set-suggest="on" aria-checked="true">on</button>
+      <button type="button" class="swatch" role="radio" data-set-suggest="off" aria-checked="false">off</button>
+    </div>
+    <p class="hint">After two characters. Tab completes on a keyboard.</p>
+  </section>
+
   <section>
     <h3>Command shortcuts (⋯ key)</h3>
     <input id="commands-field" class="text-field" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Command shortcuts, comma-separated">
-    <p class="hint">Comma-separated. Leave blank for the defaults.</p>
+    <p class="hint" id="commands-hint">Comma-separated, listed after the defaults.</p>
   </section>
 
   <section>
@@ -161,13 +152,7 @@
 
   <section class="about">
     <h3>About</h3>
-    <p>A REPL for pizza rats: <strong>lil</strong>, in your pocket, offline.</p>
-    <p>
-      Lil and Decker are by John Earnest — see
-      <a href="https://beyondloom.com/decker/" target="_blank" rel="noopener">beyondloom.com/decker</a>.
-      This is an unofficial browser REPL built on his interpreter, not affiliated with him
-      and not the official <em>Lilt</em> CLI.
-    </p>
+    <div id="about-lang"></div>
   </section>
 
   <section>
@@ -180,10 +165,9 @@
   <button type="button" class="primary" data-close>Done</button>
 </dialog>
 
-<!-- Classic scripts: they define globals, and lil.js assigns undeclared ones,
-     which throws in a module. Module scripts run after these. -->
+<!-- A classic script: it defines a global (UMD build, not a module). Module
+     scripts run after it. lang.js loads its own engine (lib/load-script.js). -->
 <script src="vendor/marked.min.js"></script>
-<script src="vendor/lil.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

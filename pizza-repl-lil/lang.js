@@ -1,26 +1,59 @@
-// Everything about the language, in one place. The rest of the app is the
-// same REPL shell in every pizza-repl-<lang>; swapping this file (plus
-// vendor/ and docs/) is the port.
+// Everything about the language, in one place: the plugin. The rest of the
+// app is the same REPL shell in every pizza-repl-<lang> (../pizza-repl, whose
+// README has the contract); swapping this file (plus vendor/ and docs/) is the
+// port.
 //
 // Lil: vendor/lil.js, a classic script that defines its API as globals, loaded
-// by index.html before this module. Wrapped the way Decker's own Lilt CLI
+// below (as a module it would throw: it assigns undeclared names). Wrapped the way Decker's own Lilt CLI
 // (js/repl.js in JohnEarnest/Decker) does it, minus the filesystem/OS bindings
 // that don't exist in a browser (read, write, dir, shell, exit, import, newdeck).
 
+import { loadScript } from "./lib/load-script.js";
+
 /** @type {any} lil.js's globals, untyped */
 const lil = globalThis;
+lil.lmenv ?? (await loadScript(new URL("vendor/lil.js", import.meta.url)));
 
 export const name = "lil";
 export const comment = "#";
 export const placeholder = "1+2";
-/** Default shortcuts behind the key row's ⋯ button; each is pasted into the input as-is. */
+export const greeting = "lil REPL — try 1+2 or show[1,2,3]. Docs tab above; the log tab keeps your sessions.";
+export const about = `
+  <p>A REPL for pizza rats: <strong>lil</strong>, in your pocket, offline.</p>
+  <p>
+    Lil and Decker are by John Earnest — see
+    <a href="https://beyondloom.com/decker/" target="_blank" rel="noopener">beyondloom.com/decker</a>.
+    This is an unofficial browser REPL built on his interpreter, not affiliated with him
+    and not the official <em>Lilt</em> CLI.
+  </p>`;
+
+/** The key row; ⋯ goes in the middle. */
+export const keys = ["(", "[", "{", "}", "]", ")"];
+/** Behind ⋯, ahead of any custom ones; each is pasted into the input as-is. */
 export const commands = ["show", "range"];
-export const greeting = "lil REPL — try 1+2 or show[1,2,3]. Reference tabs above; the log tab keeps your sessions.";
+
+/**
+ * The docs tab's menu. Ids are the old per-doc tab names, so a stored tab still opens its doc.
+ * @type {{id: string, label?: string, src: string, note?: string}[]}
+ */
+export const docs = [
+  { id: "lil", src: "docs/lil.md" },
+  { id: "quickref", src: "docs/lilquickref.md" },
+  {
+    id: "cli",
+    src: "docs/lilt.md",
+    note: `Heads up: this documents <em>Lilt</em>, John Earnest's real command-line REPL for lil.
+      This app is a separate, unofficial thing — the filesystem and CLI bits below
+      (<code>-e</code>, <code>LIL_HOME</code>, <code>read</code>/<code>write</code>, <code>exit</code>)
+      don't exist here. It's included as background on the language.`,
+  },
+  { id: "decker", src: "docs/decker.md" },
+];
 
 // Normally supplied by Decker's build step; lil.js reads it for sys.version.
 lil.VERSION ??= "1.70";
 
-/** @type {any} created on first evaluate, so tests can import this file without lil.js */
+/** @type {any} created on first evaluate */
 let env = null;
 /** @type {string[]} print/show output from the current evaluate */
 let printed = [];

@@ -46,28 +46,18 @@ function serve() {
   return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 }
 
-// The language-specific half of this test. Everything below it is the same in
-// every pizza-repl-<lang>.
-const LANG = {
-  greeting: "Prolog (Tau)",
-  value: ["?- X is 6 * 7.", "X = 42."],
-  error: "?- nope.",
-  printed: ["?- write(hi), X = 5.", "hi\nX = 5."],
-  another: ["n(7).", "n/1: 1 clause"],
-  // interpreter state doesn't survive a reload
-  lastAfterReload: ["?- n(X).", "uncaught exception: error(existence_error(procedure,n/1),top_level/0)"],
-  doc: "guide",
-  unopenedDoc: "builtins",
-  exportHead: '% pizza-repl-prolog export: "first"',
-  exportedError: "% ?- nope.\n",
-  offline: ["?- X is 10 * 10.", "X = 100."],
-};
+// The language-specific half of this test is ./lang-case.mjs. Everything here
+// is the same in every pizza-repl-<lang>.
+import { LANG } from "./lang-case.mjs";
 
 test("app in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
-  // Prefer installed Chrome; fall back to `node_modules/.bin/playwright install chromium`.
-  const browser = await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
+  // $CHROMIUM if set (a path to a chromium binary), else installed Chrome, else
+  // `node_modules/.bin/playwright install chromium`.
+  const browser = process.env.CHROMIUM
+    ? await chromium.launch({ executablePath: process.env.CHROMIUM })
+    : await chromium.launch({ channel: "chrome" }).catch(() => chromium.launch());
   t.after(async () => {
     await browser.close();
     server.closeAllConnections();
@@ -154,27 +144,59 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await setCaret("both");
 
   // --- key row -------------------------------------------------------------
-  await page.click('#key-row [data-ins="("]');
-  await page.click('#key-row [data-ins=")"]');
-  await ok("bracket keys insert at the caret", (await page.inputValue("#input")) === "()");
+  const keys = await page.locator("#key-row [data-ins]").evaluateAll((bs) => bs.map((b) => /** @type {HTMLElement} */ (b).dataset.ins));
+  await ok("the key row has lang.keys, split around ⋯", keys.length > 0 &&
+    (await page.locator("#key-row > *").nth(Math.ceil(keys.length / 2)).getAttribute("id")) === "commands-btn");
+  await page.locator("#key-row [data-ins]").first().click();
+  await page.locator("#key-row [data-ins]").last().click();
+  await ok("keys insert at the caret", (await page.inputValue("#input")) === keys[0] + keys.at(-1));
   await page.fill("#input", "");
   await page.click("#commands-btn");
-  const cmd = (await page.locator("#commands-list .command-item").first().textContent()) ?? "";
-  await ok("⋯ lists the language's commands", cmd !== "");
+  const commandItems = () => page.locator("#commands-list .command-item").allTextContents();
+  const defaults = await commandItems();
+  await ok("⋯ lists the language's commands", defaults.length > 0 && defaults.every((c) => c !== ""));
   await page.locator("#commands-list .command-item").first().click();
   await ok("picking a command pastes it and closes the popup",
-    (await page.inputValue("#input")) === cmd && !(await page.locator("#commands-dialog").evaluate((d) => /** @type {HTMLDialogElement} */ (d).open)));
+    (await page.inputValue("#input")) === defaults[0] && !(await page.locator("#commands-dialog").evaluate((d) => /** @type {HTMLDialogElement} */ (d).open)));
   await page.fill("#input", "");
-  await ok("defaults offer two shortcuts", (await page.locator("#commands-list .command-item").count()) === 2);
   await page.click("#settings-btn");
   await page.fill("#commands-field", "alpha, beta ,, gamma");
   await page.click('#settings-dialog [data-close]');
-  await ok("custom shortcuts replace the defaults",
-    (await page.locator("#commands-list .command-item").allTextContents()).join("|") === "alpha|beta|gamma");
+  await ok("custom shortcuts follow the defaults",
+    (await commandItems()).join("|") === [...defaults, "alpha", "beta", "gamma"].join("|"));
   await page.click("#settings-btn");
   await page.fill("#commands-field", "");
   await page.click('#settings-dialog [data-close]');
-  await ok("blank restores the defaults", (await page.locator("#commands-list .command-item").count()) === 2);
+  await ok("blank leaves just the defaults", (await commandItems()).join("|") === defaults.join("|"));
+
+  // --- completions (when lang.js has complete) -----------------------------
+  const chips = () => page.locator("#suggest-row .suggest-item").allTextContents();
+  const C = LANG.completion;
+  if (!C) {
+    await ok("no complete(): no strip, no option", (await page.locator("#suggest-row").isHidden()) && (await page.locator("#suggest-section").isHidden()));
+  } else {
+    await page.locator("#input").pressSequentially(C.first);
+    await ok("no completions under two characters", (await chips()).length === 0);
+    await page.locator("#input").pressSequentially(C.more);
+    await ok("completions show for the word at the caret", (await chips()).includes(C.pick), JSON.stringify(await chips()));
+    await page.locator("#suggest-row .suggest-item", { hasText: new RegExp(`^${C.pick}$`) }).click();
+    await ok("tapping a completion replaces the word", (await page.inputValue("#input")) === C.picked);
+    await ok("tapping a completion keeps focus in the input",
+      await page.locator("#input").evaluate((el) => document.activeElement === el));
+    await page.locator("#input").pressSequentially(C.tab);
+    await page.press("#input", "Tab");
+    await ok("Tab completes a single candidate", (await page.inputValue("#input")) === C.tabbed, await page.inputValue("#input"));
+    await page.fill("#input", "");
+    await page.click("#settings-btn");
+    await page.click('[data-set-suggest="off"]');
+    await page.click('#settings-dialog [data-close]');
+    await page.locator("#input").pressSequentially(C.first + C.more);
+    await ok("completions can be turned off", await page.locator("#suggest-row").isHidden());
+    await page.fill("#input", "");
+    await page.click("#settings-btn");
+    await page.click('[data-set-suggest="on"]');
+    await page.click('#settings-dialog [data-close]');
+  }
 
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });
@@ -184,23 +206,55 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("interpreter state is per page load", (await results()).at(-1) === LANG.lastAfterReload[1], (await results()).at(-1));
 
   // --- docs ----------------------------------------------------------------
-  const tabCount = await page.getByRole("tab").count();
-  await ok("one tab per panel", tabCount === (await page.locator(".panel[data-panel]").count()), `${tabCount} tabs`);
+  // One docs tab: it shows the last doc read; tapped again, a menu of chips.
+  const docsTab = page.locator('repl-tabs [data-tab="docs"]');
+  const docMenu = page.locator("#doc-menu");
+  const shownDoc = () => page.locator(".doc-page:not([hidden])").getAttribute("data-doc");
+  const docPage = (/** @type {string} */ id) => page.locator(`.doc-page[data-doc="${id}"]`);
+  /** Open the docs tab on doc `id`, through the menu if it isn't showing. */
+  const openDoc = async (/** @type {string} */ id) => {
+    if ((await docsTab.getAttribute("aria-selected")) !== "true") await docsTab.click();
+    if ((await shownDoc()) === id) return;
+    await docsTab.click();
+    await docMenu.locator(`[data-doc="${id}"]`).click();
+  };
+  await ok("three tabs: repl, docs, log", (await page.getByRole("tab").count()) === 3);
   await ok("jump button hidden on the repl tab", await page.locator("#doc-index-btn").isHidden());
-  await clickTab(LANG.doc);
-  await page.waitForSelector(`.panel[data-panel="${LANG.doc}"] doc-view h2`);
-  await ok("doc renders markdown", (await page.locator(`.panel[data-panel="${LANG.doc}"] doc-view h2`).count()) > 5);
-  await ok("jump button shows on a doc tab", await page.locator("#doc-index-btn").isVisible());
+  await docsTab.click();
+  await ok("the docs tab opens on a doc", (await page.locator(".doc-page:not([hidden])").count()) === 1);
+  await ok("…without the menu", await docMenu.isHidden());
+  await docsTab.click();
+  await ok("tapping it again drops down the menu", await docMenu.isVisible());
+  await ok("one chip per doc", (await docMenu.locator(".doc-chip").count()) === (await page.locator(".doc-page").count()));
+  await page.locator("#docs-panel").click({ position: { x: 20, y: 300 } });
+  await ok("tapping elsewhere closes the menu", await docMenu.isHidden());
+  await openDoc(LANG.doc);
+  await ok("picking a chip shows that doc and closes the menu", (await shownDoc()) === LANG.doc && (await docMenu.isHidden()));
+  const chipLabel = (await docMenu.locator(`[data-doc="${LANG.doc}"]`).textContent()) ?? "";
+  await ok("the tab is labelled with the doc it shows", ((await docsTab.textContent()) ?? "").startsWith(chipLabel), chipLabel);
+  await page.waitForSelector(`.doc-page[data-doc="${LANG.doc}"] doc-view h2`);
+  await ok("doc renders markdown", (await docPage(LANG.doc).locator("doc-view h2").count()) > 5);
+  await ok("jump button shows on the docs tab", await page.locator("#doc-index-btn").isVisible());
   await page.click("#doc-index-btn");
   const jumpItems = page.locator("#doc-index-list .doc-index-item");
   await ok("jump list lists the doc's headings", (await jumpItems.count()) > 5);
   await jumpItems.nth(4).click();
   await page.waitForTimeout(60);
   await ok("jumping closes the list", !(await page.locator("#doc-index-dialog").evaluate((d) => /** @type {HTMLDialogElement} */ (d).open)));
-  await ok("jumping scrolls the doc", (await page.locator(`.panel[data-panel="${LANG.doc}"]`).evaluate((p) => p.scrollTop)) > 0);
+  const docScroll = () => page.locator("#docs-panel").evaluate((p) => p.scrollTop);
+  const jumped = await docScroll();
+  await ok("jumping scrolls the doc", jumped > 0);
+  await clickTab("repl");
+  await docsTab.click();
+  await ok("a doc keeps its place across tabs", Math.abs((await docScroll()) - jumped) < 2, `${await docScroll()} vs ${jumped}`);
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(120);
-  await ok("active tab persists", await page.locator(`.panel[data-panel="${LANG.doc}"]`).isVisible());
+  await ok("the docs tab and its doc persist", (await page.locator("#docs-panel").isVisible()) && (await shownDoc()) === LANG.doc);
+  const app = JSON.parse(await readFile(join(root, "package.json"), "utf8")).name;
+  await page.evaluate(([app, id]) => (localStorage.setItem(app + ":tab", id), localStorage.removeItem(app + ":doc")), [app, LANG.doc]);
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(120);
+  await ok("a stored per-doc tab (older versions) opens that doc", (await page.locator("#docs-panel").isVisible()) && (await shownDoc()) === LANG.doc);
   await clickTab("repl");
   await ok("switching to the repl focuses the input",
     await page.locator("#input").evaluate((el) => document.activeElement === el));
@@ -264,7 +318,6 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "phosphor");
   await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="phosphor"]', "aria-checked")) === "true");
   await page.click('#settings-dialog [data-close]');
-  const app = JSON.parse(await readFile(join(root, "package.json"), "utf8")).name;
   await ok("storage keys use the app-ns meta", (await page.evaluate((app) => localStorage.getItem(app + ":theme"), app)) === "phosphor");
 
   // --- service worker ------------------------------------------------------
@@ -361,9 +414,9 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await page.waitForTimeout(400);
   await run(LANG.offline[0]);
   await ok("evaluates offline", (await results()).at(-1) === LANG.offline[1]);
-  await clickTab(LANG.unopenedDoc); // never opened before in this test
-  await page.waitForSelector(`.panel[data-panel="${LANG.unopenedDoc}"] doc-view h2`, { timeout: 3000 }).catch(() => {});
-  await ok("an unopened doc loads offline", (await page.locator(`.panel[data-panel="${LANG.unopenedDoc}"] doc-view h2`).count()) > 5);
+  await openDoc(LANG.unopenedDoc); // never opened before in this test
+  await page.waitForSelector(`.doc-page[data-doc="${LANG.unopenedDoc}"] doc-view h2`, { timeout: 3000 }).catch(() => {});
+  await ok("an unopened doc loads offline", (await docPage(LANG.unopenedDoc).locator("doc-view h2").count()) > LANG.unopenedDocSections);
   await ctx.setOffline(false);
 
   await ok("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
