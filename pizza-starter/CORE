@@ -1,0 +1,16 @@
+# Files every app keeps identical to the starter. scripts/sync.sh merges
+# starter changes to these into an app; everything else in app/ belongs to the
+# app once copied. Paths are relative to app/.
+.gitignore
+.node-version
+pnpm-workspace.yaml
+sw.js
+components/update-toast.js
+lib/viewport.js
+scripts/check-sw.mjs
+scripts/dev-vendor.sh
+scripts/install-hooks.sh
+scripts/warnings.sh
+tests/warnings.test.mjs
+vendor/lit.js
+vendor/lit.LICENSE.txt

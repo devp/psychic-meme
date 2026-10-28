@@ -13,3 +13,6 @@ pizza-repl-fennel is not affiliated with or endorsed by the Fennel or Fengari pr
   own © Lua.org, PUC-Rio).
 - **`docs/reference.md`, `docs/tutorial.md`, `docs/lua-primer.md`** — from the Fennel repo at
   1.6.1, for offline reading. MIT, © Calvin Rose and contributors.
+- **`docs/learnxinyminutes.md`** — [Learn X in Y minutes](https://learnxinyminutes.com/fennel/)'
+  `fennel.md` at `be257fc`, unmodified (front matter is dropped at render). CC BY-SA 3.0, © Jesse
+  Wattenbarger.

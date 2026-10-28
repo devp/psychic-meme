@@ -13,6 +13,8 @@ const lil = globalThis;
 export const name = "lil";
 export const comment = "#";
 export const placeholder = "1+2";
+/** Default shortcuts behind the key row's ⋯ button; each is pasted into the input as-is. */
+export const commands = ["show", "range"];
 export const greeting = "lil REPL — try 1+2 or show[1,2,3]. Reference tabs above; the log tab keeps your sessions.";
 
 // Normally supplied by Decker's build step; lil.js reads it for sys.version.

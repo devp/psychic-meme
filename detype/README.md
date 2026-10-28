@@ -52,6 +52,6 @@ Only in this browser's localStorage. Nothing is sent anywhere. That means:
 ## Development
 
 The same as pizza-starter: `just serve`, `just dev-init`, `just dev-check`.
-Adding, renaming or deleting a file means updating `ASSETS` in `sw.js`;
+Adding, renaming or deleting a file means updating `ASSETS` in `sw-assets.js`;
 `just warnings` flags it. `cd ../pizza-starter && just drift detype` shows
 what changed on each side since `STARTER`.

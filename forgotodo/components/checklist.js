@@ -1,6 +1,7 @@
 import { LitElement, html } from "lit";
 import { repeat } from "lit/directives/repeat.js";
-import { lists } from "../state.js";
+import { lists, split } from "../state.js";
+import { splitEntry } from "../lib/entry.js";
 import { dayKey, priorityOf, isFaded, isForgotten, isSnoozed, snoozeOf } from "../lib/forget.js";
 
 /**
@@ -168,9 +169,11 @@ export class Checklist extends LitElement {
     const input = /** @type {HTMLInputElement} */ (form.elements.namedItem("text"));
     const text = input.value.trim();
     if (!text || !this.record) return;
-    lists.append(this.record.id, { text, done: false, seenDay: dayKey() });
+    for (const t of split.get() === "on" ? splitEntry(text) : [text]) {
+      lists.append(this.record.id, { text: t, done: false, seenDay: dayKey() });
+      this._noteFiled(t);
+    }
     form.reset();
-    this._noteFiled(text);
   }
 
   /** Say where a to-do went if it isn't on the list. @param {string} text */

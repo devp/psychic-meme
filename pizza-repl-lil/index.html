@@ -47,6 +47,15 @@
 <main class="panels">
   <section class="panel repl-panel active" data-panel="repl">
     <append-log id="output" class="output"></append-log>
+    <div class="key-row" id="key-row">
+      <button type="button" data-ins="(" class="k-paren" aria-label="Insert (">(</button>
+      <button type="button" data-ins="[" class="k-bracket" aria-label="Insert [">[</button>
+      <button type="button" data-ins="{" class="k-brace" aria-label="Insert {">{</button>
+      <button type="button" id="commands-btn" class="k-more" aria-label="Command shortcuts" aria-haspopup="dialog">⋯</button>
+      <button type="button" data-ins="}" class="k-brace" aria-label="Insert }">}</button>
+      <button type="button" data-ins="]" class="k-bracket" aria-label="Insert ]">]</button>
+      <button type="button" data-ins=")" class="k-paren" aria-label="Insert )">)</button>
+    </div>
     <form class="input-row" id="input-form">
       <textarea id="input" rows="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
       <button type="submit" id="run-btn">Run</button>
@@ -91,6 +100,12 @@
   <button type="button" class="primary" data-close>Close</button>
 </dialog>
 
+<dialog id="commands-dialog" class="settings">
+  <h2>Commands</h2>
+  <div class="command-list" id="commands-list"></div>
+  <button type="button" class="primary" data-close>Close</button>
+</dialog>
+
 <dialog id="session-dialog" class="settings session-dialog">
   <div class="session-dialog-header">
     <input id="session-name" type="text" placeholder="Untitled session" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Session name">
@@ -119,6 +134,21 @@
       <button type="button" class="swatch" role="radio" data-set-font="mono" aria-checked="true">mono</button>
       <button type="button" class="swatch" role="radio" data-set-font="sans" aria-checked="false">sans</button>
     </div>
+  </section>
+
+  <section>
+    <h3>Tapping &gt; on an entry</h3>
+    <div class="swatches" role="radiogroup" aria-label="Tapping the caret on an entry">
+      <button type="button" class="swatch" role="radio" data-set-caret="both" aria-checked="true">copy + fill input</button>
+      <button type="button" class="swatch" role="radio" data-set-caret="copy" aria-checked="false">copy only</button>
+      <button type="button" class="swatch" role="radio" data-set-caret="fill" aria-checked="false">fill input only</button>
+    </div>
+  </section>
+
+  <section>
+    <h3>Command shortcuts (⋯ key)</h3>
+    <input id="commands-field" class="text-field" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Command shortcuts, comma-separated">
+    <p class="hint">Comma-separated. Leave blank for the defaults.</p>
   </section>
 
   <section>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#12141a"/>
+  <!-- slice: crust band at the top, cheese wedge tapering to a point -->
+  <path d="M13 18 Q32 8 51 18 L32 54 Z" fill="#e8b45c"/>
+  <path d="M13 18 Q32 8 51 18 L47 25 Q32 16 17 25 Z" fill="#c8763a"/>
+  <circle cx="26" cy="30" r="3.4" fill="#c0392b"/>
+  <circle cx="38" cy="31" r="3" fill="#c0392b"/>
+  <circle cx="32" cy="42" r="2.6" fill="#c0392b"/>
+</svg>

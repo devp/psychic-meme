@@ -1,0 +1,153 @@
+/* This app's own styles: the deck, the reader, the editor, toasts. */
+
+cr-deck { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* ---- lane strip ---- */
+.lanes {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.lanes::-webkit-scrollbar { display: none; }
+.lane-chip {
+  padding: 4px 10px;
+  background: var(--bg-raised);
+  color: var(--fg);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--raised);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.lane-chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: bold; box-shadow: var(--sunken); }
+.lane-chip .n { opacity: 0.7; font-size: 11px; }
+/* unread | read, ahead of the lanes: flips which cards every lane shows. */
+.show-toggle { display: flex; gap: 2px; margin-right: 6px; flex-shrink: 0; }
+
+/* ---- the card ---- */
+.stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  touch-action: none; /* we read swipes ourselves */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.card, .empty {
+  width: min(100%, 460px);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+.card-body { padding: 12px 12px 8px; overflow: hidden; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.desc {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 20px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.meta { margin: 0; font-size: 13px; color: var(--fg-dim); }
+.lane-tag, .read-tag { padding: 0 5px; background: var(--accent); color: var(--accent-ink); border-radius: var(--radius); font-size: 12px; }
+.read-tag { background: var(--fg-dim); color: var(--card-bg); }
+.btn.unread { margin-left: 4px; padding: 0 6px; font-size: 12px; line-height: 18px; }
+.comment { width: 100%; resize: none; user-select: text; -webkit-user-select: text; }
+.hint { margin: 0; padding: 0 12px 8px; font-size: 11px; color: var(--fg-dim); }
+.empty p { margin: 12px; }
+
+/* Slide in from the way we came. */
+.card.next { animation: in-right 0.18s ease-out; }
+.card.prev { animation: in-left 0.18s ease-out; }
+.card.up { animation: in-up 0.2s ease-out; }
+.card.down { animation: in-down 0.2s ease-out; }
+.card.flip { animation: spin-in 0.2s ease-out; }
+.card.spin { animation: spin-in 0.12s linear; }
+@keyframes in-right { from { transform: translateX(40%) rotate(4deg); opacity: 0; } }
+@keyframes in-left { from { transform: translateX(-40%) rotate(-4deg); opacity: 0; } }
+@keyframes in-up { from { transform: translateY(30%); opacity: 0; } }
+@keyframes in-down { from { transform: translateY(-30%); opacity: 0; } }
+@keyframes spin-in { from { transform: rotateY(80deg); } }
+cr-deck.spinning .stage { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .card { animation: none !important; } }
+
+/* South Park: cards are speech bubbles. */
+:root[data-theme="south-park"] .card { position: relative; }
+:root[data-theme="south-park"] .card::after {
+  content: "";
+  position: absolute;
+  left: 28px;
+  bottom: -10px;
+  border: 10px solid transparent;
+  border-bottom: 0;
+  border-top-color: var(--card-bg);
+}
+:root[data-theme="south-park"] .desc { font-weight: normal; }
+/* Santa Monica: orange headings, like a profile's "extended network" box. */
+:root[data-theme="santa-monica"] .desc { color: var(--accent); font-size: 18px; }
+:root[data-theme="santa-monica"] .app-header { color: #fff; }
+:root[data-theme="santa-monica"] .lanes { background: #6699cc; }
+/* Cupertino: a grey LCD in white plastic; the selection is an inverted bar. */
+:root[data-theme="cupertino"] .titlebar { justify-content: center; gap: 12px; border-bottom: 1px solid #8e9488; }
+:root[data-theme="cupertino"] .desc { font-size: 18px; }
+:root[data-theme="cupertino"] .btn.spin { border-radius: 999px; }
+
+/* ---- prev / position / next ---- */
+.deck-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 12px;
+  flex-shrink: 0;
+}
+.pos { font-size: 13px; color: var(--fg-on-bg); }
+
+.btn.spin { background: var(--accent); color: var(--accent-ink); font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ---- reader ---- */
+.reader {
+  width: 90vw;
+  height: 90dvh;
+  max-width: none;
+  max-height: none;
+  display: none;
+  flex-direction: column;
+}
+.reader[open] { display: flex; }
+.reader .controls { display: flex; gap: 4px; flex-shrink: 0; }
+.frame-wrap { flex: 1; min-height: 0; background: #fff; margin-top: 3px; box-shadow: var(--sunken); }
+.frame-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* ---- editor ---- */
+.editor form { display: grid; gap: 10px; padding: 12px 10px 10px; }
+.editor label { display: grid; gap: 3px; font-size: 13px; }
+.editor label.check { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.editor label.check input { width: 18px; height: 18px; box-shadow: none; }
+.editor .row { justify-content: space-between; }
+.editor .row input { flex: 1; }
+.editor textarea { resize: vertical; }
+
+/* ---- toast ---- */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: calc(60px + env(safe-area-inset-top));
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 8px 14px;
+  max-width: calc(100vw - 32px);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}

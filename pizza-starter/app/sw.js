@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+/// <reference path="sw-assets.js" />
 // Offline support, hand-written. No build step, no library.
 //
 // How a service worker gets here: app.js calls register("sw.js"). The browser
@@ -15,6 +16,10 @@
 // So an edit shows up one reload late while developing, and an installed app
 // shows the toast moments after launch. Offline, the check just fails
 // quietly and nothing changes.
+//
+// Every navigation starts a check too, from here, without the page. A deploy
+// whose app code throws before <update-toast> runs can't ask for its own fix;
+// this way the fix still lands, and the launch after it runs it.
 
 const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
 
@@ -26,29 +31,10 @@ const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self
 const PREFIX = sw.registration.scope + " ";
 const CACHE = PREFIX + "v1";
 
-// Every file the app needs offline, fetched on install. Add a file to the app,
-// add it here -- `just warnings` flags anything missing or listed-but-gone.
-// Editing this list changes sw.js's bytes, which is what makes browsers pick
-// it up.
-const ASSETS = [
-  "index.html",
-  "manifest.webmanifest",
-  "theme.css",
-  "base.css",
-  "app.css",
-  "app.js",
-  "state.js",
-  "lib/reactive-element.js",
-  "lib/store.js",
-  "lib/viewport.js",
-  "components/append-log.js",
-  "components/checklist.js",
-  "components/list-summary.js",
-  "components/tabs.js",
-  "components/update-toast.js",
-  "vendor/lit.js",
-  "icons/pizza.svg",
-];
+// ASSETS, every file the app needs offline, is in sw-assets.js: the app's
+// list, kept apart so sw.js stays the same in every app. The browser checks
+// imported scripts for changes too, so editing the list updates the worker.
+importScripts("sw-assets.js");
 
 // Install: download ASSETS into the cache.
 //
@@ -88,6 +74,7 @@ sw.addEventListener("fetch", (event) => {
   // A navigation is the page itself: a deep link, a refresh, a url carrying
   // ?utm_source=... It's a one-page app, so every one of them gets index.html.
   const key = req.mode === "navigate" ? "index.html" : req;
+  if (req.mode === "navigate") event.waitUntil(startCheck());
 
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
@@ -109,8 +96,8 @@ sw.addEventListener("fetch", (event) => {
 // would leave the next launch running new app.js against old state.js.
 //
 // `no-cache` makes the browser ask the server whether each file changed (a
-// cheap 304 if not) instead of trusting its HTTP cache. Launch and resume can
-// both ask at once; they share one check.
+// cheap 304 if not) instead of trusting its HTTP cache. A navigation, launch
+// and resume can all ask at once; they share one check.
 /** @type {Promise<void> | null} */
 let checking = null;
 
@@ -141,10 +128,13 @@ function sameBytes(a, b) {
   return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
+function startCheck() {
+  return (checking ??= check()
+    .catch(() => {})
+    .finally(() => (checking = null)));
+}
+
 sw.addEventListener("message", (event) => {
   if (event.data !== "check") return;
-  checking ??= check()
-    .catch(() => {})
-    .finally(() => (checking = null));
-  event.waitUntil(checking);
+  event.waitUntil(startCheck());
 });

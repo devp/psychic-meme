@@ -11,6 +11,9 @@
   --accent: #7dd3a8;
   --accent-ink: #10241a;
   --border: #2a2e3a;
+  --k-paren: #f2a65a;
+  --k-bracket: #6cb6f5;
+  --k-brace: #c79bf0;
 }
 
 :root[data-theme="paper"] {
@@ -22,6 +25,9 @@
   --accent: #b5562f;
   --accent-ink: #fff6ef;
   --border: #ded5bf;
+  --k-paren: #c2410c;
+  --k-bracket: #1d6fb8;
+  --k-brace: #7e3fb0;
 }
 
 :root[data-theme="phosphor"] {
@@ -33,6 +39,9 @@
   --accent: #39ff6a;
   --accent-ink: #04160a;
   --border: #163a1e;
+  --k-paren: #ffd24a;
+  --k-bracket: #4ad8ff;
+  --k-brace: #ff7ad9;
 }
 
 :root {

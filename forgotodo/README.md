@@ -33,8 +33,9 @@ auto (follows the system). The old `backlight` theme is palo alto with it on.
   as `foo!`, and `foo>!` is just urgent. Snoozed to-dos are counted, skipped
   by Forget and Shake Up, and Fast Forward takes a `>` off.
 - **Press and hold** a to-do: it fades and shakes, then asks *Abort, Retry,
-  Fail?* (always in mono). Abort leaves it; Retry swaps its `!`s and `?`s for
-  one `>` (back tomorrow, neutral); Fail deletes it. It's the only delete.
+  Fail?* (always in mono), answered Avert, Retry, Free, or Cancel. Avert
+  forgets it; Retry swaps its `!`s and `?`s for one `>` (back tomorrow,
+  neutral); Free deletes it; Cancel leaves it. It's the only delete.
 - Done items disappear the day after you check them.
 - Catch-up happens when the app opens or comes back to the foreground, so days
   it sat unopened still count.
@@ -75,11 +76,16 @@ the tab again) to close it.
 The icons are 10×10 bitmaps, drawn in `lib/icons.js` as ASCII art and shown
 at 4×. **Desktop icons** in Options turns them off for a plain list by name.
 
-**Erase all data**: press and hold Recycle for 2 seconds; it shakes harder
-as the hold runs out. It deletes this app's to-dos and settings on this
-device (other apps on the same site are untouched), after three confirms,
-then starts over as a first run. Any desktop icon can take a hold command:
-`data-hold-cmd` in `index.html`, `HOLD_COMMANDS` in `app.js`.
+**Press and hold** some desktop icons for 2 seconds to run something else;
+the icon shakes harder as the hold runs out.
+- **Themes**: switch to a random other theme (and its font).
+- **Recycle**: erase every to-do on the list, after three confirms. Settings
+  stay, and it doesn't start over as a first run.
+- **Help**: add the first run's tutorial to-dos to the end of the list.
+- **About**: email the author.
+
+Any desktop icon can take a hold command: `data-hold-cmd` in `index.html`,
+`HOLD_COMMANDS` in `app.js`.
 
 **Shrink to fit** in Options (on for new installs): big type for three to-dos or fewer, a little
 smaller with each one after, then as small as it takes (down to 10px) for the
@@ -94,7 +100,7 @@ Fonts, vendored so they work offline:
 
 The same as pizza-starter: `just serve`, `just dev-init`, `just dev-check`,
 `just warnings`. Adding, renaming or deleting an app file (fonts included)
-means updating `ASSETS` in `sw.js`; `just warnings` flags any mismatch.
+means updating `ASSETS` in `sw-assets.js`; `just warnings` flags any mismatch.
 
 Browser tests are one file per block in `tests/browser/` (shared setup in
 `harness.mjs`), so `node --test` runs them in parallel.

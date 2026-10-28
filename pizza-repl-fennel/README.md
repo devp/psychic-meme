@@ -20,7 +20,8 @@ Built on [pizza-starter](../pizza-starter) (see `STARTER`). Sibling: [pizza-repl
 ,help
 ```
 
-Tabs: `reference`, `tutorial`, and `lua` (the Lua primer) are Fennel's own docs. The round
+Tabs: `reference`, `tutorial`, and `lua` (the Lua primer) are Fennel's own docs; `learnx` is
+[Learn X in Y minutes](https://learnxinyminutes.com/fennel/)' Fennel page. The round
 button on a doc tab jumps to a section. `log` keeps sessions: rename, delete, or copy one as
 commented Fennel that pastes back in and reruns.
 
@@ -34,8 +35,14 @@ seam. See that README for the file table.
 and each entry resumes it. So REPL semantics (locals, `*1`, `,doc`) are Fennel's, not
 reimplemented, and pasting an export replays form by form.
 
+Completions come from the same repl: `BOOT` keeps the completer `fennel.repl` hands to
+`registerCompleter` (the one behind `,complete`) and `complete()` calls it directly, so nothing
+is read and `*1` and line counts stay put. The shell shows them in a strip above the key row
+from the second character of a symbol (tap to replace it, Tab on a keyboard), and skips the
+strip for a `lang.js` with no `complete`. Options turns it off.
+
 `just serve`, `just dev-check` (`just dev-init` once), `just warnings`. Add or remove a file:
-update `ASSETS` in `sw.js`.
+update `ASSETS` in `sw-assets.js`.
 
 ## Known gaps
 

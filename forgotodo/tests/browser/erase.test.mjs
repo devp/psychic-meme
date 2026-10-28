@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chromium, launch, serve } from "./harness.mjs";
 
-test("erase all data, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
+test("erase the list, in a real browser", { skip: !chromium && "playwright not installed" }, async (t) => {
   const browser = await launch();
   const server = await serve();
   const URL = `http://127.0.0.1:${server.address().port}/index.html`;
@@ -17,7 +17,6 @@ test("erase all data, in a real browser", { skip: !chromium && "playwright not i
   await page.addInitScript(() => {
     if (sessionStorage.getItem("seeded")) return;
     sessionStorage.setItem("seeded", "1");
-    localStorage.setItem("other-app:keep", "1");
     localStorage.setItem("forgotodo:theme", "akihabara");
     // Enough rows that the list lies under every desktop icon.
     const filler = Array.from({ length: 30 }, (_, i) => ({ id: "f" + i, text: "filler " + i, done: false }));
@@ -86,10 +85,11 @@ test("erase all data, in a real browser", { skip: !chromium && "playwright not i
   await openErase();
   await answer("ok");
   await answer("ok");
-  await Promise.all([page.waitForEvent("load"), answer("ok")]);
+  await answer("ok");
   await page.waitForTimeout(120);
-  await ok("three OKs erase and start a first run",
-    (await page.locator("#about-dialog").isVisible()) && (await page.locator(".checklist li").count()) > 0 &&
-      (await page.getAttribute("html", "data-theme")) === "palo-alto");
-  await ok("other apps' keys survive", (await page.evaluate(() => localStorage.getItem("other-app:keep"))) === "1");
+  await ok("three OKs empty the list and keep settings",
+    (await page.locator(".checklist li").count()) === 0 && (await page.getAttribute("html", "data-theme")) === "akihabara");
+  await page.reload({ waitUntil: "networkidle" });
+  await ok("and a reload is no first run",
+    !(await page.locator("#about-dialog").isVisible()) && (await page.locator(".checklist li").count()) === 0);
 });

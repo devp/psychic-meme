@@ -1,0 +1,103 @@
+/* ---- theme tokens ----
+   Every colour lives here, plus the few shape tokens that make an era: corner
+   radius, bevels, title bars, font. Add a theme by copying a block and adding
+   a swatch button in index.html -- nothing else needs to know.
+
+   Echoes, not copies: no logos or recreated assets.
+   dulles       -- a dial-up desktop: teal, grey bevels, a yellow-ish welcome
+   south-park   -- a sky-blue birdhouse of 140-character status updates
+   santa-monica -- a place for friends: navy band, light-blue boxes, orange
+   cupertino    -- a clickwheel in your pocket: white plastic, grey mono LCD */
+
+:root,
+:root[data-theme="dulles"] {
+  --bg: #008080;
+  --bg-alt: #c0c0c0;
+  --bg-raised: #c0c0c0;
+  --card-bg: #ffffff;
+  --fg: #000000;
+  --fg-on-bg: #ffffff;
+  --fg-dim: #505050;
+  --accent: #ffcc00;
+  --accent-ink: #000000;
+  --link: #0000cc;
+  --border: #808080;
+  --title-bg: linear-gradient(90deg, #000080, #1084d0);
+  --title-fg: #ffffff;
+  --radius: 0;
+  --raised: inset -1px -1px #0a0a0a, inset 1px 1px #ffffff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  --sunken: inset -1px -1px #ffffff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+  --shadow: none;
+  --font-body: Tahoma, Verdana, "Segoe UI", sans-serif;
+  --font-title: Tahoma, Verdana, "Segoe UI", sans-serif;
+  --tagline: "you've got links!";
+}
+
+:root[data-theme="south-park"] {
+  --bg: #c0deed;
+  --bg-alt: #ffffff;
+  --bg-raised: #ffffff;
+  --card-bg: #ffffff;
+  --fg: #333333;
+  --fg-on-bg: #333333;
+  --fg-dim: #999999;
+  --accent: #0084b4;
+  --accent-ink: #ffffff;
+  --link: #0084b4;
+  --border: #c0deed;
+  --title-bg: #f5fbfe;
+  --title-fg: #999999;
+  --radius: 6px;
+  --raised: 0 1px 0 #a0c6da, inset 0 0 0 1px #c0deed;
+  --sunken: inset 0 1px 2px rgb(0 0 0 / 0.12), inset 0 0 0 1px #aaccdd;
+  --shadow: 0 2px 10px rgb(0 60 100 / 0.15);
+  --font-body: "Lucida Grande", "Lucida Sans Unicode", Helvetica, Arial, sans-serif;
+  --font-title: "Lucida Grande", "Lucida Sans Unicode", Helvetica, Arial, sans-serif;
+  --tagline: "what are you reading?";
+}
+
+:root[data-theme="santa-monica"] {
+  --bg: #e5e5e5;
+  --bg-alt: #003399;
+  --bg-raised: #ffffff;
+  --card-bg: #ffffff;
+  --fg: #000000;
+  --fg-on-bg: #000000;
+  --fg-dim: #666666;
+  --accent: #ff6600;
+  --accent-ink: #ffffff;
+  --link: #003399;
+  --border: #6699cc;
+  --title-bg: #6699cc;
+  --title-fg: #ffffff;
+  --radius: 0;
+  --raised: inset 0 0 0 1px #6699cc;
+  --sunken: inset 0 0 0 1px #6699cc;
+  --shadow: none;
+  --font-body: Verdana, Arial, Helvetica, sans-serif;
+  --font-title: Verdana, Arial, Helvetica, sans-serif;
+  --tagline: "a place for links";
+}
+
+:root[data-theme="cupertino"] {
+  --bg: #f4f4f2;
+  --bg-alt: #e2e2df;
+  --bg-raised: #fbfbfa;
+  --card-bg: #c9cfc3;
+  --fg: #1c1e1a;
+  --fg-on-bg: #3a3a3a;
+  --fg-dim: #575c53;
+  --accent: #1c1e1a;
+  --accent-ink: #c9cfc3;
+  --link: #1c1e1a;
+  --border: #9a9a96;
+  --title-bg: linear-gradient(#e4e8e0, #b9bfb3);
+  --title-fg: #1c1e1a;
+  --radius: 8px;
+  --raised: inset 0 0 0 1px #b4b4b0, 0 1px 0 #ffffff;
+  --sunken: inset 0 1px 3px rgb(0 0 0 / 0.25), inset 0 0 0 1px #8e9488;
+  --shadow: 0 0 0 3px #d6d6d2, 0 0 0 4px #a8a8a4;
+  --font-body: "Chicago", "ChicagoFLF", Charcoal, Geneva, "Helvetica Neue", sans-serif;
+  --font-title: "Chicago", "ChicagoFLF", Charcoal, Geneva, "Helvetica Neue", sans-serif;
+  --tagline: "1,000 links in your pocket";
+}

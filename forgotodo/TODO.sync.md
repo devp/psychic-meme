@@ -37,10 +37,11 @@ Single user, a few devices. Manual: a sync button. No CRDT, no ids, no clocks.
 
 ## Open questions
 
-- **remoteStorage provider:** who still runs public hosting? If no one does, self-host, which means running a server.
-- **Second-device onboarding:** a QR code with the secret in the URL fragment, a paste button, or a password manager. On iOS, a home-screen PWA's storage is separate from Safari's, so pairing has to happen in the installed app.
-- **Feature budget:** Sync is one more icon unless something goes.
+- **remoteStorage provider:** just 5apps.com/storage, but leave some of the structure in place that we can later have multiple possible providers (think SSO picker)
+- **Second-device onboarding:** q: can this be resolved when connecting to remoteStorage?
+- **Feature budget:** if we max our menu as a 4x4 grid, there is one more slot under Record, we sould be fine.
 
-## Future
+## structure notes
 
-- **Merge**, as a fourth answer to the conflict: match items by text with the `!`/`?`/`>` suffix stripped. For matches, the lower tier wins, because forgetting wins. Everything else is a union.
+- we don't want the complexity to baloon for this -- ideally sync, and remoteStorage integration, and the specific mechanics, can all be consolidated or isolated and modularized, to keep overall complexity low.
+- we are also looking to make it easy to adapt remoteStorage for other apps as well

@@ -134,6 +134,72 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await ok("caret never clobbers a half-typed input", (await page.inputValue("#input")) === "half-typed");
   await page.fill("#input", "");
 
+  // caret option: copy only / fill only (both is the default, tested above)
+  const setCaret = async (/** @type {string} */ mode) => {
+    await page.click("#settings-btn");
+    await page.click(`[data-set-caret="${mode}"]`);
+    await page.click('#settings-dialog [data-close]');
+  };
+  await page.evaluate(() => void ((/** @type {any} */ (window)).__copied = null));
+  await setCaret("copy");
+  await page.locator("#output .copy-caret").first().click();
+  await ok("copy-only: copies", (await copied()) === LANG.value[0]);
+  await ok("copy-only: leaves the input alone", (await page.inputValue("#input")) === "");
+  await setCaret("fill");
+  await page.evaluate(() => void ((/** @type {any} */ (window)).__copied = null));
+  await page.locator("#output .copy-caret").first().click();
+  await ok("fill-only: refills the input", (await page.inputValue("#input")) === LANG.value[0]);
+  await ok("fill-only: doesn't copy", (await copied()) === null);
+  await page.fill("#input", "");
+  await setCaret("both");
+
+  // --- key row -------------------------------------------------------------
+  await page.click('#key-row [data-ins="("]');
+  await page.click('#key-row [data-ins=")"]');
+  await ok("bracket keys insert at the caret", (await page.inputValue("#input")) === "()");
+  await page.fill("#input", "");
+  await page.click("#commands-btn");
+  const cmd = (await page.locator("#commands-list .command-item").first().textContent()) ?? "";
+  await ok("⋯ lists the language's commands", cmd !== "");
+  await page.locator("#commands-list .command-item").first().click();
+  await ok("picking a command pastes it and closes the popup",
+    (await page.inputValue("#input")) === cmd && !(await page.locator("#commands-dialog").evaluate((d) => /** @type {HTMLDialogElement} */ (d).open)));
+  await page.fill("#input", "");
+  await ok("defaults offer one shortcut", (await page.locator("#commands-list .command-item").count()) === 1);
+  await page.click("#settings-btn");
+  await page.fill("#commands-field", "alpha, beta ,, gamma");
+  await page.click('#settings-dialog [data-close]');
+  await ok("custom shortcuts follow the defaults",
+    (await page.locator("#commands-list .command-item").allTextContents()).join("|") === ",doc|alpha|beta|gamma");
+  await page.click("#settings-btn");
+  await page.fill("#commands-field", "");
+  await page.click('#settings-dialog [data-close]');
+  await ok("blank leaves just the defaults", (await page.locator("#commands-list .command-item").count()) === 1);
+
+  // --- completions ---------------------------------------------------------
+  const chips = () => page.locator("#suggest-row .suggest-item").allTextContents();
+  await page.locator("#input").pressSequentially("(s");
+  await ok("no completions under two characters", (await chips()).length === 0);
+  await page.locator("#input").pressSequentially("tr");
+  await ok("completions show for the word at the caret", (await chips()).includes("string"), JSON.stringify(await chips()));
+  await page.locator("#suggest-row .suggest-item", { hasText: /^string$/ }).click();
+  await ok("tapping a completion replaces the word", (await page.inputValue("#input")) === "(string");
+  await ok("tapping a completion keeps focus in the input",
+    await page.locator("#input").evaluate((el) => document.activeElement === el));
+  await page.locator("#input").pressSequentially(".forma");
+  await page.press("#input", "Tab");
+  await ok("Tab completes a single candidate", (await page.inputValue("#input")) === "(string.format");
+  await page.fill("#input", "");
+  await page.click("#settings-btn");
+  await page.click('[data-set-suggest="off"]');
+  await page.click('#settings-dialog [data-close]');
+  await page.locator("#input").pressSequentially("(str");
+  await ok("completions can be turned off", await page.locator("#suggest-row").isHidden());
+  await page.fill("#input", "");
+  await page.click("#settings-btn");
+  await page.click('[data-set-suggest="on"]');
+  await page.click('#settings-dialog [data-close]');
+
   // --- persistence ---------------------------------------------------------
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(120);
@@ -234,7 +300,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   });
   await ok("service worker activates", swState === "active", swState);
 
-  const assets = (await readFile(join(root, "sw.js"), "utf8")).match(/const ASSETS = \[([^\]]*)\]/)?.[1].match(/"[^"]+"/g)?.length;
+  const assets = (await readFile(join(root, "sw-assets.js"), "utf8")).match(/const ASSETS = \[([^\]]*)\]/)?.[1].match(/"[^"]+"/g)?.length;
   const cached = await page.evaluate(async () => {
     const names = await caches.keys();
     const c = await caches.open(names[0]);

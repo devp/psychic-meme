@@ -7,7 +7,7 @@
 import { html } from "lit";
 import { syncAppHeight, autoGrow, submitOnEnter } from "./lib/viewport.js";
 import { exportSession } from "./lib/export.js";
-import { theme, font, tab, sessions } from "./state.js";
+import { theme, font, tab, caretAction, suggestPref, commandsPref, sessions } from "./state.js";
 import * as lang from "./lang.js";
 import { Tabs } from "./components/tabs.js";
 import { AppendLog } from "./components/append-log.js";
@@ -37,9 +37,11 @@ output.dataset.empty = lang.greeting;
 const activeId = () => sessions.ensureActive().id;
 
 /**
- * Tapping an entry's caret copies its input. In the live log it also refills
- * the input box -- the usual reason to tap is "run that again" -- but only
- * when the box is empty, so it never clobbers work in progress.
+ * Tapping an entry's caret copies its input and/or, in the live log, refills
+ * the input box -- the usual reason to tap is "run that again" -- per the
+ * caretAction option (default: both). Filling only happens when the box is
+ * empty, so it never clobbers work in progress. Saved sessions in the dialog
+ * always just copy: there's no input behind the dialog to fill.
  * @param {boolean} live
  */
 const renderEntry = (live) => (/** @type {Entry} */ e) =>
@@ -48,10 +50,12 @@ const renderEntry = (live) => (/** @type {Entry} */ e) =>
       <button type="button" class="copy-caret" title=${live ? "Copy / reuse" : "Copy"}
         aria-label=${live ? "Copy this input, and reuse it if the input box is empty" : "Copy this input"}
         @click=${(/** @type {Event} */ ev) => {
-          copyText(e.input, /** @type {HTMLElement} */ (ev.currentTarget));
-          if (live && input.value.trim() === "") {
+          const action = live ? caretAction.get() : "copy";
+          if (action !== "fill") copyText(e.input, /** @type {HTMLElement} */ (ev.currentTarget));
+          if (action !== "copy" && input.value.trim() === "") {
             input.value = e.input;
             autoGrow(input);
+            suggest();
           }
         }}>&gt;</button>
       <span class="prompt-text">${e.input}</span>
@@ -79,6 +83,7 @@ form.addEventListener("submit", (e) => {
   sessions.append(activeId(), { input: source, output: text, isError });
   input.value = "";
   autoGrow(input);
+  suggest();
   input.focus();
   // Your own entry is always followed, even if you'd scrolled up to read.
   output.updateComplete.then(() => (output.scrollTop = output.scrollHeight));
@@ -87,6 +92,112 @@ submitOnEnter(input, () => form.requestSubmit());
 input.addEventListener("input", () => autoGrow(input));
 // Tapping Run would move focus off the textarea and drop the keyboard.
 byId("run-btn").addEventListener("pointerdown", (e) => e.preventDefault());
+// Key row: brackets, plus a gray middle key that pops up the language's
+// command shortcuts. Tapping a key would move focus off the textarea and drop
+// the keyboard, so keep it there. Everything inserts at the caret (replacing any
+// selection).
+/** @param {string} text */
+const insertAtCaret = (text) => {
+  input.focus();
+  input.setRangeText(text, input.selectionStart, input.selectionEnd, "end");
+  autoGrow(input);
+  suggest();
+};
+byId("key-row").addEventListener("pointerdown", (e) => e.preventDefault());
+byId("key-row").addEventListener("click", (e) => {
+  const b = /** @type {HTMLElement} */ (e.target).closest("button[data-ins]");
+  if (b instanceof HTMLElement) insertAtCaret(b.dataset.ins ?? "");
+});
+
+// Completions: a strip of chips above the key row for the word at the caret,
+// from lang.complete() when the language has one. Tapping a chip replaces the
+// word; so does Tab on a keyboard when there's one candidate, else Tab extends
+// to their common prefix. The strip keeps its height while on, so the log
+// doesn't jump as you type.
+/** @type {((source: string, caret: number) => {from: number, items: string[]} | null) | undefined} */
+const complete = /** @type {any} */ (lang).complete;
+const MIN_CHARS = 2;
+const MAX_CHIPS = 20;
+const suggestRow = byId("suggest-row");
+/** @type {{from: number, items: string[]} | null} */
+let suggestion = null;
+
+function suggest() {
+  const caret = input.selectionStart;
+  const r = complete && suggestPref.get() === "on" && caret === input.selectionEnd ? complete(input.value, caret) : null;
+  suggestion = r && caret - r.from >= MIN_CHARS && r.items.length ? r : null;
+  suggestRow.replaceChildren(
+    ...(suggestion?.items.slice(0, MAX_CHIPS) ?? []).map((item) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "suggest-item";
+      b.textContent = item;
+      return b;
+    })
+  );
+  suggestRow.scrollLeft = 0;
+}
+
+/** @param {string} text replaces the word at the caret */
+function acceptSuggestion(text) {
+  if (!suggestion) return;
+  input.focus();
+  input.setRangeText(text, suggestion.from, input.selectionStart, "end");
+  autoGrow(input);
+  suggest();
+}
+
+if (complete) {
+  byId("suggest-section").hidden = false;
+  suggestPref.subscribe((v) => {
+    suggestRow.hidden = v !== "on";
+    syncChecked("[data-set-suggest]", "data-set-suggest", v);
+    suggest();
+  });
+  input.addEventListener("input", suggest);
+  document.addEventListener("selectionchange", () => document.activeElement === input && suggest());
+  suggestRow.addEventListener("pointerdown", (e) => e.preventDefault()); // keep the keyboard up
+  suggestRow.addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement} */ (e.target).closest(".suggest-item");
+    if (b) acceptSuggestion(b.textContent ?? "");
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || e.shiftKey || !suggestion) return;
+    e.preventDefault();
+    const { items } = suggestion;
+    acceptSuggestion(items.length === 1 ? items[0] : commonPrefix(items));
+  });
+}
+
+/** @param {string[]} items */
+function commonPrefix(items) {
+  let p = items[0];
+  for (const s of items) while (!s.startsWith(p)) p = p.slice(0, -1);
+  return p;
+}
+
+const commandsDialog = /** @type {HTMLDialogElement} */ (byId("commands-dialog"));
+const commandsList = byId("commands-list");
+const commandsField = /** @type {HTMLInputElement} */ (byId("commands-field"));
+commandsField.addEventListener("input", () => commandsPref.set(commandsField.value));
+commandsPref.subscribe((v) => {
+  if (commandsField.value !== v) commandsField.value = v;
+  const custom = v.split(",").map((c) => c.trim()).filter(Boolean);
+  commandsList.replaceChildren(
+    ...[...lang.commands, ...custom].map((cmd) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "command-item";
+      b.textContent = cmd;
+      b.addEventListener("click", () => {
+        commandsDialog.close();
+        insertAtCaret(cmd);
+      });
+      return b;
+    })
+  );
+});
+byId("commands-btn").addEventListener("click", () => commandsDialog.showModal());
 
 const newSession = () => sessions.create("");
 byId("new-session-btn").addEventListener("click", newSession);
@@ -175,6 +286,8 @@ theme.subscribe((v) => {
   syncChecked("[data-set-theme]", "data-set-theme", v);
 });
 
+caretAction.subscribe((v) => syncChecked("[data-set-caret]", "data-set-caret", v));
+
 font.subscribe((v) => {
   document.documentElement.setAttribute("data-font", v);
   syncChecked("[data-set-font]", "data-set-font", v);
@@ -216,6 +329,10 @@ document.addEventListener("click", (e) => {
   if (t) theme.set(t.getAttribute("data-set-theme") ?? "dusk");
   const f = el.closest("[data-set-font]");
   if (f) font.set(f.getAttribute("data-set-font") ?? "mono");
+  const c = el.closest("[data-set-caret]");
+  if (c) caretAction.set(c.getAttribute("data-set-caret") ?? "both");
+  const sg = el.closest("[data-set-suggest]");
+  if (sg) suggestPref.set(sg.getAttribute("data-set-suggest") ?? "on");
   if (el.closest("[data-close]")) el.closest("dialog")?.close();
 });
 

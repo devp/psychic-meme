@@ -6,13 +6,13 @@ below should be enough to start a thread cold.
 
 ## Before vendoring anything: check the licence
 
-**Apart from Fennel, none of these have been licence-checked.** A pizza-repl doesn't link to an engine,
+**Apart from Fennel and Tau Prolog, none of these have been licence-checked.** A pizza-repl doesn't link to an engine,
 it *vendors the file into this repo and ships it offline* — so the licence has to
 permit redistribution, and `NOTICE.md` needs an entry the way lil.js and marked do.
 
 | engine | artifact | licence |
 |---|---|---|
-| Tau Prolog | JS lib | ❓ unchecked |
+| Tau Prolog | JS lib | ✅ done: pizza-repl-prolog (BSD-3; docs: learnxinyminutes, CC BY-SA 3.0) |
 | Forth | pick an impl first | ❓ unchecked |
 | oK | JS, JohnEarnest | ❓ unchecked (Decker is MIT; oK is a separate repo — verify) |
 | Kiki | `smallandnearlysilent.com/kiki/kiki.js` | ❓ **unchecked, and not obviously stated** — Dev flagged this one specifically |
@@ -67,10 +67,9 @@ Unknowns: licence; whether a reusable reference doc exists.
 The only candidate that's REPL-*native* — a query prompt is the actual interface,
 not a bolt-on. ASCII, phone-typable, and the biggest paradigm shift per keystroke
 on this list. Puzzle/logic work is game-adjacent in the small way that's wanted.
-Unknowns: licence; whether queries are sync or callback-driven (**check early —
-if it's callback/iterator-based, this is the one that forces the async refactor**);
-how backtracking/multiple solutions should present in a transcript, which is a
-genuine UI design question rather than a port detail.
+Done: pizza-repl-prolog. Answers are callback-driven (via `setTimeout`), but no
+async refactor was needed: lang.js runs Tau's search loop itself. Multiple
+solutions present toplevel-style (`X = 1 ;` … `false.`), 10 per entry, `;` for more.
 
 ### Kiki
 Charming, has its own docs and REPL, JS at `smallandnearlysilent.com/kiki/kiki.js`.

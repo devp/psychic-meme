@@ -17,6 +17,8 @@ const fengari = /** @type {any} */ (globalThis).fengari;
 export const name = "fennel";
 export const comment = ";;";
 export const placeholder = "(+ 1 2)";
+/** Shortcuts always behind the key row's ⋯ button, ahead of any custom ones; each is pasted into the input as-is. */
+export const commands = [",doc"];
 export const greeting =
   "Fennel REPL — try (+ 1 2) or (print :hi). ,help lists REPL commands. Reference tabs above; the log tab keeps your sessions.";
 
@@ -37,12 +39,13 @@ print = function(...)
   emit(table.concat(parts, "\\t"))
 end
 
-local repl
+local repl, completer
 local function start()
   repl = coroutine.create(function()
     fennel.repl({
       ["error-pinpoint"] = false, -- ANSI escapes otherwise
       readChunk = function(parser) return coroutine.yield(parser["stack-size"]) end,
+      registerCompleter = function(c) completer = c end, -- bound to this repl's scope, locals included
       onValues = function(xs) if #xs > 0 then emit(table.concat(xs, "\\t")) end end,
       onError = function(kind, msg)
         emit((kind == "Runtime" and "Runtime error: " or "") .. tostring(msg), true)
@@ -53,7 +56,7 @@ local function start()
 end
 start()
 
-return function(src)
+local function evaluate(src)
   out, failed = {}, false
   local ok, depth = coroutine.resume(repl, src .. "\\n")
   if not ok then
@@ -68,6 +71,14 @@ return function(src)
   end
   return table.concat(out, "\\n"), failed
 end
+
+-- Calls the completer directly rather than sending ,complete through the repl:
+-- nothing is read, so line counts and *1 stay put.
+local function complete(fragment)
+  return table.concat(completer(fragment, fragment), "\\n")
+end
+
+return evaluate, complete
 `;
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
@@ -84,7 +95,8 @@ check(lauxlib.luaL_loadbuffer(L, to_luastring(fennelSource), null, to_luastring(
 check(lua.lua_pcall(L, 0, 1, 0), "run fennel");
 check(lauxlib.luaL_loadstring(L, to_luastring(BOOT)), "load boot");
 lua.lua_insert(L, -2); // boot(fennel)
-check(lua.lua_pcall(L, 1, 1, 0), "run boot");
+check(lua.lua_pcall(L, 1, 2, 0), "run boot");
+const completeRef = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
 const evalRef = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
 
 /**
@@ -128,6 +140,59 @@ export function hasUnterminated(source) {
   return inString || depth > 0;
 }
 
+// What can't be part of a symbol. `,` is unquote, except as the first thing in
+// the input, where it starts a repl command (,doc).
+const DELIMITER = /[\s()[\]{}"';`,]/;
+
+/**
+ * Names the symbol before the caret could become: locals, globals, special
+ * forms and macros, fields after `.`, methods after `:`, and repl commands.
+ * None inside a string or comment, or for a :keyword or number (-1, +2, .5 too).
+ * @param {string} source
+ * @param {number} caret
+ * @returns {{from: number, items: string[]} | null} items replace source.slice(from, caret)
+ */
+export function complete(source, caret) {
+  const before = source.slice(0, caret);
+  if (inStringOrComment(before)) return null;
+  let from = caret;
+  while (from > 0 && !DELIMITER.test(before[from - 1])) from--;
+  if (from > 0 && before[from - 1] === "," && before.slice(0, from - 1).trim() === "") from--;
+  const fragment = before.slice(from);
+  if (fragment === "" || /^(:|[-+]?\.?\d)/.test(fragment)) return null;
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, completeRef);
+  lua.lua_pushstring(L, to_luastring(fragment));
+  if (lua.lua_pcall(L, 1, 1, 0) !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return null;
+  }
+  const found = lua.lua_tojsstring(L, -1);
+  lua.lua_pop(L, 1);
+  const items = [...new Set(found.split("\n"))]
+    .filter((s) => s !== "" && s !== fragment)
+    .sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0));
+  return { from, items };
+}
+
+/**
+ * Same reader rules as hasUnterminated, asking only about the end.
+ * @param {string} source
+ */
+function inStringOrComment(source) {
+  let inString = false, inComment = false;
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i];
+    if (inComment) {
+      if (c === "\n") inComment = false;
+    } else if (inString) {
+      if (c === "\\") i++;
+      else if (c === '"') inString = false;
+    } else if (c === '"') inString = true;
+    else if (c === ";") inComment = true;
+  }
+  return inString || inComment;
+}
+
 /**
  * Pasting an export runs through the same repl, form by form, so *1 and
  * locals replay faithfully: nothing to warn about.
@@ -139,9 +204,9 @@ export function replayCaveat(_inputs) {
 }
 
 /**
- * Relative links point at pages of fennel-lang.org.
+ * Drops YAML front matter (learnxinyminutes); relative links point at pages of fennel-lang.org.
  * @param {string} md
  */
 export function preprocessDoc(md) {
-  return md.replace(/\]\((?!https?:|#)\/?([^)#.]+)(?:\.md)?(#[^)]*)?\)/g, "](https://fennel-lang.org/$1$2)");
+  return md.replace(/^---\n[\s\S]*?\n---\n/, "").replace(/\]\((?!https?:|#)\/?([^)#.]+)(?:\.md)?(#[^)]*)?\)/g, "](https://fennel-lang.org/$1$2)");
 }

@@ -74,8 +74,8 @@
         <button type="button" data-cmd="sweep" data-icon="sweep"><span>Sweep…</span><small>forgotten</small></button>
         <button type="button" data-cmd="lookahead" data-icon="lookahead"><span>Look Ahead</span><small>snoozed</small></button>
         <button type="button" data-cmd="recycle" data-hold-cmd="erase" data-icon="recycle"><span>Recycle…</span><small>done</small></button>
-        <button type="button" data-cmd="forget" data-icon="forget"><span>Forget</span><small>one, gone</small></button>
-        <button type="button" data-cmd="remember" data-icon="remember"><span>Remember</span><small>one, back</small></button>
+        <button type="button" data-cmd="forget" data-hold-cmd="forgetAll" data-icon="forget"><span>Forget</span><small>one, gone</small></button>
+        <button type="button" data-cmd="remember" data-hold-cmd="rememberOne" data-icon="remember"><span>Remember</span><small>one, back</small></button>
         <button type="button" data-cmd="shake" data-icon="shake"><span>Shake Up</span><small>roll for all</small></button>
         <button type="button" data-cmd="fastforward" data-icon="fastforward"><span>Fast Forward…</span><small>a day passes</small></button>
       </div>
@@ -83,10 +83,10 @@
     <section>
       <h2>System</h2>
       <div class="desk-icons">
-        <button type="button" data-cmd="themes" data-icon="themes" aria-haspopup="dialog"><span>Themes…</span></button>
+        <button type="button" data-cmd="themes" data-hold-cmd="themes" data-icon="themes" aria-haspopup="dialog"><span>Themes…</span></button>
         <button type="button" data-cmd="prefs" data-icon="prefs" aria-haspopup="dialog"><span>Options…</span></button>
-        <button type="button" data-cmd="help" data-icon="help" aria-haspopup="dialog"><span>Help…</span></button>
-        <button type="button" data-cmd="about" data-icon="about" aria-haspopup="dialog"><span>About…</span></button>
+        <button type="button" data-cmd="help" data-hold-cmd="help" data-icon="help" aria-haspopup="dialog"><span>Help…</span></button>
+        <button type="button" data-cmd="about" data-hold-cmd="about" data-icon="about" aria-haspopup="dialog"><span>About…</span></button>
       </div>
     </section>
   </nav>
@@ -135,6 +135,7 @@
     <label><input type="checkbox" data-toggle="fit"> Shrink to fit</label>
     <label><input type="checkbox" data-toggle="deskclock"> Show Clock on Menu</label>
     <label><input type="checkbox" data-toggle="flash"> Blink changes</label>
+    <label><input type="checkbox" data-toggle="split"> Split new to-dos at ;</label>
   </section>
 
   <div class="dialog-buttons"><button type="button" id="settings-close" class="primary">Done</button></div>
@@ -225,15 +226,16 @@
   </form>
 </dialog>
 
-<!-- Hold a to-do: Abort leaves it, Retry snoozes it a day (waking neutral), Fail deletes it. -->
+<!-- Hold a to-do: Avert forgets it, Retry snoozes it a day (waking neutral), Free deletes it, Cancel leaves it. (We might style the text differently.)-->
 <dialog id="dos-dialog" class="dialog dos">
   <h2 id="dos-title"></h2>
   <form method="dialog">
     <p class="dialog-msg">Abort, Retry, Fail?</p>
     <div class="dialog-buttons">
-      <button type="submit" value="abort" class="primary">Abort</button>
+      <button type="submit" value="avert" class="primary">Avert</button>
       <button type="submit" value="retry" class="primary">Retry</button>
-      <button type="submit" value="fail" class="primary">Fail</button>
+      <button type="submit" value="free" class="primary">Free</button>
+      <button type="submit" value="cancel" class="primary">Cancel</button>
     </div>
   </form>
 </dialog>
