@@ -175,14 +175,52 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
   await clickTab("Record");
 
   // --- theme ---------------------------------------------------------------
+  const bgToken = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--bg").trim());
   await page.click("#settings-btn");
-  await page.click('[data-set-theme="light"]');
-  await page.waitForTimeout(60);
-  await ok("theme applies", (await page.getAttribute("html", "data-theme")) === "light");
-  await ok("light tokens apply", (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--bg").trim())) === "#f1e4c3");
-  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="light"]', "aria-checked")) === "true");
+  for (const [name, bg] of [["day", "#f3e4c0"], ["moon", "#14181f"], ["candle", "#1f150c"]]) {
+    await page.click(`[data-set-theme="${name}"]`);
+    await page.waitForTimeout(40);
+    await ok(`theme ${name} applies`, (await page.getAttribute("html", "data-theme")) === name && (await bgToken()) === bg, await bgToken());
+  }
+  await ok("swatch aria-checked syncs", (await page.getAttribute('[data-set-theme="candle"]', "aria-checked")) === "true");
+  await ok("storage keys use the app-ns meta", (await page.evaluate((k) => localStorage.getItem(k), `${appNs}:theme`)) === "candle");
+
+  // --- font: Lora by default, vendored ---------------------------------------
+  await ok("serif is the default font", (await page.getAttribute("html", "data-font")) === "serif");
+  await ok("body text is Lora", (await page.evaluate(() => getComputedStyle(document.body).fontFamily)).includes("Lora"));
+  await ok("Lora actually loads", await page.evaluate(async () => {
+    await document.fonts.ready;
+    return document.fonts.check('16px "Lora"');
+  }));
+  await page.click('[data-set-font="sans"]');
+  await ok("font option applies", (await page.getAttribute("html", "data-font")) === "sans");
+  await page.click('[data-set-font="serif"]');
+
+  // --- motion ------------------------------------------------------------------
+  const panelTransition = () => page.evaluate(() =>
+    getComputedStyle(/** @type {Element} */ (document.querySelector(".panel.active"))).transitionDuration);
+  await page.click('[data-set-motion="still"]');
+  await page.waitForTimeout(40);
+  await ok("still: nothing marked moving", (await page.getAttribute("html", "data-moving")) === null);
+  await ok("still: panels don't transition", (await panelTransition()) === "0s", await panelTransition());
+  await page.click('[data-set-motion="unfurl"]');
+  await page.waitForTimeout(40);
+  await ok("unfurl: moving", (await page.getAttribute("html", "data-moving")) === "");
+  await ok("unfurl: panels unroll slowly", (await panelTransition()) === "0.9s", await panelTransition());
+  await page.click('[data-set-motion="auto"]');
   await page.click("#settings-close");
-  await ok("storage keys use the app-ns meta", (await page.evaluate((k) => localStorage.getItem(k), `${appNs}:theme`)) === "light");
+
+  // A device that asks for reduced motion gets stillness from the first paint.
+  const calm = await browser.newContext({ reducedMotion: "reduce" });
+  const calmPage = await calm.newPage();
+  await calmPage.goto(URL, { waitUntil: "domcontentloaded" });
+  await ok("auto follows reduced motion", (await calmPage.getAttribute("html", "data-moving")) === null);
+  // v1's theme names still work: stored "dark" loads as candle.
+  await calmPage.evaluate((k) => localStorage.setItem(k, "dark"), `${appNs}:theme`);
+  await calmPage.reload({ waitUntil: "networkidle" });
+  await ok("old theme name migrates", (await calmPage.getAttribute("html", "data-theme")) === "candle"
+    && (await calmPage.evaluate((k) => localStorage.getItem(k), `${appNs}:theme`)) === "candle");
+  await calm.close();
 
   // --- service worker ------------------------------------------------------
   const swState = await page.evaluate(async () => {
@@ -199,6 +237,7 @@ test("app in a real browser", { skip: !chromium && "playwright not installed" },
     return (await c.keys()).length;
   });
   await ok("assets precached", cached >= 11, `${cached} entries in cache`);
+  await ok("the serif is cached for offline", await page.evaluate(async () => !!(await caches.match("fonts/lora-latin-400-normal.woff2"))));
 
   // --- updates -------------------------------------------------------------
   // Headless pages never change visibility on their own; fake a trip to the

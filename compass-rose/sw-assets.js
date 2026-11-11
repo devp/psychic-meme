@@ -22,4 +22,7 @@ const ASSETS = [
   "components/update-toast.js",
   "vendor/lit.js",
   "icons/compass.svg",
+  "fonts/lora-latin-400-normal.woff2",
+  "fonts/lora-latin-600-normal.woff2",
+  "fonts/lora-latin-400-italic.woff2",
 ];

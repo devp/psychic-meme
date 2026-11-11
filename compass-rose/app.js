@@ -3,7 +3,7 @@
 // bottom with no indirection.
 
 import { syncAppHeight } from "./lib/viewport.js";
-import { theme, font, tab, toolkitRecord } from "./state.js";
+import { theme, font, motion, tab, toolkitRecord } from "./state.js";
 import { Tabs } from "./components/tabs.js";
 import { CompassRose } from "./components/compass-rose.js";
 import { RecordView } from "./components/record-view.js";
@@ -45,6 +45,18 @@ font.subscribe((v) => {
   syncChecked("[data-set-font]", "data-set-font", v);
 });
 
+// Motion: one switch for every transition in app.css, which all live under
+// :root[data-moving]. "auto" follows the device and keeps following it.
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const syncMotion = () => {
+  const v = motion.get();
+  const moving = v === "unfurl" || (v !== "still" && !reduceMotion.matches);
+  document.documentElement.toggleAttribute("data-moving", moving);
+  syncChecked("[data-set-motion]", "data-set-motion", v);
+};
+reduceMotion.addEventListener("change", syncMotion);
+motion.subscribe(syncMotion);
+
 tab.subscribe((v) => {
   // A tab id from an older version (or a typo) falls back to the list.
   if (!document.querySelector(`.panel[data-panel="${v}"]`)) return tab.set("records");
@@ -75,7 +87,9 @@ document.addEventListener("click", (e) => {
   const t = el.closest("[data-set-theme]");
   if (t) theme.set(t.getAttribute("data-set-theme") ?? "auto");
   const f = el.closest("[data-set-font]");
-  if (f) font.set(f.getAttribute("data-set-font") ?? "sans");
+  if (f) font.set(f.getAttribute("data-set-font") ?? "serif");
+  const m = el.closest("[data-set-motion]");
+  if (m) motion.set(m.getAttribute("data-set-motion") ?? "auto");
 });
 
 const settings = /** @type {HTMLDialogElement} */ (document.getElementById("settings-dialog"));
