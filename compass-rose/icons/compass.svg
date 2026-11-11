@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Compass rose">
+  <rect width="512" height="512" rx="96" fill="#1e1710"/>
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#5a4631" stroke-width="10"/>
+  <path d="M256 70 L282 230 L256 256 L230 230 Z" fill="#c9973f"/>
+  <path d="M256 442 L282 282 L256 256 L230 282 Z" fill="#9a8566"/>
+  <path d="M70 256 L230 230 L256 256 L230 282 Z" fill="#7d9a78"/>
+  <path d="M442 256 L282 230 L256 256 L282 282 Z" fill="#b5533c"/>
+  <circle cx="256" cy="256" r="26" fill="#e8d9b8"/>
+</svg>

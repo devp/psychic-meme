@@ -1,0 +1,89 @@
+/* ---- theme tokens: sepia map ----
+   Every colour lives here. Two palettes, dark sepia and light sepia; "auto"
+   picks by prefers-color-scheme and falls back to dark.
+
+   Contrast (WCAG, checked against --bg / --surface): text ~12:1 dark, ~11:1
+   light; muted ~6:1. Accents used as text stay at 4.5:1 or more on --surface,
+   which is why wax, verdigris and situation are a shade lighter than a pure
+   ink would be in dark, and darker in light. No pure black or white. */
+
+:root,
+:root[data-theme="dark"] {
+  --bg:        #1e1710;  /* deep umber, the "table" */
+  --surface:   #2a2016;  /* parchment panels */
+  --raised:    #362a1d;  /* cards, inputs */
+  --line:      #5a4631;  /* ink lines, borders */
+  --text:      #e8d9b8;  /* aged parchment */
+  --muted:     #b09a76;  /* secondary text */
+
+  --brass:     #c9973f;  /* compass rose, thought */
+  --wax:       #d0705a;  /* feeling */
+  --verdigris: #8fae89;  /* behavior */
+  --situation: #a8936f;
+  --intervention: #e8d9b8; /* the compass pin */
+}
+
+/* Light sepia. Repeated under the media query below: CSS has no mixins, and
+   this is the whole of the duplication. Edit both. */
+:root[data-theme="light"] {
+  --bg:        #f1e4c3;
+  --surface:   #e8d6ad;
+  --raised:    #f6ecd2;
+  --line:      #b89b6a;
+  --text:      #3b2b1a;
+  --muted:     #65502f;
+
+  --brass:     #74531a;
+  --wax:       #93391f;
+  --verdigris: #45633f;
+  --situation: #6b573a;
+  --intervention: #3b2b1a;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --bg:        #f1e4c3;
+    --surface:   #e8d6ad;
+    --raised:    #f6ecd2;
+    --line:      #b89b6a;
+    --text:      #3b2b1a;
+    --muted:     #65502f;
+
+    --brass:     #74531a;
+    --wax:       #93391f;
+    --verdigris: #45633f;
+    --situation: #6b573a;
+    --intervention: #3b2b1a;
+  }
+}
+
+/* Category colours, by name, so markup can say var(--c-feeling). */
+:root {
+  --c-situation: var(--situation);
+  --c-thought: var(--brass);
+  --c-feeling: var(--wax);
+  --c-behavior: var(--verdigris);
+  --c-intervention: var(--intervention);
+  --c-resolution: var(--muted);
+}
+
+/* The starter's token names, which base.css and update-toast use. */
+:root {
+  --bg-alt: var(--surface);
+  --bg-raised: var(--raised);
+  --fg: var(--text);
+  --fg-dim: var(--muted);
+  --accent: var(--brass);
+  --accent-ink: var(--bg);
+  --border: var(--line);
+}
+
+:root {
+  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: var(--font-sans);
+}
+:root[data-font="mono"] { --font-body: var(--font-mono); }
+
+/* ---- theme extras ---- */
+body { background: radial-gradient(ellipse at center, var(--surface) 0%, var(--bg) 100%); }

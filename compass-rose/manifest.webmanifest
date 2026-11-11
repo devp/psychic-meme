@@ -1,0 +1,19 @@
+{
+  "name": "compass-rose",
+  "short_name": "compass",
+  "description": "A thought record: situation, thoughts, feelings, behavior. Stays on this device.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1e1710",
+  "theme_color": "#1e1710",
+  "icons": [
+    {
+      "src": "icons/compass.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
