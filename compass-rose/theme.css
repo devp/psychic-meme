@@ -1,60 +1,93 @@
-/* ---- theme tokens: sepia map ----
-   Every colour lives here. Two palettes, dark sepia and light sepia; "auto"
-   picks by prefers-color-scheme and falls back to dark.
+/* ---- theme tokens: a map on the deck ----
+   Every colour lives here. Three lights to read the map by:
+     candle  dark: warm umber, amber ink     (the default, and "auto" on a dark device)
+     day     light: sun on parchment         ("auto" on a light device)
+     moon    dark: silvered ink, blue-umber
+   "auto" picks day or candle by prefers-color-scheme.
 
-   Contrast (WCAG, checked against --bg / --surface): text ~12:1 dark, ~11:1
-   light; muted ~6:1. Accents used as text stay at 4.5:1 or more on --surface,
-   which is why wax, verdigris and situation are a shade lighter than a pure
-   ink would be in dark, and darker in light. No pure black or white. */
+   Contrast (WCAG, against --surface, the panels): text 9.7-12:1, muted
+   5.5-6.5:1, accents used as text 4.7:1 or more. No pure black or white.
+   Re-check after any change. */
 
 :root,
-:root[data-theme="dark"] {
-  --bg:        #1e1710;  /* deep umber, the "table" */
-  --surface:   #2a2016;  /* parchment panels */
-  --raised:    #362a1d;  /* cards, inputs */
-  --line:      #5a4631;  /* ink lines, borders */
-  --text:      #e8d9b8;  /* aged parchment */
-  --muted:     #b09a76;  /* secondary text */
+:root[data-theme="candle"] {
+  --bg:        #1f150c;  /* the deck at night */
+  --surface:   #2c1e12;  /* parchment panels */
+  --raised:    #3a2817;  /* cards, inputs */
+  --line:      #63482d;  /* ink lines, borders */
+  --text:      #f0dcb4;  /* parchment by candlelight */
+  --muted:     #c0a073;
 
-  --brass:     #c9973f;  /* compass rose, thought */
-  --wax:       #d0705a;  /* feeling */
-  --verdigris: #8fae89;  /* behavior */
-  --situation: #a8936f;
-  --intervention: #e8d9b8; /* the compass pin */
+  --brass:     #d9a24a;  /* compass rose, thought */
+  --wax:       #dc7a5e;  /* feeling */
+  --verdigris: #9cb889;  /* behavior */
+  --situation: #b59a70;
+  --intervention: #f3e2bf; /* the compass pin */
+
+  --glow: rgb(255 168 72 / 0.13);  /* a candle, low and near */
+  --glow-at: 50% 78%;
+  --grain: 0.07;
 }
 
-/* Light sepia. Repeated under the media query below: CSS has no mixins, and
+/* Daylight. Repeated under the media query below: CSS has no mixins, and
    this is the whole of the duplication. Edit both. */
-:root[data-theme="light"] {
-  --bg:        #f1e4c3;
-  --surface:   #e8d6ad;
-  --raised:    #f6ecd2;
-  --line:      #b89b6a;
-  --text:      #3b2b1a;
-  --muted:     #65502f;
+:root[data-theme="day"] {
+  --bg:        #f3e4c0;
+  --surface:   #ead5a8;
+  --raised:    #f8eccf;
+  --line:      #b89a68;
+  --text:      #3a2916;
+  --muted:     #644d2c;
 
-  --brass:     #74531a;
-  --wax:       #93391f;
-  --verdigris: #45633f;
-  --situation: #6b573a;
-  --intervention: #3b2b1a;
+  --brass:     #72511a;
+  --wax:       #933a1f;
+  --verdigris: #44623e;
+  --situation: #6a5537;
+  --intervention: #3a2916;
+
+  --glow: rgb(255 246 214 / 0.55);  /* sun, from above */
+  --glow-at: 50% -10%;
+  --grain: 0.09;
 }
 
 @media (prefers-color-scheme: light) {
   :root[data-theme="auto"] {
-    --bg:        #f1e4c3;
-    --surface:   #e8d6ad;
-    --raised:    #f6ecd2;
-    --line:      #b89b6a;
-    --text:      #3b2b1a;
-    --muted:     #65502f;
+    --bg:        #f3e4c0;
+    --surface:   #ead5a8;
+    --raised:    #f8eccf;
+    --line:      #b89a68;
+    --text:      #3a2916;
+    --muted:     #644d2c;
 
-    --brass:     #74531a;
-    --wax:       #93391f;
-    --verdigris: #45633f;
-    --situation: #6b573a;
-    --intervention: #3b2b1a;
+    --brass:     #72511a;
+    --wax:       #933a1f;
+    --verdigris: #44623e;
+    --situation: #6a5537;
+    --intervention: #3a2916;
+
+    --glow: rgb(255 246 214 / 0.55);
+    --glow-at: 50% -10%;
+    --grain: 0.09;
   }
+}
+
+:root[data-theme="moon"] {
+  --bg:        #14181f;  /* deep blue-umber */
+  --surface:   #1d232b;
+  --raised:    #272e38;
+  --line:      #48525f;
+  --text:      #dfe3e4;  /* silvered ink */
+  --muted:     #9ba6b0;
+
+  --brass:     #cdbd8c;  /* pale moon-gold */
+  --wax:       #cf9690;  /* dusty rose */
+  --verdigris: #8fb8a8;  /* sea glass */
+  --situation: #a7aca3;
+  --intervention: #e8eae4;
+
+  --glow: rgb(196 214 236 / 0.10);  /* the moon, high over the rail */
+  --glow-at: 85% 0%;
+  --grain: 0.06;
 }
 
 /* Category colours, by name, so markup can say var(--c-feeling). */
@@ -78,12 +111,61 @@
   --border: var(--line);
 }
 
+/* ---- type ---- */
+
+/* Vendored OFL font, Latin subset; see fonts/Lora.LICENSE.txt. */
+@font-face {
+  font-family: "Lora";
+  src: url("fonts/lora-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("fonts/lora-latin-600-normal.woff2") format("woff2");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("fonts/lora-latin-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
   --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-body: var(--font-sans);
+  --font-body: var(--font-serif);
 }
+:root[data-font="sans"] { --font-body: var(--font-sans); }
 :root[data-font="mono"] { --font-body: var(--font-mono); }
 
-/* ---- theme extras ---- */
-body { background: radial-gradient(ellipse at center, var(--surface) 0%, var(--bg) 100%); }
+/* ---- light and paper ----
+   The body carries the vignette; ::before the paper grain (inline SVG
+   noise, no image files); ::after the light source, which a candle lets
+   flicker when motion is on (app.css). */
+body {
+  position: relative;
+  isolation: isolate;
+  background: radial-gradient(ellipse at center, var(--surface) 0%, var(--bg) 100%);
+}
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+body::before {
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .16 1.4 0 0 0 -.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+body::after {
+  background: radial-gradient(ellipse 90% 60% at var(--glow-at), var(--glow), transparent 70%);
+}

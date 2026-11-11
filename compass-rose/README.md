@@ -17,6 +17,11 @@ Not a medical device. No clinical advice, no scores or streaks. A therapist's ow
 | **Toolkit** | Your own list of interventions, tagged by corner, offered when you intervene. Starts with five neutral starters you can delete. |
 | **Needle / hint** | Looks only at entries since the last intervention. It points at a corner you haven't touched yet; or, once the map has looped back with nothing tested, at the center, with a dismissable "Mapped it. What's one thing you could test?" |
 
+## Look and feel
+
+- Three lights to read the map by: **Daylight**, **Candlelight** (default on a dark device) and **Moonlight**, with Match device as the default. Options also has the font (Lora serif by default, vendored in `fonts/`; or sans or mono) and Motion.
+- **Motion**: panels, new entries and dialogs unroll like a scroll; the needle swings slowly; candlelight flickers, barely. Motion follows the device's reduced-motion setting unless Options says Unfurl or Still. Everything that moves is gated on `:root[data-moving]` in `app.css`.
+
 ## Using it
 
 - Tap a corner of the compass (or the situation mark) and type a line.

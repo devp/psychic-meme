@@ -7,7 +7,14 @@ import { persistedValue, recordStore } from "./lib/store.js";
 const NS = document.querySelector('meta[name="app-ns"]')?.getAttribute("content") ?? "app";
 
 export const theme = persistedValue(NS + ":theme", "auto");
-export const font = persistedValue(NS + ":font", "sans");
+// v1 named the themes light and dark; keep an installed copy's choice.
+/** @type {Record<string, string>} */
+const RENAMED = { light: "day", dark: "candle" };
+if (RENAMED[theme.get()]) theme.set(RENAMED[theme.get()]);
+
+export const font = persistedValue(NS + ":font", "serif");
+/** "auto" follows the device's reduced-motion setting; "unfurl" and "still" override it. */
+export const motion = persistedValue(NS + ":motion", "auto");
 export const tab = persistedValue(NS + ":tab", "records");
 
 /** Thought records. Each record's items are its entries; `connections` sits beside them. */
