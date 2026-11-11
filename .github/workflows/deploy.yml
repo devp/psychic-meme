@@ -28,6 +28,7 @@ env:
     pizza-repl-prolog pl
     carousel carousel
     ttr ttr
+    compass-rose compass-rose
 
 jobs:
   plan:
