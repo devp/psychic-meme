@@ -42,6 +42,15 @@ After a thought, it suggests feeling, but I may have a second thought.
 **B2. The compass is decoration. It doesn't reflect *this* record.**
 The rose looks the same whether I've written 2 entries or 20.
 - *Fix: the compass is the mini-map.* Plot each entry as a small mark in its corner's sector: thoughts near the top, and so on. Draw connections as ink routes across the rose. A loop becomes a visible circuit around the pin, and an intervention plants a mark in the center with routes leaving it. The needle keeps its job. This makes the theme *be* the visualization instead of framing it.
+- *Nice to have, as a thematic option: a floating needle.* Tilt the phone and the needle sways a few degrees (about ±5°) around wherever it's pointing, with a spring and settle, like a compass card floating in its bowl. Implementation:
+  - Use `deviceorientation`, heavily smoothed. It needs no permission on Android Chrome; iOS needs one tap to allow it.
+  - It's its own Options toggle ("floating needle"), and only runs when Motion is on and the Record tab is visible.
+  - About 40 lines, no dependencies, and the sensor data never leaves the device.
+  - *Battery:* small but not zero. The tilt sensor reports up to ~60 times a second, and each reading redraws one SVG transform. Keep it cheap:
+    - stop listening when the page is hidden or the compass is off-screen;
+    - stop redrawing once the needle has settled and the phone is still.
+  - *Check:* after a week, Android's per-app battery usage for the installed app should be negligible.
+  - *Risk:* a jittery needle reads as anxious. If heavy smoothing doesn't make it calm, drop it.
 - *Fix: rounds as rings.* Each intervention adds a faint ring outward, like tree rings or a sounding chart, so "map → test → map again" shows as the record growing outward.
 
 **B3. Evolving is invisible: the new thought doesn't sit beside the old one.**
