@@ -1,0 +1,271 @@
+/* What goes on the stage and in the player. The shell is base.css. */
+
+.stage {
+  --gutter: 76px;
+  padding: 72px 0 48px;
+}
+.stage > * { padding-left: var(--gutter); padding-right: var(--gutter); }
+
+/* ---- heading: one bold line over one light line ---- */
+.heading { position: relative; margin-bottom: 42px; }
+
+.heading h1 { margin: 0; font-size: 28px; line-height: 1.22; font-weight: 300; }
+.heading-title { display: block; font-size: 28px; line-height: 1.22; font-weight: 700; letter-spacing: -0.01em; }
+.heading-subtitle { display: block; color: var(--ink-soft); }
+
+.back {
+  position: absolute;
+  left: calc(var(--gutter) - 52px);
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+.back:hover { background: var(--wash); }
+.back svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---- tiles: a row of squares that runs off the right edge ---- */
+.tiles {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding-top: 4px;
+  padding-bottom: 20px;
+  scroll-padding-left: var(--gutter);
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.tiles::-webkit-scrollbar { display: none; }
+.tiles li { flex: 0 0 166px; scroll-snap-align: start; }
+
+.tile { display: block; }
+
+.tile-art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.tile-art svg { width: 58%; height: 58%; transition: transform 0.2s; }
+.tile:hover .tile-art { background: var(--wash); border-color: var(--ink); }
+.tile:hover .tile-art svg { transform: scale(1.06); }
+.tile:active .tile-art { background: var(--wash-strong); }
+
+.tile-label { display: block; margin-top: 12px; font-weight: 700; }
+
+.tile-art--text { place-items: end start; padding: 14px; }
+.tile-title { font-size: 20px; line-height: 1.15; font-weight: 700; }
+.tile-description { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
+
+/* ---- links: a gallery's categories ---- */
+.links { columns: 3 200px; column-gap: 40px; max-width: 900px; }
+.links li { break-inside: avoid; }
+.links a {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 2px;
+  font-size: 17px;
+  font-weight: 700;
+  border-bottom: 1px solid rgb(255 255 255 / 0.28);
+}
+.links a:hover { background: var(--wash); }
+.count { font-size: 12px; font-weight: 400; color: var(--ink-soft); }
+
+/* ---- cards: collections ---- */
+.cards-title { margin: 44px 0 16px; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 166px));
+  gap: 26px 18px;
+}
+
+.card { display: block; }
+.card-art { position: relative; display: block; }
+.card-title { display: block; margin-top: 12px; font-weight: 700; }
+.card-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.card-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 52px;
+  height: 52px;
+  padding: 12px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.45);
+  fill: #fff;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.card:hover .card-play, .card:focus-visible .card-play { opacity: 1; transform: none; }
+.card[data-on] .cover { box-shadow: 0 0 0 2px var(--ink); }
+
+.empty { margin: 0; font-size: 16px; color: var(--ink-soft); }
+
+/* ---- cover: a collection's artwork, drawn when it has none ---- */
+.cover {
+  display: block;
+  aspect-ratio: 1;
+  width: 100%;
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.2);
+}
+.cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cover--drawn {
+  --ring: rgb(255 255 255 / 0.2);
+  background:
+    radial-gradient(circle at 72% 76%,
+      rgb(255 255 255 / 0.9) 0 3%, transparent 3.5% 17%,
+      var(--ring) 17.5% 18.5%, transparent 19% 31%,
+      var(--ring) 31.5% 32.5%, transparent 33% 46%,
+      var(--ring) 46.5% 47.5%, transparent 48% 62%,
+      var(--ring) 62.5% 63.5%, transparent 64%),
+    linear-gradient(140deg,
+      hsl(var(--cover-hue) 72% 58%),
+      hsl(calc(var(--cover-hue) + 48) 70% 34%));
+}
+
+/* ---- feature: one collection, large ---- */
+.feature { display: flex; align-items: flex-end; gap: 32px; }
+
+.feature-art {
+  position: relative;
+  flex: 0 0 240px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: 0 14px 40px rgb(0 0 40 / 0.28);
+}
+.feature-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 76px;
+  height: 76px;
+  padding: 18px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.45);
+  fill: #fff;
+  transition: transform 0.15s, background-color 0.15s;
+}
+.feature-art:hover .feature-play { transform: scale(1.06); background: rgb(0 0 0 / 0.6); }
+
+.feature-text { min-width: 0; max-width: 520px; }
+.feature-text h1 { margin: 0; font-size: 34px; }
+.feature-description { margin: 8px 0 0; font-size: 18px; font-weight: 300; color: var(--ink); }
+.feature-curator { margin: 10px 0 0; font-size: 12px; color: var(--ink-soft); }
+.feature-text .pill { margin-top: 22px; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px 9px 16px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--paper-accent);
+  font-weight: 700;
+}
+.pill:hover { background: rgb(255 255 255 / 0.88); }
+.pill svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* ---- player ---- */
+.player-progress { position: absolute; inset: 0 0 auto 0; height: 3px; background: rgb(255 255 255 / 0.16); }
+.player-progress span { display: block; height: 100%; background: var(--ink); transition: width 0.5s linear; }
+
+.player-now { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.player-now .cover { flex: 0 0 46px; width: 46px; }
+.player-text { min-width: 0; }
+.player-title, .player-byline { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player-title { font-weight: 700; }
+.player-byline { font-size: 12px; color: var(--ink-soft); }
+.player-now:hover .player-title { text-decoration: underline; }
+
+.player-time { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-soft); white-space: nowrap; }
+
+.player-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.player-controls button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+}
+.player-controls button:hover { background: var(--wash); }
+.player-controls button:disabled { opacity: 0.4; cursor: default; background: none; }
+.player-controls svg { width: 22px; height: 22px; fill: currentColor; }
+.player-controls [aria-pressed] svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.player-controls [aria-pressed="true"] svg { fill: currentColor; }
+.thumb-down svg { transform: rotate(180deg); }
+.player-controls .player-toggle { width: 46px; height: 46px; margin: 0 4px; background: var(--paper); color: var(--paper-ink); }
+.player-controls .player-toggle:hover { background: rgb(255 255 255 / 0.88); }
+.player-toggle svg { width: 26px; height: 26px; }
+
+/* ---- about dialog ---- */
+.about {
+  width: min(92vw, 420px);
+  padding: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--font-body);
+  box-shadow: 0 20px 60px rgb(0 0 40 / 0.4);
+}
+.about::backdrop { background: rgb(0 10 50 / 0.5); }
+.about h2 { margin: 0 0 12px; font-size: 22px; }
+.about p { margin: 0 0 12px; }
+.about a { color: var(--paper-accent); font-weight: 700; }
+.about a:hover { text-decoration: underline; }
+.about .pill { margin-top: 8px; padding: 9px 22px; background: var(--paper-accent); color: var(--paper); }
+.about :focus-visible { outline-color: var(--paper-accent); }
+
+/* ---- phone ---- */
+@media (max-width: 719px) {
+  .stage { --gutter: 16px; padding: 28px 0 32px; }
+
+  .heading { margin-bottom: 24px; }
+  .heading h1, .heading-title { font-size: 22px; }
+  .heading:has(.back) { padding-left: calc(var(--gutter) + 40px); }
+  .back { left: calc(var(--gutter) - 8px); top: -4px; }
+
+  /* No room for a row to run off the edge: two across, and it wraps. */
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; overflow: visible; }
+  .tile-title { font-size: 17px; }
+
+  .links { columns: 1; }
+
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; }
+
+  .feature { flex-direction: column; align-items: flex-start; gap: 20px; }
+  .feature-art { flex-basis: auto; width: min(62vw, 240px); }
+  .feature-text h1 { font-size: 26px; }
+  .feature-description { font-size: 16px; }
+
+  .player { gap: 8px; padding-left: 12px; padding-right: 8px; }
+  .player-time { display: none; }
+  .player-controls { gap: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

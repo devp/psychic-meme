@@ -14,6 +14,7 @@ Currently, miscellaneous side-projects and utilities -- some hand-coded, some LL
 
 - [carousel](carousel) -- a deck of links shared from your phone: swipe through, tap to read in a frame, and it's gone. Early-web themes
 - [compass-rose](compass-rose) -- a thought record shaped like a compass: situation, thoughts, feelings, behavior; connect what led to what, and turn loops into something to test. Stays on your device
+- [concierge](concierge) -- an homage to the Songza web player: it's Wednesday afternoon, what are you doing? Mock data behind one seam, so it can be about something other than music
 - [detype](detype) -- freewriting, morning-pages style: type a line, press Enter, let it fade. One page per day to look back on
 - [forgotodo](forgotodo) -- a to-do list with retro Palm/Newton looks
 - pizza-repl -- repls for pizza rats: try out a language in your phone browser/PWA, offline. One app per language: [lil](pizza-repl-lil), [fennel](pizza-repl-fennel), [prolog](pizza-repl-prolog)

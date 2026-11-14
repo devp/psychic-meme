@@ -29,6 +29,7 @@ env:
     carousel carousel
     ttr ttr
     compass-rose compass-rose
+    concierge concierge
 
 jobs:
   plan:

@@ -1,0 +1,200 @@
+/* Shell: reset and the four regions (notice, side, main, player).
+   Colours come from theme.css tokens. What goes inside main is app.css. */
+
+/* ---- base ---- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  /* --app-height is set by syncAppHeight(); the dvh is the pre-JS fallback. */
+  height: var(--app-height, 100dvh);
+  overflow: hidden;
+}
+
+body {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "notice notice"
+    "side   main"
+    "player player";
+  background: var(--sky-base) var(--sky);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ---- notice ---- */
+.notice {
+  grid-area: notice;
+  margin: 0;
+  padding: 7px 16px;
+  padding-top: calc(7px + env(safe-area-inset-top));
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notice a { color: var(--paper-accent); }
+.notice a:hover { text-decoration: underline; }
+.notice a:focus-visible { outline-color: var(--paper-accent); }
+
+/* ---- side ---- */
+.side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  background: rgb(255 255 255 / 0.07);
+  padding-bottom: 16px;
+}
+
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  background: var(--well);
+}
+.nav-search svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.nav-search input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* < 16px makes iOS zoom on focus */
+  outline: none;
+}
+.nav-search input::placeholder { color: transparent; }
+.nav-search:focus-within { box-shadow: inset 0 -2px 0 var(--ink); }
+.nav-search:focus-within input::placeholder { color: var(--ink-faint); }
+.nav-search input::-webkit-search-cancel-button { display: none; }
+
+.brand {
+  padding: 22px 14px 14px;
+  font-size: 25px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.nav-links { display: flex; flex-direction: column; }
+
+.nav-link {
+  margin: 0 0 0 0;
+  padding: 7px 14px;
+  font-weight: 700;
+  border-bottom: 1px solid rgb(255 255 255 / 0.22);
+}
+.nav-link:hover { background: var(--wash); }
+.nav-link[aria-current="page"] { background: var(--wash-strong); }
+
+.nav-label {
+  padding: 18px 14px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid rgb(255 255 255 / 0.22);
+}
+
+.nav-about {
+  align-self: flex-start;
+  margin: 22px 14px 0;
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.nav-about:hover { background: rgb(255 255 255 / 0.88); }
+
+/* ---- main ---- */
+.main {
+  grid-area: main;
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---- player ---- */
+.player {
+  grid-area: player;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  background: var(--bar);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* ---- phone: the rail lies down across the top ---- */
+@media (max-width: 719px) {
+  body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "notice" "side" "main" "player";
+  }
+
+  .side {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+  .brand { grid-row: 1; grid-column: 1; padding: 0 12px 0 16px; font-size: 22px; }
+  .nav-search { grid-row: 1; grid-column: 2; }
+
+  .nav-links {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: stretch;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-top: 1px solid rgb(255 255 255 / 0.22);
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-link { padding: 11px 14px; border-bottom: 0; white-space: nowrap; }
+  .nav-link:first-child { padding-left: 16px; }
+  .nav-label { display: none; }
+  .nav-about {
+    align-self: center;
+    margin: 0 16px 0 8px;
+    padding: 5px 12px;
+  }
+}

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-period="afternoon">
+<head>
+<meta charset="utf-8">
+<!-- interactive-widget=resizes-content is half of the keyboard fix; the other
+     half is syncAppHeight() in lib/viewport.js. Neither works alone. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#2f8fff">
+<title>Concierge</title>
+<!-- localStorage key prefix; state.js reads it. -->
+<meta name="app-ns" content="concierge">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/concierge.svg" type="image/svg+xml">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="app.css">
+<script type="importmap">
+{
+  "imports": {
+    "lit": "./vendor/lit.js",
+    "lit/directives/repeat.js": "./vendor/lit.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- Filled from the service's config by app.js; stays hidden without a notice. -->
+<p id="notice" class="notice" hidden></p>
+
+<side-nav class="side"></side-nav>
+
+<stage-view id="stage" class="main" role="main"></stage-view>
+
+<player-bar id="player" class="player" hidden></player-bar>
+
+<dialog id="about-dialog" class="about">
+  <h2>About</h2>
+  <p>
+    An homage to a music concierge from the early 2010s that asked one good
+    question: what are you doing right now? It answered with a few things that
+    fit, picked by people, and then got out of the way.
+  </p>
+  <p>
+    Nothing here is real. The stations, the bands and the songs are invented,
+    and nothing plays: the player only counts time. The interface is the point,
+    and it will take any subject that fits the same three questions.
+  </p>
+  <!-- A global page, not part of this app: psychic-meme/misc/qr/ draws a QR
+       code for whatever ?q= holds. app.js adds ?q=<this app's URL>. -->
+  <p><a id="share-link" href="https://devp.github.io/psychic-meme/misc/qr/" target="_blank" rel="noopener">Show a QR code for this app ↗</a></p>
+  <button type="button" id="about-close" class="pill">Done</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

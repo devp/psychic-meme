@@ -1,0 +1,17 @@
+{
+  "name": "Concierge",
+  "short_name": "Concierge",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#2f8fff",
+  "theme_color": "#2f8fff",
+  "icons": [
+    {
+      "src": "icons/concierge.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

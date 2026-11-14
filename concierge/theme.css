@@ -1,0 +1,58 @@
+/* ---- theme tokens ----
+   Every colour lives here. The sky follows the time of day: app.js sets
+   data-period on <html> (lib/moment.js has the periods). Add ?period=night to
+   the URL to look at another one. */
+:root {
+  /* afternoon, and the fallback */
+  --sky: linear-gradient(135deg, #8a90f2 0%, #3d8ffb 34%, #1c9bf6 62%, #58c8ea 100%);
+  --sky-base: #2f8fff;      /* behind the gradient, and what the browser chrome matches */
+  --ink: #ffffff;           /* text and line work on the sky */
+  --ink-soft: rgb(255 255 255 / 0.78);
+  --ink-faint: rgb(255 255 255 / 0.5);
+  --line: rgb(255 255 255 / 0.55);
+  --wash: rgb(255 255 255 / 0.14);   /* hover and selected fills */
+  --wash-strong: rgb(255 255 255 / 0.24);
+  --well: rgb(8 60 190 / 0.55);      /* the search box: a deeper patch of sky */
+  --bar: rgb(9 28 82 / 0.86);        /* the player along the bottom */
+  --paper: #ffffff;         /* the notice strip, buttons, the dialog */
+  --paper-ink: #1f2a44;
+  --paper-accent: #1766e8;
+
+  --font-body: "Helvetica Neue", Helvetica, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+:root[data-period="morning"] {
+  --sky: linear-gradient(135deg, #f0a37c 0%, #d78fb4 26%, #5b9cf0 60%, #3fb3ec 100%);
+  --sky-base: #6a9bea;
+  --well: rgb(150 60 110 / 0.4);
+  --paper-accent: #c4476f;
+}
+
+:root[data-period="late-morning"] {
+  --sky: linear-gradient(135deg, #5aa5f8 0%, #2b8ffb 38%, #22a6ee 68%, #4ccbd8 100%);
+  --sky-base: #2b8ffb;
+}
+
+:root[data-period="evening"] {
+  --sky: linear-gradient(135deg, #6c54d6 0%, #7a5fd0 22%, #c2609f 62%, #ec8a63 100%);
+  --sky-base: #8a5fc8;
+  --well: rgb(60 30 150 / 0.5);
+  --bar: rgb(40 16 70 / 0.88);
+  --paper-accent: #7a3fc0;
+}
+
+:root[data-period="night"] {
+  --sky: linear-gradient(135deg, #2b2f8f 0%, #3a3fb0 30%, #5a3fa8 66%, #7d4a9e 100%);
+  --sky-base: #3a3fb0;
+  --well: rgb(14 14 80 / 0.55);
+  --bar: rgb(12 10 46 / 0.9);
+  --paper-accent: #3a3fb0;
+}
+
+:root[data-period="late-night"] {
+  --sky: linear-gradient(135deg, #101a4a 0%, #18306e 36%, #1d4f8c 70%, #23708f 100%);
+  --sky-base: #18306e;
+  --well: rgb(4 10 40 / 0.6);
+  --bar: rgb(4 8 30 / 0.9);
+  --paper-accent: #18306e;
+}
